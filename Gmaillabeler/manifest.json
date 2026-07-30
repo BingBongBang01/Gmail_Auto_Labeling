@@ -1,0 +1,44 @@
+{
+  "manifest_version": 3,
+  "name": "__MSG_extName__",
+  "version": "1.42",
+  "author": "thk7410@gmail.com",
+  "default_locale": "en",
+  "description": "__MSG_extDescription__",
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAwPgJ4sCNlJBGDpSlVtC7pb/fi+hhkK7cGetomKQcqJ2mEGQJP7RWiQGfaRfMEa4WdqsqHUGJ8KgSfFH5TAWls2HrphNbNbV1u3NS4dHWyViCV2+fRYUevoqtDgBMqgdCm0CJJgC5szxS9yXlc41SUqZmbZCEm3SbkejdJ9TZTv0WBIBsy2AcmDclOJ0UKoeWS8HQwemHKXLj7vSUw7JLUTZBOh6YJHfKZATQrlTYI2RAEafeHE1Pwqw5HXDoudCWIJVSUB8YTAJltsCsIOfqmwWa2jhSytoht1REEHulcO6ARdMgJcM2/6SDnRhODeaCz3itOsUrg6gKytC015xQfQIDAQAB",
+  "permissions": [
+    "identity",
+    "alarms",
+    "storage",
+    "notifications"
+  ],
+  "host_permissions": [
+    "https://gmail.googleapis.com/*",
+    "https://generativelanguage.googleapis.com/*",
+    "https://oauth2.googleapis.com/*",
+    "https://accounts.google.com/*",
+    "https://www.googleapis.com/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["*://mail.google.com/*"],
+      "js": [
+        "i18n.js",
+        "content/ui_list_badge.js",
+        "content/ui_detail_card.js",
+        "content/content_main.js"
+      ]
+    }
+  ],
+  "action": {
+    "default_popup": "popup/popup.html",
+    "default_icon": "icon128.png"
+  },
+  "icons": {
+    "128": "icon128.png"
+  },
+  "options_page": "options/options.html"
+}

@@ -1,0 +1,1931 @@
+{
+  "extName": {
+    "message": "Gmail AI Labeler"
+  },
+  "extDescription": {
+    "message": "Gemini を使って Gmail のメールを自動分類し、ラベルを付ける拡張機能です。バッチ分類、再分類/分割、ラベル統合、リアルタイムログに対応しています。"
+  },
+  "appTitle": {
+    "message": "Gmail AI Labeler"
+  },
+  "statusIdle": {
+    "message": "待機中"
+  },
+  "statusRunning": {
+    "message": "実行中"
+  },
+  "statusDone": {
+    "message": "完了"
+  },
+  "statusError": {
+    "message": "エラー"
+  },
+  "statusCancelled": {
+    "message": "中止済み"
+  },
+  "statusQuotaExceeded": {
+    "message": "上限超過"
+  },
+  "tabClassify": {
+    "message": "分類"
+  },
+  "tabManage": {
+    "message": "ラベル管理"
+  },
+  "tabSettings": {
+    "message": "設定"
+  },
+  "sectionRecentClassify": {
+    "message": "最近のメールを分類"
+  },
+  "labelBatchCount": {
+    "message": "バッチ数"
+  },
+  "labelEmailCount": {
+    "message": "分類するメール数"
+  },
+  "batchHint": {
+    "message": "バッチ1件あたりメール$BATCH$件処理 (RPM $RPM$ / TPM $TPM$ / RPD $RPD$ 基準、自動連動)",
+    "placeholders": {
+      "batch": {
+        "content": "$1"
+      },
+      "rpm": {
+        "content": "$2"
+      },
+      "tpm": {
+        "content": "$3"
+      },
+      "rpd": {
+        "content": "$4"
+      }
+    }
+  },
+  "btnStart": {
+    "message": "分類開始"
+  },
+  "btnStartRunning": {
+    "message": "分類実行中…"
+  },
+  "btnStop": {
+    "message": "中止"
+  },
+  "btnStopRequesting": {
+    "message": "中止要求中…"
+  },
+  "btnForceStop": {
+    "message": "強制停止"
+  },
+  "btnForceStopping": {
+    "message": "強制停止中…"
+  },
+  "btnOpenLog": {
+    "message": "詳細ログを開く"
+  },
+  "progressIdle": {
+    "message": "待機中"
+  },
+  "progressDone": {
+    "message": "完了"
+  },
+  "progressQuotaExceededShort": {
+    "message": "上限超過のため中止"
+  },
+  "progressErrorShort": {
+    "message": "エラーのため中止"
+  },
+  "progressRunning": {
+    "message": "$PROCESSED$ / $TOTAL$件 (バッチ $BATCHIDX$/$BATCHTOTAL$) - $PERCENT$%",
+    "placeholders": {
+      "processed": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      },
+      "batchidx": {
+        "content": "$3"
+      },
+      "batchtotal": {
+        "content": "$4"
+      },
+      "percent": {
+        "content": "$5"
+      }
+    }
+  },
+  "resultRequesting": {
+    "message": "$COUNT$件のメール分類をリクエスト中…",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "resultLastRun": {
+    "message": "前回の結果: $TOTAL$件中$SUCCESS$件成功",
+    "placeholders": {
+      "success": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      }
+    }
+  },
+  "resultRequestsUsedSuffix": {
+    "message": " (リクエスト$REQUESTS$回)",
+    "placeholders": {
+      "requests": {
+        "content": "$1"
+      }
+    }
+  },
+  "resultFailReasonSuffix": {
+    "message": "\n失敗理由: $REASON$",
+    "placeholders": {
+      "reason": {
+        "content": "$1"
+      }
+    }
+  },
+  "resultCancelled": {
+    "message": "中止: $TOTAL$件中$SUCCESS$件処理後に停止",
+    "placeholders": {
+      "success": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      }
+    }
+  },
+  "resultQuotaExceeded": {
+    "message": "1日の上限超過のため中止: $TOTAL$件中$SUCCESS$件処理済み。日付が変わってから再度お試しください。",
+    "placeholders": {
+      "success": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      }
+    }
+  },
+  "resultLastError": {
+    "message": "前回のエラー: $ERROR$",
+    "placeholders": {
+      "error": {
+        "content": "$1"
+      }
+    }
+  },
+  "errorAlreadyRunning": {
+    "message": "別の処理が実行中です。完了または中止してからお試しください。"
+  },
+  "errorSelectLabel": {
+    "message": "ラベルを選択してください。"
+  },
+  "errorGenericPrefix": {
+    "message": "エラー: $ERROR$",
+    "placeholders": {
+      "error": {
+        "content": "$1"
+      }
+    }
+  },
+  "requestSent": {
+    "message": "リクエストを送信しました"
+  },
+  "sectionRelabelSplit": {
+    "message": "ラベルの再分類 / 分割"
+  },
+  "hintRelabelSplit": {
+    "message": "特定のラベルのメールを再分類します。「このラベル自体を候補から除外」をオンにすると、そのラベルのメールが他の(または新しい)カテゴリへ強制的に再配置され、実質的な「分割」になります。"
+  },
+  "checkboxExcludeSelf": {
+    "message": "このラベル自体を候補から除外して再分類(分割モード)"
+  },
+  "btnStartRelabel": {
+    "message": "再分類開始"
+  },
+  "relabelRequesting": {
+    "message": "再分類をリクエスト中…"
+  },
+  "sectionApiKey": {
+    "message": "Gemini APIキー"
+  },
+  "hintApiKey": {
+    "message": "Gemini APIキーを複数(例: 別のGoogleアカウントで発行したキー)登録できます。1つのキーが1日の上限に達すると自動で次のキーに切り替わり、登録したキーの数だけ1日の処理量が実質的に増えます。"
+  },
+  "btnGetApiKey": {
+    "message": "Google AI Studioでキーを発行 (新しいタブ)"
+  },
+  "btnSaveKey": {
+    "message": "保存"
+  },
+  "btnToggleKey": {
+    "message": "表示/非表示"
+  },
+  "warnApiKeyFormat": {
+    "message": "警告: 通常Gemini APIキーは「AIza」で始まります。値をもう一度確認してください。"
+  },
+  "msgKeySaved": {
+    "message": "保存しました。"
+  },
+  "msgEnterKey": {
+    "message": "キーを入力してください。"
+  },
+  "sectionCategories": {
+    "message": "ラベルカテゴリ一覧"
+  },
+  "hintCategories": {
+    "message": "AIはこの一覧の中からのみ選びます(新しいカテゴリを自分で作らず、曖昧な場合は「その他」に分類します)。カテゴリごとに説明を書いておくとその基準で分類し、空欄の場合は名前だけを見てAIが判断します。"
+  },
+  "btnSaveCategories": {
+    "message": "保存"
+  },
+  "btnResetCategories": {
+    "message": "初期値に戻す"
+  },
+  "msgCategoriesSaved": {
+    "message": "保存しました($COUNT$件のカテゴリ)。",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "msgCategoriesMin": {
+    "message": "カテゴリは1件以上必要です。"
+  },
+  "msgCategoriesReset": {
+    "message": "初期値に戻しました。"
+  },
+  "sectionLabelColors": {
+    "message": "Gmailラベルの色"
+  },
+  "hintLabelColors": {
+    "message": "ラベルを新規作成すると自動で色が付きますが、以前色なしで作成されたラベルがある場合は、下のボタンで現在のカテゴリ一覧に基づいて色をまとめて適用できます。"
+  },
+  "btnApplyColors": {
+    "message": "既存ラベルに色を適用"
+  },
+  "colorRequesting": {
+    "message": "ラベル色の適用をリクエスト中…"
+  },
+  "sectionAdvanced": {
+    "message": "詳細設定"
+  },
+  "checkboxShowQuota": {
+    "message": "メイン画面にAPI使用量を表示"
+  },
+  "hintQuota": {
+    "message": "Gemini APIキー認証にはリアルタイムの公式クォータ確認手段がないため、これはこの拡張機能が実際に送信したリクエスト数を毎日0時基準で数えた推定値です。Googleコンソールの実際の値と多少異なる場合があります。"
+  },
+  "quotaText": {
+    "message": "本日のGeminiリクエスト(推定): $TODAY$ / $RPD$ (RPD基準、0時にリセット)",
+    "placeholders": {
+      "today": {
+        "content": "$1"
+      },
+      "rpd": {
+        "content": "$2"
+      }
+    }
+  },
+  "sectionTheme": {
+    "message": "テーマ"
+  },
+  "themeLight": {
+    "message": "ライト"
+  },
+  "themeDark": {
+    "message": "ダーク"
+  },
+  "themeSystem": {
+    "message": "システム"
+  },
+  "sectionLanguage": {
+    "message": "言語"
+  },
+  "hintLanguage": {
+    "message": "初期設定ではブラウザの言語に従います。ここで変更できます。"
+  },
+  "languageSystem": {
+    "message": "ブラウザに合わせる (テスト)"
+  },
+  "footerOpenFull": {
+    "message": "全画面で開く"
+  },
+  "logWindowTitle": {
+    "message": "Gmail AI Labeler - 詳細ログ"
+  },
+  "logBtnExpandAll": {
+    "message": "すべてのログを表示"
+  },
+  "logBtnCollapse": {
+    "message": "要約のみ表示"
+  },
+  "logBtnCancel": {
+    "message": "中止"
+  },
+  "logBtnCancelRequested": {
+    "message": "中止要求済み"
+  },
+  "logBtnClear": {
+    "message": "画面をクリア"
+  },
+  "logProgressNoInfo": {
+    "message": "進捗情報なし"
+  },
+  "logProgressTemplate": {
+    "message": "$PROCESSED$ / $TOTAL$件処理 (バッチ $BATCHIDX$/$BATCHTOTAL$) - $PERCENT$%",
+    "placeholders": {
+      "processed": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      },
+      "batchidx": {
+        "content": "$3"
+      },
+      "batchtotal": {
+        "content": "$4"
+      },
+      "percent": {
+        "content": "$5"
+      }
+    }
+  },
+  "notifyTitleClassify": {
+    "message": "Gmail AI Labeler"
+  },
+  "notifyTitleRelabel": {
+    "message": "Gmail AI Labeler - 再分類($LABEL$)",
+    "placeholders": {
+      "label": {
+        "content": "$1"
+      }
+    }
+  },
+  "notifyTitleApplyColors": {
+    "message": "Gmail AI Labeler - ラベル色の適用"
+  },
+  "notifyTitleErrorSuffix": {
+    "message": "$TITLE$ - エラー",
+    "placeholders": {
+      "title": {
+        "content": "$1"
+      }
+    }
+  },
+  "msgNoMailToProcess": {
+    "message": "処理するメールがありません"
+  },
+  "msgSuccessSummary": {
+    "message": "$TOTAL$件中$SUCCESS$件成功",
+    "placeholders": {
+      "success": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      }
+    }
+  },
+  "msgCancelledSummary": {
+    "message": "中止: $TOTAL$件中$SUCCESS$件処理後に停止",
+    "placeholders": {
+      "success": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      }
+    }
+  },
+  "msgQuotaExceededSummary": {
+    "message": "1日の上限超過のため中止: $TOTAL$件中$SUCCESS$件処理",
+    "placeholders": {
+      "success": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      }
+    }
+  },
+  "msgFailSuffix": {
+    "message": "\n失敗: $REASON$",
+    "placeholders": {
+      "reason": {
+        "content": "$1"
+      }
+    }
+  },
+  "logJobStarted": {
+    "message": "$TITLE$ の作業を開始",
+    "placeholders": {
+      "title": {
+        "content": "$1"
+      }
+    }
+  },
+  "logJobDone": {
+    "message": "作業が完了しました"
+  },
+  "logJobCancelled": {
+    "message": "ユーザーの要求により作業を中止しました"
+  },
+  "logJobQuotaExceeded": {
+    "message": "1日のAPI上限超過により作業を中止しました"
+  },
+  "logJobError": {
+    "message": "エラーのため作業を中断: $ERROR$",
+    "placeholders": {
+      "error": {
+        "content": "$1"
+      }
+    }
+  },
+  "detailCardText": {
+    "message": "✨ Gemini AI がこのメールを <strong>[$LABEL$]</strong> に分類しました。",
+    "placeholders": {
+      "label": {
+        "content": "$1"
+      }
+    }
+  },
+  "defaultCategoriesList": {
+    "message": "セキュリティ,広告,ショッピング,お知らせ,ニュースレター,仕事,個人,その他"
+  },
+  "sectionRestructure": {
+    "message": "ラベル構造の整理"
+  },
+  "hintRestructure": {
+    "message": "関連するメールをすべて読み直してラベルを付け直すため(単にラベルを移動するだけではない)、時間がかなりかかることがあります。AIがラベル構成全体を見て自動整理します。意味が重なるラベルは一つの上位グループの下にまとめ、性質の異なるメールが多く混在するラベルはいくつかの下位ラベルに分割します。下位ラベルは十分な件数のメールを含む場合のみ維持され、名前は短い単語一つに保たれます。既存の下位ラベルがあれば新規作成せず再利用します。"
+  },
+  "btnStartRestructure": {
+    "message": "ラベル構造整理を開始"
+  },
+  "notifyTitleRestructure": {
+    "message": "Gmail AI Labeler - ラベル構造整理"
+  },
+  "restructureRequesting": {
+    "message": "ラベル構造整理をリクエスト中…"
+  },
+  "resultNoChangeNeeded": {
+    "message": "明確に改善できる点が見つからず、変更なしで終了しました。"
+  },
+  "sectionAutoClassify": {
+    "message": "新着メールの自動分類"
+  },
+  "hintAutoClassify": {
+    "message": "オンにすると、ラベルのないメールがこの件数だけ溜まるたびにバックグラウンドで1バッチを自動分類します。数分おきに確認します。設定範囲: 1~現在のバッチサイズ。"
+  },
+  "checkboxAutoClassify": {
+    "message": "新着メールが届いたら自動で分類する"
+  },
+  "labelAutoClassifyThreshold": {
+    "message": "実行基準(件数)"
+  },
+  "hintCategoriesSubLabel": {
+    "message": "「親/子」の形式で下位ラベルをあらかじめ指定することもできます(例: 「ショッピング/配送, ショッピング/決済」)。親の名前はカテゴリ一覧に追加され、下位ラベルはGmailにすぐ作成されて、以降の分類で再利用されます。"
+  },
+  "btnCancelAction": {
+    "message": "キャンセル"
+  },
+  "sectionDedupe": {
+    "message": "重複/誤分類ラベルの整理"
+  },
+  "hintDedupe": {
+    "message": "この拡張機能のラベルが既に付いているメールをすべて探し、ラベルを外してから最初から再分類します。以前のロジックでラベルが重複・誤って付いた場合の整理に使います。"
+  },
+  "btnDedupe": {
+    "message": "ラベルを外して再分類"
+  },
+  "notifyTitleDedupe": {
+    "message": "Gmail AI Labeler - ラベル整理"
+  },
+  "dedupeRequesting": {
+    "message": "ラベル整理をリクエスト中…"
+  },
+  "sectionFilterRules": {
+    "message": "個人フィルタールール"
+  },
+  "hintFilterRules": {
+    "message": "AI分析の前に確認されるルールです。メールが条件に一致すると、AI呼び出しなしで指定したラベルが直接付きます。"
+  },
+  "labelMatchType": {
+    "message": "基準"
+  },
+  "matchTypeFrom": {
+    "message": "送信者"
+  },
+  "matchTypeSubject": {
+    "message": "件名"
+  },
+  "labelMatchValue": {
+    "message": "含む文字列"
+  },
+  "labelTargetLabel": {
+    "message": "適用するラベル"
+  },
+  "btnAddFilterRule": {
+    "message": "+ ルール追加"
+  },
+  "btnSaveFilterRules": {
+    "message": "ルールを保存"
+  },
+  "btnDeleteRule": {
+    "message": "削除"
+  },
+  "msgFilterRulesSaved": {
+    "message": "保存しました(ルール$COUNT$件)。",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "placeholderMatchValue": {
+    "message": "例: noreply@example.com"
+  },
+  "placeholderTargetLabel": {
+    "message": "例: ショッピング/領収書"
+  },
+  "sectionOAuth": {
+    "message": "Googleアカウント連携(個人OAuth)"
+  },
+  "hintOAuth": {
+    "message": "利用者が増えてもこの拡張機能が審査費用なしで使い続けられるよう、共有クライアントではなく各自のGoogle OAuthクライアントで接続します。初回のみ約10分かかります。下の案内書をご覧ください。"
+  },
+  "btnOAuthGuide": {
+    "message": "設定案内書を開く"
+  },
+  "btnOAuthGetCredentials": {
+    "message": "発行する (Google Cloud Console)"
+  },
+  "labelOAuthClientId": {
+    "message": "OAuthクライアントID"
+  },
+  "labelOAuthClientSecret": {
+    "message": "OAuthクライアントシークレット(発行されない場合は空欄)"
+  },
+  "btnSaveOAuth": {
+    "message": "保存"
+  },
+  "btnConnectOAuth": {
+    "message": "Googleアカウントを連携"
+  },
+  "btnDisconnectOAuth": {
+    "message": "連携解除"
+  },
+  "oauthStatusConnected": {
+    "message": "連携済み"
+  },
+  "oauthStatusNotConnected": {
+    "message": "未連携"
+  },
+  "msgOAuthSaved": {
+    "message": "保存しました。"
+  },
+  "msgOAuthConnecting": {
+    "message": "Googleログイン画面を開いています…"
+  },
+  "msgOAuthConnected": {
+    "message": "連携が完了しました。"
+  },
+  "msgOAuthDisconnected": {
+    "message": "連携を解除しました。"
+  },
+  "logBtnExportTxt": {
+    "message": "全ログをtxtで保存"
+  },
+  "logBtnExporting": {
+    "message": "書き出し中…"
+  },
+  "logCountHint": {
+    "message": "全$TOTAL$行中$SHOWN$行を表示中(すべて見るには「全ログをtxtで保存」を使用)",
+    "placeholders": {
+      "shown": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      }
+    }
+  },
+  "placeholderOAuthSecret": {
+    "message": "GOCSPX-... (任意)"
+  },
+  "hintOAuthSecretOptional": {
+    "message": "注: 「Chrome拡張機能」タイプで作成するとGoogleはシークレットを発行しません(正常です)。ただしリダイレクトURI登録のため必ず「ウェブアプリケーション」タイプで作成してください。その場合は通常シークレットが発行されます。"
+  },
+  "checkboxCorrectionLearning": {
+    "message": "手動で修正したラベルを学習に反映"
+  },
+  "hintCorrectionLearning": {
+    "message": "AIの分類と違う手動でラベルを付け替えると、次回の分類時にAIへ参考例として提示し、同じ間違いを繰り返さないようにします。過去の修正を参照させたくない場合はオフにしてください。"
+  },
+  "btnAddCategory": {
+    "message": "+ カテゴリを追加"
+  },
+  "placeholderCategoryName": {
+    "message": "カテゴリ名 (例: ショッピング)"
+  },
+  "placeholderCategoryDesc": {
+    "message": "分類基準の説明(任意) - 例: 「クレジットカード決済、請求書、自動引き落とし通知」"
+  },
+  "badgeAutoLearned": {
+    "message": "AI自動追加"
+  },
+  "sectionRepeat": {
+    "message": "繰り返し作業"
+  },
+  "hintRepeat": {
+    "message": "一度に大量に処理すると(API上限を超えてエラーで止まる可能性があるため)危険なので、小さいバッチを何度かに分けて繰り返し実行します。溜まったメールが多いときに安全です。"
+  },
+  "labelRepeatBatches": {
+    "message": "ラウンドごとのバッチ数 (1~5)"
+  },
+  "labelRepeatCount": {
+    "message": "繰り返し回数"
+  },
+  "btnStartRepeat": {
+    "message": "繰り返し作業開始"
+  },
+  "notifyTitleRepeat": {
+    "message": "Gmail AI Labeler - 繰り返し作業"
+  },
+  "repeatRequesting": {
+    "message": "繰り返し作業をリクエスト中…"
+  },
+  "sectionDeleteAllLabels": {
+    "message": "ラベル全削除"
+  },
+  "hintDeleteAllLabels": {
+    "message": "この拡張機能が管理するすべてのラベルを削除します(再分類は行いません)。繰り返し作業の前にきれいに初期化したいときに使用してください。"
+  },
+  "btnDeleteAllLabels": {
+    "message": "ラベルを全削除"
+  },
+  "confirmDeleteAllLabels": {
+    "message": "この拡張機能が管理するすべてのラベルがGmailから完全に削除されます。メール自体は削除されず、ラベルのみ削除されます。元に戻せません。続けますか?"
+  },
+  "btnConfirmDeleteAllLabels": {
+    "message": "はい、すべて削除"
+  },
+  "notifyTitleDeleteLabels": {
+    "message": "Gmail AI Labeler - ラベル全削除"
+  },
+  "deleteLabelsRequesting": {
+    "message": "ラベル削除をリクエスト中…"
+  },
+  "resultLabelsDeleted": {
+    "message": "ラベル$COUNT$件を削除しました。",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "sectionAbout": {
+    "message": "このアプリについて"
+  },
+  "btnSupportDeveloper": {
+    "message": "開発者を応援する"
+  },
+  "btnDonateHeader": {
+    "message": "♥ 応援"
+  },
+  "btnAddApiKey": {
+    "message": "+ キーを追加"
+  },
+  "placeholderApiKeyLabel": {
+    "message": "ラベル(任意)"
+  },
+  "msgKeysSaved": {
+    "message": "キー$COUNT$件を保存しました。",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "quotaTextMultiKey": {
+    "message": "本日のGemini リクエスト(推定): $TODAY$ / $RPD$($KEYS$個のキー合算、深夜にリセット)",
+    "placeholders": {
+      "today": {
+        "content": "$1"
+      },
+      "rpd": {
+        "content": "$2"
+      },
+      "keys": {
+        "content": "$3"
+      }
+    }
+  },
+  "sectionDriveBackup": {
+    "message": "Google Driveにバックアップ"
+  },
+  "hintDriveBackup": {
+    "message": "カテゴリやフィルタールールなどの設定を後で復元できるように保存します - パソコンにファイルとして保存するか、自分のGoogle Driveに保存できます。"
+  },
+  "checkboxIncludeCredentials": {
+    "message": "APIキー/OAuth認証情報もバックアップに含める"
+  },
+  "hintIncludeCredentials": {
+    "message": "復元後すぐに使えるよう、デフォルトはオンです。オフにするとGemini APIキーとOAuthクライアントシークレットがバックアップファイルから除外されます(そのDriveファイルを共有する予定がある場合はオフが安全です)。"
+  },
+  "btnBackupToDrive": {
+    "message": "今すぐバックアップ"
+  },
+  "btnRestoreFromDrive": {
+    "message": "復元"
+  },
+  "confirmDriveRestore": {
+    "message": "現在の設定(カテゴリ、フィルタールールなど)が最後にバックアップしたDriveの内容で上書きされます。続けますか?"
+  },
+  "btnConfirmDriveRestore": {
+    "message": "はい、復元する"
+  },
+  "notifyTitleDriveBackup": {
+    "message": "Gmail AI Labeler - Driveバックアップ"
+  },
+  "notifyTitleDriveRestore": {
+    "message": "Gmail AI Labeler - Drive復元"
+  },
+  "driveBackupRequesting": {
+    "message": "バックアップをリクエスト中…"
+  },
+  "driveRestoreRequesting": {
+    "message": "復元をリクエスト中…"
+  },
+  "msgDriveBackupDone": {
+    "message": "Google Driveへのバックアップが完了しました。"
+  },
+  "msgDriveRestoreDone": {
+    "message": "Google Driveから設定を$COUNT$件復元しました。",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "lastBackupAt": {
+    "message": "最終バックアップ: $DATE$",
+    "placeholders": {
+      "date": {
+        "content": "$1"
+      }
+    }
+  },
+  "noBackupYet": {
+    "message": "まだバックアップしていません。"
+  },
+  "sectionLabelAnalysis": {
+    "message": "ラベルを分析して分類基準を作成"
+  },
+  "hintLabelAnalysis": {
+    "message": "ラベルを選ぶと、AIがそのラベルに実際に分類されたメール(と現在の分類基準があればそれも)を見て、使える分類基準のテキストを提案します。"
+  },
+  "btnAnalyzeLabel": {
+    "message": "分析する"
+  },
+  "labelAnalysisRequesting": {
+    "message": "分析をリクエスト中…"
+  },
+  "notifyTitleLabelAnalysis": {
+    "message": "Gmail AI Labeler - ラベル分析"
+  },
+  "msgLabelAnalysisDone": {
+    "message": "\"$LABEL$\"の分析完了(全$TOTAL$件中$SAMPLE$件サンプル) - 下の一時保存欄に追加されました。",
+    "placeholders": {
+      "label": {
+        "content": "$1"
+      },
+      "sample": {
+        "content": "$2"
+      },
+      "total": {
+        "content": "$3"
+      }
+    }
+  },
+  "hintScratchpad": {
+    "message": "一時保存欄 - 上で生成した提案はポップアップを閉じてもここに残ります(誤操作で消えません)。「カテゴリに適用」を押すと下の該当カテゴリの説明欄に自動で反映されます。先に内容を編集してから適用することもできます。"
+  },
+  "placeholderScratchpad": {
+    "message": "(ラベル名)\n(提案された分類基準)"
+  },
+  "btnClearScratchpad": {
+    "message": "一時保存をクリア"
+  },
+  "notifyTitleOAuthConnect": {
+    "message": "Gmail AI Labeler - Googleアカウント連携"
+  },
+  "oauthConnectRequesting": {
+    "message": "Googleログイン画面を開いています…"
+  },
+  "btnSelectAll": {
+    "message": "すべて選択"
+  },
+  "btnSelectNone": {
+    "message": "選択解除"
+  },
+  "msgSelectAtLeastOneLabel": {
+    "message": "ラベルを1つ以上選択してください。"
+  },
+  "msgLabelAnalysisMultiDone": {
+    "message": "選択した$TOTAL$件中$SUCCESS$件を分析しました - 下の一時保存欄に追加されました。",
+    "placeholders": {
+      "success": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      }
+    }
+  },
+  "btnApplyScratchpad": {
+    "message": "カテゴリに適用"
+  },
+  "msgNoScratchpadEntries": {
+    "message": "一時保存欄に有効な項目が見つかりません(形式: ラベル名、改行、分類基準テキスト)。"
+  },
+  "msgScratchpadApplied": {
+    "message": "一時保存の$TOTAL$件中$APPLIED$件を該当カテゴリに適用しました。",
+    "placeholders": {
+      "applied": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      }
+    }
+  },
+  "msgScratchpadNotFound": {
+    "message": " 一致するカテゴリなし: $NAMES$。",
+    "placeholders": {
+      "names": {
+        "content": "$1"
+      }
+    }
+  },
+  "tabAdvancedSettings": {
+    "message": "詳細設定"
+  },
+  "sectionBackupRestore": {
+    "message": "バックアップ / 復元"
+  },
+  "labelLocalBackup": {
+    "message": "ローカルバックアップ"
+  },
+  "btnBackupLocal": {
+    "message": "ファイルに保存"
+  },
+  "btnRestoreLocal": {
+    "message": "ファイルから読み込み"
+  },
+  "msgLocalBackupDone": {
+    "message": "ローカルファイルに保存しました。"
+  },
+  "msgLocalRestoreDone": {
+    "message": "ファイルから設定を$COUNT$件復元しました。",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "labelDriveBackup": {
+    "message": "Google Driveにバックアップ"
+  },
+  "checkboxAutoBackupOnChange": {
+    "message": "設定変更時にDriveへ自動バックアップ"
+  },
+  "logNoMailToProcess": {
+    "message": "処理するメールがありません"
+  },
+  "logFetchStart": {
+    "message": "合計$COUNT$件のメール詳細取得を開始",
+    "placeholders": {
+      "count": {
+        "content": "$1$"
+      }
+    }
+  },
+  "logCancelledDuringFetch": {
+    "message": "停止リクエストを確認。詳細取得$DONE$/$TOTAL$の時点で終了",
+    "placeholders": {
+      "done": {
+        "content": "$1$"
+      },
+      "total": {
+        "content": "$2$"
+      }
+    }
+  },
+  "logFetchItemDone": {
+    "message": "[詳細取得$DONE$/$TOTAL$] 「$SUBJECT$」($FROM$) 取得完了",
+    "placeholders": {
+      "done": {
+        "content": "$1$"
+      },
+      "total": {
+        "content": "$2$"
+      },
+      "subject": {
+        "content": "$3$"
+      },
+      "from": {
+        "content": "$4$"
+      }
+    }
+  },
+  "logFetchItemFailed": {
+    "message": "[詳細取得$DONE$/$TOTAL$] 取得失敗 (id=$ID$): $ERR$",
+    "placeholders": {
+      "done": {
+        "content": "$1$"
+      },
+      "total": {
+        "content": "$2$"
+      },
+      "id": {
+        "content": "$3$"
+      },
+      "err": {
+        "content": "$4$"
+      }
+    }
+  },
+  "logFetchComplete": {
+    "message": "メール詳細取得完了 ($DONE$/$TOTAL$)",
+    "placeholders": {
+      "done": {
+        "content": "$1$"
+      },
+      "total": {
+        "content": "$2$"
+      }
+    }
+  },
+  "logFilterMatched": {
+    "message": "フィルタールール一致: 「$SUBJECT$」→ [$LABEL$] (AI分析をスキップ)",
+    "placeholders": {
+      "subject": {
+        "content": "$1$"
+      },
+      "label": {
+        "content": "$2$"
+      }
+    }
+  },
+  "logFilterAppliedCount": {
+    "message": "個人フィルタールールで$COUNT$件のメールを即時分類確定 (AI呼び出し節約)",
+    "placeholders": {
+      "count": {
+        "content": "$1$"
+      }
+    }
+  },
+  "logCorrectionExamplesUsed": {
+    "message": "ユーザーが直接修正した過去の分類事例$COUNT$件を今回の分類に参照しました",
+    "placeholders": {
+      "count": {
+        "content": "$1$"
+      }
+    }
+  },
+  "logClassifyStageStart": {
+    "message": "分類段階開始: 合計$BATCHES$バッチに分割 (バッチあたり最大$BATCHSIZE$件)",
+    "placeholders": {
+      "batches": {
+        "content": "$1$"
+      },
+      "batchsize": {
+        "content": "$2$"
+      }
+    }
+  },
+  "logSplitModeExclude": {
+    "message": "分割モード: 「$LABEL$」ラベルは分類候補から除外されました",
+    "placeholders": {
+      "label": {
+        "content": "$1$"
+      }
+    }
+  },
+  "logCancelledBeforeBatch": {
+    "message": "停止リクエストを確認。分類バッチ$BATCH$/$TOTAL$開始前に終了",
+    "placeholders": {
+      "batch": {
+        "content": "$1$"
+      },
+      "total": {
+        "content": "$2$"
+      }
+    }
+  },
+  "logBatchRequesting": {
+    "message": "分類バッチ$BATCH$/$TOTAL$ Gemini分析リクエスト (メール$COUNT$件)",
+    "placeholders": {
+      "batch": {
+        "content": "$1$"
+      },
+      "total": {
+        "content": "$2$"
+      },
+      "count": {
+        "content": "$3$"
+      }
+    }
+  },
+  "logBatchDone": {
+    "message": "分類バッチ$BATCH$/$TOTAL$ 分析完了",
+    "placeholders": {
+      "batch": {
+        "content": "$1$"
+      },
+      "total": {
+        "content": "$2$"
+      }
+    }
+  },
+  "logBatchFailed": {
+    "message": "分類バッチ$BATCH$/$TOTAL$ 分析失敗: $ERR$",
+    "placeholders": {
+      "batch": {
+        "content": "$1$"
+      },
+      "total": {
+        "content": "$2$"
+      },
+      "err": {
+        "content": "$3$"
+      }
+    }
+  },
+  "logQuotaExhaustedStop": {
+    "message": "1日のAPI割り当てを超過したと判断されたため、作業を中断します。"
+  },
+  "logCancelledAfterBatch": {
+    "message": "停止リクエストを確認。分類バッチ$BATCH$/$TOTAL$完了後に終了",
+    "placeholders": {
+      "batch": {
+        "content": "$1$"
+      },
+      "total": {
+        "content": "$2$"
+      }
+    }
+  },
+  "logClassifyDoneApplyStart": {
+    "message": "分類段階完了。ラベル適用開始 (対象$COUNT$件)",
+    "placeholders": {
+      "count": {
+        "content": "$1$"
+      }
+    }
+  },
+  "logCancelledDuringApply": {
+    "message": "停止リクエストを確認。ラベル適用$DONE$/$TOTAL$の時点で終了",
+    "placeholders": {
+      "done": {
+        "content": "$1$"
+      },
+      "total": {
+        "content": "$2$"
+      }
+    }
+  },
+  "logApplyItemDone": {
+    "message": "[適用$DONE$/$TOTAL$] 「$SUBJECT$」→ [$LABEL$] 適用完了",
+    "placeholders": {
+      "done": {
+        "content": "$1$"
+      },
+      "total": {
+        "content": "$2$"
+      },
+      "subject": {
+        "content": "$3$"
+      },
+      "label": {
+        "content": "$4$"
+      }
+    }
+  },
+  "logReplacedSuffix": {
+    "message": " (既存のラベルを削除)"
+  },
+  "logApplyItemFailed": {
+    "message": "[適用$DONE$/$TOTAL$] 「$SUBJECT$」ラベル適用失敗: $ERR$",
+    "placeholders": {
+      "done": {
+        "content": "$1$"
+      },
+      "total": {
+        "content": "$2$"
+      },
+      "subject": {
+        "content": "$3$"
+      },
+      "err": {
+        "content": "$4$"
+      }
+    }
+  },
+  "logApplyComplete": {
+    "message": "ラベル適用完了 ($DONE$/$TOTAL$)",
+    "placeholders": {
+      "done": {
+        "content": "$1$"
+      },
+      "total": {
+        "content": "$2$"
+      }
+    }
+  },
+  "logQuotaReduced": {
+    "message": "要求した$REQ$件のうち、本日残りの割当推定(要求$REMAINING$回=最大$MAX$件)に合わせて自動的に縮小しました",
+    "placeholders": {
+      "req": {
+        "content": "$1$"
+      },
+      "remaining": {
+        "content": "$2$"
+      },
+      "max": {
+        "content": "$3$"
+      }
+    }
+  },
+  "logFetchingUnlabeled": {
+    "message": "ラベルなしの最近のメールを最大$COUNT$件取得",
+    "placeholders": {
+      "count": {
+        "content": "$1$"
+      }
+    }
+  },
+  "logFewerThanRequested": {
+    "message": "実際にラベルなしのメールは$COUNT$件しかないため、その分だけ処理して終了します。",
+    "placeholders": {
+      "count": {
+        "content": "$1$"
+      }
+    }
+  },
+  "errNoApiKey": {
+    "message": "Gemini APIキーが設定されていません。拡張機能のオプションページでキーを入力してください。"
+  },
+  "errNoOAuthClientId": {
+    "message": "Google OAuthクライアントIDが設定されていません。設定タブで入力してください。取得方法は案内書を参照。"
+  },
+  "logRepeatStart": {
+    "message": "繰り返し作業開始: ラウンドあたりバッチ$BATCHES$個(最大$MAX$件のメール) x 合計$ROUNDS$回",
+    "placeholders": {
+      "batches": {
+        "content": "$1$"
+      },
+      "max": {
+        "content": "$2$"
+      },
+      "rounds": {
+        "content": "$3$"
+      }
+    }
+  },
+  "logRepeatCancelledBefore": {
+    "message": "停止リクエストを確認。繰り返し作業$ROUND$/$TOTAL$ラウンド開始前に終了",
+    "placeholders": {
+      "round": {
+        "content": "$1$"
+      },
+      "total": {
+        "content": "$2$"
+      }
+    }
+  },
+  "logRepeatRoundStart": {
+    "message": "繰り返し作業$ROUND$/$TOTAL$ラウンド開始",
+    "placeholders": {
+      "round": {
+        "content": "$1$"
+      },
+      "total": {
+        "content": "$2$"
+      }
+    }
+  },
+  "logRepeatRoundFailed": {
+    "message": "繰り返し作業$ROUND$/$TOTAL$ラウンド失敗: $ERR$",
+    "placeholders": {
+      "round": {
+        "content": "$1$"
+      },
+      "total": {
+        "content": "$2$"
+      },
+      "err": {
+        "content": "$3$"
+      }
+    }
+  },
+  "logRepeatRoundDone": {
+    "message": "繰り返し作業$ROUND$/$TOTAL$ラウンド完了: $SUCCESS$/$COUNT$",
+    "placeholders": {
+      "round": {
+        "content": "$1$"
+      },
+      "total": {
+        "content": "$2$"
+      },
+      "success": {
+        "content": "$3$"
+      },
+      "count": {
+        "content": "$4$"
+      }
+    }
+  },
+  "logRepeatQuotaStop": {
+    "message": "1日のAPI割り当てを超過したため、繰り返し作業を中断します。"
+  },
+  "logRepeatNoMoreMail": {
+    "message": "ラベルなしのメールがこれ以上ないため、繰り返し作業を早期終了します。"
+  },
+  "logRepeatAllDone": {
+    "message": "繰り返し作業全体完了: 合計$SUCCESS$/$TOTAL$",
+    "placeholders": {
+      "success": {
+        "content": "$1$"
+      },
+      "total": {
+        "content": "$2$"
+      }
+    }
+  },
+  "logDeleteAllStart": {
+    "message": "管理中のラベル全削除を開始 (カテゴリ$COUNT$件が対象)",
+    "placeholders": {
+      "count": {
+        "content": "$1$"
+      }
+    }
+  },
+  "logDeleteAllDone": {
+    "message": "ラベル$COUNT$件削除完了",
+    "placeholders": {
+      "count": {
+        "content": "$1$"
+      }
+    }
+  },
+  "logDedupeNoLabels": {
+    "message": "現在管理中のラベルが一つもないため、整理する対象がありません。"
+  },
+  "logDedupeFetchingMail": {
+    "message": "管理ラベルが付いたメールを検索中 (ラベル$COUNT$件が対象)",
+    "placeholders": {
+      "count": {
+        "content": "$1$"
+      }
+    }
+  },
+  "logLabelFetchFailed": {
+    "message": "ラベルID $ID$ のメール取得失敗: $ERR$",
+    "placeholders": {
+      "id": {
+        "content": "$1$"
+      },
+      "err": {
+        "content": "$2$"
+      }
+    }
+  },
+  "logDedupeFoundMail": {
+    "message": "ラベルが付いたメールを$COUNT$件発見",
+    "placeholders": {
+      "count": {
+        "content": "$1$"
+      }
+    }
+  },
+  "logQuotaReducedGeneric": {
+    "message": "本日残りの割当推定(要求$REMAINING$回=最大$MAX$件)に合わせて処理対象を自動的に縮小しました。",
+    "placeholders": {
+      "remaining": {
+        "content": "$1$"
+      },
+      "max": {
+        "content": "$2$"
+      }
+    }
+  },
+  "logDedupeRemovingLabels": {
+    "message": "対象メールの既存ラベルを削除中 ($COUNT$件)",
+    "placeholders": {
+      "count": {
+        "content": "$1$"
+      }
+    }
+  },
+  "logRemoveLabelFailed": {
+    "message": "ラベル削除失敗 (id=$ID$): $ERR$",
+    "placeholders": {
+      "id": {
+        "content": "$1$"
+      },
+      "err": {
+        "content": "$2$"
+      }
+    }
+  },
+  "logDedupeRemovedReclassify": {
+    "message": "ラベル削除完了。再分類を開始"
+  },
+  "errLabelNotInCategories": {
+    "message": "「$LABEL$」は管理中のカテゴリ一覧にありません。",
+    "placeholders": {
+      "label": {
+        "content": "$1$"
+      }
+    }
+  },
+  "errTooFewCategoriesAfterExclude": {
+    "message": "除外後に残るカテゴリが少なすぎます。先にカテゴリを増やしてください。"
+  },
+  "logRelabelFetchingMail": {
+    "message": "「$LABEL$」ラベルのメールを検索 (再分類対象)",
+    "placeholders": {
+      "label": {
+        "content": "$1$"
+      }
+    }
+  },
+  "logRelabelFoundMail": {
+    "message": "$COUNT$件のメールを発見",
+    "placeholders": {
+      "count": {
+        "content": "$1$"
+      }
+    }
+  },
+  "logFewerTargetThanRequested": {
+    "message": "対象メールは$COUNT$件しかないため、その分だけ処理して終了します。",
+    "placeholders": {
+      "count": {
+        "content": "$1$"
+      }
+    }
+  },
+  "logColorsStart": {
+    "message": "カテゴリ$COUNT$件にGmailラベルの色を適用開始",
+    "placeholders": {
+      "count": {
+        "content": "$1$"
+      }
+    }
+  },
+  "logColorItemDone": {
+    "message": "「$CAT$」ラベルの色を適用完了",
+    "placeholders": {
+      "cat": {
+        "content": "$1$"
+      }
+    }
+  },
+  "logColorItemFailed": {
+    "message": "「$CAT$」ラベルの色適用失敗: $ERR$",
+    "placeholders": {
+      "cat": {
+        "content": "$1$"
+      },
+      "err": {
+        "content": "$2$"
+      }
+    }
+  },
+  "logColorsDone": {
+    "message": "ラベル色適用完了: $SUCCESS$/$TOTAL$",
+    "placeholders": {
+      "success": {
+        "content": "$1$"
+      },
+      "total": {
+        "content": "$2$"
+      }
+    }
+  },
+  "logDriveBackupStart": {
+    "message": "Google Driveへの設定バックアップを開始"
+  },
+  "errDriveUploadFailed": {
+    "message": "Driveバックアップのアップロード失敗 (HTTP $STATUS$): $ERR$",
+    "placeholders": {
+      "status": {
+        "content": "$1$"
+      },
+      "err": {
+        "content": "$2$"
+      }
+    }
+  },
+  "logDriveRestoreStart": {
+    "message": "Google Driveから設定の読み込みを開始"
+  },
+  "errDriveDownloadFailed": {
+    "message": "Driveバックアップのダウンロード失敗 (HTTP $STATUS$)。まだバックアップしていない場合は先にバックアップを実行してください。",
+    "placeholders": {
+      "status": {
+        "content": "$1$"
+      }
+    }
+  },
+  "errDriveBackupEmpty": {
+    "message": "Driveのバックアップファイルが空です。先にバックアップを実行してください。"
+  },
+  "errDriveBackupInvalid": {
+    "message": "Driveバックアップファイルの形式が正しくありません。"
+  },
+  "logDriveRestoreDone": {
+    "message": "Google Driveから設定の読み込み完了 ($DATE$にバックアップされた$COUNT$件を適用)",
+    "placeholders": {
+      "date": {
+        "content": "$1$"
+      },
+      "count": {
+        "content": "$2$"
+      }
+    }
+  },
+  "logUnknownTime": {
+    "message": "不明な時刻"
+  },
+  "logNewLabelsDetected": {
+    "message": "Gmailで直接作成された新しいラベルを検出: [$NAMES$] - カテゴリ一覧に自動反映しました",
+    "placeholders": {
+      "names": {
+        "content": "$1$"
+      }
+    }
+  },
+  "logDeletedLabelsDetected": {
+    "message": "Gmailで削除されたラベルを検出: [$NAMES$] - カテゴリ一覧から自動的に削除しました",
+    "placeholders": {
+      "names": {
+        "content": "$1$"
+      }
+    }
+  },
+  "errOAuthNoCode": {
+    "message": "OAuth認証コードが返されませんでした。"
+  },
+  "errOAuthTokenExchangeFailed": {
+    "message": "OAuthトークン交換失敗 (HTTP $STATUS$): $ERR$",
+    "placeholders": {
+      "status": {
+        "content": "$1$"
+      },
+      "err": {
+        "content": "$2$"
+      }
+    }
+  },
+  "errDriveCreateFailed": {
+    "message": "Driveバックアップファイルの作成失敗 (HTTP $STATUS$)",
+    "placeholders": {
+      "status": {
+        "content": "$1$"
+      }
+    }
+  },
+  "errMessageListFailed": {
+    "message": "メール一覧の取得失敗 (HTTP $STATUS$)",
+    "placeholders": {
+      "status": {
+        "content": "$1$"
+      }
+    }
+  },
+  "errLabelMessageListFailed": {
+    "message": "「$LABEL$」ラベルのメール取得失敗 (HTTP $STATUS$)",
+    "placeholders": {
+      "label": {
+        "content": "$1$"
+      },
+      "status": {
+        "content": "$2$"
+      }
+    }
+  },
+  "errMessageContentFailed": {
+    "message": "メール内容の取得失敗 (HTTP $STATUS$)",
+    "placeholders": {
+      "status": {
+        "content": "$1$"
+      }
+    }
+  },
+  "errLabelListFailed": {
+    "message": "ラベル一覧の取得失敗 (HTTP $STATUS$): $ERR$",
+    "placeholders": {
+      "status": {
+        "content": "$1$"
+      },
+      "err": {
+        "content": "$2$"
+      }
+    }
+  },
+  "errLabelCreateFailed": {
+    "message": "ラベル作成失敗: $LABEL$ (HTTP $STATUS$)",
+    "placeholders": {
+      "label": {
+        "content": "$1$"
+      },
+      "status": {
+        "content": "$2$"
+      }
+    }
+  },
+  "errLabelApplyFailed": {
+    "message": "ラベル適用失敗 (HTTP $STATUS$)",
+    "placeholders": {
+      "status": {
+        "content": "$1$"
+      }
+    }
+  },
+  "errGemini429Retries": {
+    "message": "Gemini API 429(レート制限)再試行回数超過: $ERR$",
+    "placeholders": {
+      "err": {
+        "content": "$1$"
+      }
+    }
+  },
+  "logGemini429Retry": {
+    "message": "Gemini 429応答 - 速度を落として再試行 (呼び出し間隔$INTERVAL$ms、試行$ATTEMPT$/$MAX$)",
+    "placeholders": {
+      "interval": {
+        "content": "$1$"
+      },
+      "attempt": {
+        "content": "$2$"
+      },
+      "max": {
+        "content": "$3$"
+      }
+    }
+  },
+  "errGeminiHttpError": {
+    "message": "Gemini APIエラー (HTTP $STATUS$): $ERR$",
+    "placeholders": {
+      "status": {
+        "content": "$1$"
+      },
+      "err": {
+        "content": "$2$"
+      }
+    }
+  },
+  "errGeminiNoResult": {
+    "message": "Gemini応答に分析結果がありません"
+  },
+  "errGeminiNotArray": {
+    "message": "Gemini応答が配列形式ではありません"
+  },
+  "logLabelAnalysisStart": {
+    "message": "「$LABEL$」ラベルの分析開始",
+    "placeholders": {
+      "label": {
+        "content": "$1$"
+      }
+    }
+  },
+  "logLabelAnalysisFoundMail": {
+    "message": "「$LABEL$」ラベルの付いたメールを$COUNT$件発見",
+    "placeholders": {
+      "label": {
+        "content": "$1$"
+      },
+      "count": {
+        "content": "$2$"
+      }
+    }
+  },
+  "errLabelAnalysisNoMail": {
+    "message": "「$LABEL$」ラベルの付いたメールがないため分析できません。",
+    "placeholders": {
+      "label": {
+        "content": "$1$"
+      }
+    }
+  },
+  "logAnalysisSampleDone": {
+    "message": "[分析対象$DONE$/$TOTAL$] 「$SUBJECT$」取得完了",
+    "placeholders": {
+      "done": {
+        "content": "$1$"
+      },
+      "total": {
+        "content": "$2$"
+      },
+      "subject": {
+        "content": "$3$"
+      }
+    }
+  },
+  "logAnalysisSampleFailed": {
+    "message": "分析対象メールの取得失敗 (id=$ID$): $ERR$",
+    "placeholders": {
+      "id": {
+        "content": "$1$"
+      },
+      "err": {
+        "content": "$2$"
+      }
+    }
+  },
+  "errAnalysisNoSample": {
+    "message": "サンプルメールを一件も取得できなかったため分析できません。"
+  },
+  "logAnalysisRequestSent": {
+    "message": "「$LABEL$」ラベル分析用のGemini要求を送信",
+    "placeholders": {
+      "label": {
+        "content": "$1$"
+      }
+    }
+  },
+  "errAnalysisNoSuggestion": {
+    "message": "AIが分類基準を生成できませんでした。"
+  },
+  "logAnalysisDone": {
+    "message": "「$LABEL$」ラベル分析完了 - 分類基準の提案生成: 「$SUGGESTION$」",
+    "placeholders": {
+      "label": {
+        "content": "$1$"
+      },
+      "suggestion": {
+        "content": "$2$"
+      }
+    }
+  },
+  "logMultiAnalysisStart": {
+    "message": "選択したラベル$COUNT$件の順次分析を開始",
+    "placeholders": {
+      "count": {
+        "content": "$1$"
+      }
+    }
+  },
+  "logMultiAnalysisSkipped": {
+    "message": "カテゴリ一覧にないためスキップ: $NAMES$",
+    "placeholders": {
+      "names": {
+        "content": "$1$"
+      }
+    }
+  },
+  "logMultiAnalysisCancelled": {
+    "message": "停止リクエストを確認。$DONE$/$TOTAL$件処理後に終了",
+    "placeholders": {
+      "done": {
+        "content": "$1$"
+      },
+      "total": {
+        "content": "$2$"
+      }
+    }
+  },
+  "logMultiAnalysisItemStart": {
+    "message": "[$IDX$/$TOTAL$] 「$LABEL$」分析開始",
+    "placeholders": {
+      "idx": {
+        "content": "$1$"
+      },
+      "total": {
+        "content": "$2$"
+      },
+      "label": {
+        "content": "$3$"
+      }
+    }
+  },
+  "logMultiAnalysisItemFailed": {
+    "message": "[$IDX$/$TOTAL$] 「$LABEL$」分析失敗: $ERR$",
+    "placeholders": {
+      "idx": {
+        "content": "$1$"
+      },
+      "total": {
+        "content": "$2$"
+      },
+      "label": {
+        "content": "$3$"
+      },
+      "err": {
+        "content": "$4$"
+      }
+    }
+  },
+  "logMultiAnalysisDone": {
+    "message": "選択したラベルの分析完了: $SUCCESS$/$TOTAL$件成功",
+    "placeholders": {
+      "success": {
+        "content": "$1$"
+      },
+      "total": {
+        "content": "$2$"
+      }
+    }
+  },
+  "errLabelMoveFailed": {
+    "message": "ラベル移動失敗 (HTTP $STATUS$)",
+    "placeholders": {
+      "status": {
+        "content": "$1$"
+      }
+    }
+  },
+  "errLabelIdMessageListFailed": {
+    "message": "ラベルID基準のメール取得失敗 (HTTP $STATUS$)",
+    "placeholders": {
+      "status": {
+        "content": "$1$"
+      }
+    }
+  },
+  "errLabelColorApplyFailed": {
+    "message": "ラベル色適用失敗 (HTTP $STATUS$)",
+    "placeholders": {
+      "status": {
+        "content": "$1$"
+      }
+    }
+  },
+  "logUserRequestedStop": {
+    "message": "ユーザーが停止をリクエストしました"
+  },
+  "logTranslateStart": {
+    "message": "カテゴリ/ラベルを$LANG$に翻訳中",
+    "placeholders": {
+      "lang": {
+        "content": "$1$"
+      }
+    }
+  },
+  "logTranslateLabelRenamed": {
+    "message": "Gmailラベル名変更: 「$OLD$」→ 「$NEW$」",
+    "placeholders": {
+      "old": {
+        "content": "$1$"
+      },
+      "new": {
+        "content": "$2$"
+      }
+    }
+  },
+  "logTranslateLabelRenameFailed": {
+    "message": "Gmailラベル名変更失敗 (「$OLD$」→「$NEW$」): $ERR$",
+    "placeholders": {
+      "old": {
+        "content": "$1$"
+      },
+      "new": {
+        "content": "$2$"
+      },
+      "err": {
+        "content": "$3$"
+      }
+    }
+  },
+  "logTranslateDone": {
+    "message": "カテゴリ/ラベルの翻訳と適用が完了"
+  },
+  "errTranslateNoResult": {
+    "message": "AIが翻訳結果を生成できませんでした。"
+  },
+  "confirmTranslateLabels": {
+    "message": "現在ラベル名は$OLD$になっています。言語を$NEW$に変更しましたが、ラベル名と分類基準、実際のGmailラベル名までAIで翻訳して適用しますか?",
+    "placeholders": {
+      "old": {
+        "content": "$1"
+      },
+      "new": {
+        "content": "$2"
+      }
+    }
+  },
+  "notifyTitleTranslate": {
+    "message": "Gmail AI Labeler - ラベル翻訳"
+  },
+  "guideTitle": {
+    "message": "Google OAuthクライアント発行ガイド"
+  },
+  "guideSubtitle": {
+    "message": "Gmail AI Labeler - 個人OAuthクライアント設定(Google Cloudを一度も使ったことがないアカウント基準、約10分)"
+  },
+  "guideWhyBox": {
+    "message": "<strong>なぜこの手順が必要ですか?</strong><br>Gmailデータを扱う拡張機能が「多くの人」に配布されると、Googleはセキュリティ審査(ユーザー100人超)を要求し、この過程で開発者に費用・手続きの負担が生じることがあります。代わりに<strong>各自が自分の名前で発行したOAuthクライアント</strong>を使えば、Googleはこれを「個人の開発・テスト目的」として認識し、審査なしで使い続けられます。手間はかかりますが、一度設定すればそのまま使えます。"
+  },
+  "guideNoBillingBox": {
+    "message": "<strong>参考</strong>: この拡張機能が使うGmail API/Drive APIは<strong>どちらも無料APIなので、請求先アカウント(カード登録)なしで有効化できます。</strong>以下の手順中に請求関連の画面が表示されても、それはこの拡張機能と無関係な別の有料サービスの案内なので、「スキップ」や戻るボタンで進めば大丈夫です。"
+  },
+  "guideStep1Title": {
+    "message": "ステップ1. Google Cloudプロジェクトを作成"
+  },
+  "guideStep1List": {
+    "message": "<li><a class=\"btn\" href=\"https://console.cloud.google.com/projectcreate\" target=\"_blank\">Google Cloud Consoleで新しいプロジェクトを作成</a></li><li class=\"note\"><span class=\"warn\">このアカウントでCloud Consoleを初めて訪れる場合</span>、プロジェクト作成画面の代わりに「国選択+利用規約への同意」のウェルカム画面が先に表示されることがあります。規約にチェックして「同意して続行」を押すと、本来のプロジェクト作成画面に自動で移動します。</li><li>プロジェクト名は何でも構いません(例: \"gmail-labeler-personal\")。「作成」を押して数秒待ちます(右上のベルアイコンに進行状況が表示されます)。</li><li>作成が終わったら、画面上部のプロジェクト選択ドロップダウンで今作ったプロジェクトが選択されているか確認します(自動で選択されていなければクリックして選択)。</li>"
+  },
+  "guideStep2Title": {
+    "message": "ステップ2. Gmail API + Google Drive APIを有効化"
+  },
+  "guideStep2List": {
+    "message": "<li><a class=\"btn\" href=\"https://console.cloud.google.com/apis/library/gmail.googleapis.com\" target=\"_blank\">Gmail APIライブラリページを開く</a></li><li>(作成したプロジェクトが選択された状態で)青い<strong>「有効にする(ENABLE)」</strong>ボタンをクリック。数秒かかります。</li><li><a class=\"btn\" href=\"https://console.cloud.google.com/apis/library/drive.googleapis.com\" target=\"_blank\">Google Drive APIライブラリページを開く</a></li><li>同様に<strong>「有効にする」</strong>をクリック(設定バックアップ機能を使うため - 使わない場合はスキップ可)</li>"
+  },
+  "guideStep2Box": {
+    "message": "この拡張機能はDriveの<span class=\"mono\">drive.file</span>範囲のみを使用します - この拡張機能が直接作成したバックアップファイル1つだけにアクセスでき、Drive内の他のファイルは一切見えません。Googleのポリシー上「機密性の低い」範囲のため、別途セキュリティ審査なしでそのまま使用できます。"
+  },
+  "guideStep3Title": {
+    "message": "ステップ3. OAuth同意画面の設定"
+  },
+  "guideStep3List": {
+    "message": "<li><a class=\"btn\" href=\"https://console.cloud.google.com/apis/credentials/consent\" target=\"_blank\">OAuth同意画面ページを開く</a></li><li>User Type: <strong>外部(External)</strong>を選択して作成</li><li>アプリ名(何でも良い、例: \"Gmail Labeler\")、ユーザーサポートメール(自分のGmail)、開発者の連絡先メール(自分のGmail)を入力して保存して続行</li><li>スコープ(Scopes)画面はそのまま保存して続行(スキップ可)</li><li><span class=\"warn\">テストユーザー(Test users)</span>画面で「ADD USERS」を押して<strong>自分のGmailアドレス</strong>を追加します。この拡張機能を使うアカウントは全てここに追加する必要があります。</li><li>保存して続行 → 概要確認 → ダッシュボードに戻る</li><li class=\"note\">公開ステータス(Publishing status)は<strong>「テスト(Testing)」</strong>のままにします。「本番環境に公開」を押してはいけません - 審査対象になります。</li>"
+  },
+  "guideStep4Title": {
+    "message": "ステップ4. OAuthクライアントIDを作成(リダイレクトURIは自動計算)"
+  },
+  "guideStep4List": {
+    "message": "<li><a class=\"btn\" href=\"https://console.cloud.google.com/apis/credentials\" target=\"_blank\">認証情報ページを開く</a></li><li>上部の「+ 認証情報を作成」→「OAuthクライアントID」を選択</li><li>アプリケーションの種類: <strong>ウェブアプリケーション(Web application)</strong>を選択(重要 - 「デスクトップアプリ」ではありません)</li><li>名前は何でも良い(例: \"Gmail Labeler Extension\")</li><li>「承認済みのリダイレクトURI」項目に下記の値をそのまま貼り付けます(このページが既に拡張機能IDを読み取り自動計算済みです - chrome://extensionsに行く必要はありません):</li>"
+  },
+  "guideRedirectUriPlaceholder": {
+    "message": "https://(拡張機能のページから開くと自動入力されます).chromiumapp.org/"
+  },
+  "guideCopyBtn": {
+    "message": "コピー"
+  },
+  "guideStep4List2": {
+    "message": "<li>作成を押すと<strong>クライアントID</strong>と<strong>クライアントシークレット</strong>が表示されます。両方コピーしておきます。</li>"
+  },
+  "guideStep4WarnBox": {
+    "message": "<span class=\"warn\">注意:</span> 一覧に「Chrome拡張機能(Chrome Extension)」という種類も表示されますが、これは選ばないでください。その種類はカスタムリダイレクトURIを登録できず(この方式と合いません)、そもそも<strong>シークレットが発行されません</strong>。必ず<strong>「ウェブアプリケーション」</strong>を選択してください。そうすればリダイレクトURI入力欄が表示され、シークレットも正常に発行されます。"
+  },
+  "guideStep4NoteBox": {
+    "message": "「ウェブアプリケーション」で作成したのにシークレットが表示されない場合は、認証情報一覧で作成したクライアントをクリックして詳細ページに入ると「クライアントシークレット」項目に値があります(隠れている場合は目のアイコンをクリック)。それでも本当にない場合は、拡張機能の設定でシークレット欄を空欄のまま保存しても構いません - クライアントIDのみで接続を試みます。"
+  },
+  "guideStep5Title": {
+    "message": "ステップ5. 拡張機能に入力して連携"
+  },
+  "guideStep5List": {
+    "message": "<li>拡張機能のポップアップ → 設定タブ → 「Googleアカウント連携(個人OAuth)」セクションにクライアントID/シークレットを貼り付けて保存</li><li>「Googleアカウント連携」ボタンをクリック → 新しいウィンドウでGoogleにログイン</li><li><span class=\"warn\">「Googleでこのアプリを確認できませんでした」</span>という警告画面が出ても、ステップ3でテストユーザーとして登録したアカウントであれば安全です → <strong>「詳細」</strong>をクリック → <strong>「[アプリ名](安全ではないページ)に移動」</strong>をクリック → 権限を許可</li><li>連携完了後ポップアップに戻れば、分類機能が正常に使えます。</li>"
+  },
+  "guideStep5Box": {
+    "message": "<span class=\"warn\">以前にすでに連携済みの方へ</span>: Driveバックアップ機能の追加により、必要な権限範囲が増えました。設定タブで「連携解除」→「Googleアカウント連携」をもう一度押して再認証しないと、Driveバックアップ機能が正常に動作しません。"
+  },
+  "guideFooterNote": {
+    "message": "問題がある場合は次を確認してください: (1) ログインしようとしているアカウントがテストユーザーに登録されているか、(2) リダイレクトURIが上記の自動計算値と正確に一致しているか(誤字・空白なし)、(3) アプリケーションの種類が「ウェブアプリケーション」になっているか。"
+  },
+  "labelBackupPassphrase": {
+    "message": "暗号化パスワード"
+  },
+  "placeholderBackupPassphrase": {
+    "message": "任意 - 入力するとAPIキー/シークレットを暗号化します"
+  },
+  "hintBackupPassphrase": {
+    "message": "ここにパスワードを入力してからバックアップすると、APIキー/OAuthシークレットだけがこのパスワードで暗号化されて保存されます(他の設定はそのまま保存)。復元時も同じパスワードをここに入力する必要があります。パスワード自体は保存されないため、忘れるとその認証情報は復元できません(手動で再入力すれば済みます)。空欄にすると従来通り平文で保存されます。"
+  },
+  "msgLocalBackupDoneEncrypted": {
+    "message": "ローカルファイルに保存しました(APIキー/シークレットは暗号化済み)。"
+  },
+  "errBackupPassphraseNeeded": {
+    "message": "このバックアップのAPIキー/シークレットは暗号化されています。復元するには、バックアップ時に使用したパスワードを暗号化パスワード欄に入力してください。"
+  },
+  "errBackupPassphraseWrong": {
+    "message": "パスワードが間違っているか、バックアップファイルが破損しているため、APIキー/シークレットを復号できませんでした。"
+  },
+  "logDriveBackupDone": {
+    "message": "Google Drive設定バックアップ完了 (設定項目$COUNT$件)",
+    "placeholders": {
+      "count": {
+        "content": "$1$"
+      }
+    }
+  },
+  "logDriveBackupDoneEncrypted": {
+    "message": "Google Drive設定バックアップ完了 (設定項目$COUNT$件、APIキー/シークレットは暗号化済み)",
+    "placeholders": {
+      "count": {
+        "content": "$1$"
+      }
+    }
+  }
+}

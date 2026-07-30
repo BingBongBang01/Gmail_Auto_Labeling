@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+  :root {
+    --blue: #1a73e8;
+    --blue-dark: #1558b0;
+    --amber: #f9a825;
+    --red: #d93025;
+    --red-dark: #b1291d;
+    --green: #188038;
+    --border: #e0e0e0;
+    --bg: #fff;
+    --text: #202124;
+    --text-secondary: #5f6368;
+    --surface-2: #f8f9fa;
+  }
+  html[data-theme="dark"] {
+    --blue: #8ab4f8;
+    --blue-dark: #aecbfa;
+    --amber: #fdd663;
+    --red: #f28b82;
+    --red-dark: #ffb4a9;
+    --green: #81c995;
+    --border: #3c4043;
+    --bg: #202124;
+    --text: #e8eaed;
+    --text-secondary: #9aa0a6;
+    --surface-2: #2a2b2e;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: "Google Sans", "Segoe UI", Roboto, Arial, sans-serif;
+    width: 380px;
+    margin: 0;
+    color: var(--text);
+    background: var(--bg);
+  }
+
+  /* ---- 헤더 ---- */
+  .header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 16px 10px 16px;
+  }
+  .header h1 { font-size: 15px; margin: 0; font-weight: 600; }
+  .donate-btn {
+    font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 12px;
+    background: #ff4d6d; color: #fff; border: none; cursor: pointer; white-space: nowrap;
+    box-shadow: 0 1px 3px rgba(255,77,109,0.5);
+  }
+  .donate-btn:hover { background: #e6395a; }
+  html[data-theme="dark"] .donate-btn { background: #ff6b85; color: #2a0008; }
+  html[data-theme="dark"] .donate-btn:hover { background: #ff8299; }
+  .status-pill {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 11px; color: var(--text-secondary);
+    padding: 3px 9px; border-radius: 12px; background: var(--surface-2);
+  }
+  .status-dot { width: 7px; height: 7px; border-radius: 50%; background: #bdbdbd; }
+  .status-pill.running .status-dot { background: var(--amber); animation: blink 1.1s infinite; }
+  .status-pill.done .status-dot { background: var(--green); }
+  .status-pill.error .status-dot { background: var(--red); }
+  .status-pill.cancelled .status-dot { background: #9e9e9e; }
+  @keyframes blink { 0%,100%{opacity:1;} 50%{opacity:0.35;} }
+
+  /* ---- 탭 ---- */
+  .tabs { display: flex; border-bottom: 1px solid var(--border); padding: 0 8px; }
+  .tab-btn {
+    flex: 1; text-align: center; padding: 10px 4px; font-size: 12.5px; font-weight: 500;
+    color: var(--text-secondary); background: none; border: none; cursor: pointer;
+    border-bottom: 2px solid transparent; margin: 0; border-radius: 0;
+  }
+  .tab-btn.active { color: var(--blue); border-bottom: 2px solid var(--blue); }
+
+  .tab-panel { display: none; padding: 16px; max-height: 480px; overflow-y: auto; }
+  .tab-panel.active { display: block; }
+
+  /* ---- 공통 요소 ---- */
+  .section-title { font-size: 12px; font-weight: 600; color: var(--text-secondary); margin: 0 0 8px 0; text-transform: uppercase; letter-spacing: .3px; }
+
+  details.settings-group { border-bottom: 1px solid var(--border); }
+  details.settings-group:last-of-type { border-bottom: none; }
+  details.settings-group > summary {
+    font-size: 12.5px; font-weight: 600; color: var(--text); cursor: pointer; list-style: none;
+    padding: 11px 2px; display: flex; align-items: center; justify-content: space-between;
+    -webkit-user-select: none; user-select: none;
+  }
+  details.settings-group > summary::-webkit-details-marker { display: none; }
+  details.settings-group > summary::after {
+    content: '▾'; font-size: 10px; color: var(--text-secondary); margin-left: 8px; transition: transform .15s ease;
+  }
+  details.settings-group[open] > summary::after { transform: rotate(180deg); }
+  details.settings-group > summary:hover { color: var(--blue); }
+  details.settings-group > *:not(summary) { margin-top: 2px; }
+  details.settings-group[open] { padding-bottom: 12px; }
+  details.settings-group.danger-group > summary { color: var(--red); }
+  .hint { font-size: 11px; color: var(--text-secondary); opacity: .85; line-height: 1.5; margin-bottom: 10px; }
+  .field-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+  .field-row label { font-size: 12.5px; color: var(--text); }
+  input[type="number"], input[type="text"], input[type="password"], select, textarea {
+    font-family: inherit; font-size: 13px; border: 1px solid var(--border); border-radius: 6px;
+    padding: 6px 8px; color: var(--text); background: var(--bg);
+  }
+  input[type="number"] { width: 70px; text-align: center; }
+  select, textarea, input[type="text"], input[type="password"] { width: 100%; }
+  textarea { resize: vertical; }
+  label.checkbox-row { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--text); margin: 8px 0; }
+  label.checkbox-row input { width: auto; margin: 0; }
+
+  button {
+    font-family: inherit; font-size: 13px; padding: 8px 14px; border-radius: 6px; cursor: pointer;
+    border: 1px solid var(--border); background: var(--surface-2); color: var(--text);
+  }
+  button:hover { filter: brightness(0.95); }
+  button:disabled { cursor: default; opacity: .6; }
+
+  /* ---- 분류 시작 / 중지 버튼 ---- */
+  .start-row { display: flex; align-items: stretch; gap: 8px; }
+  button.primary {
+    background: var(--blue); color: #fff; border: none; font-weight: 600;
+    flex: 1; transition: background .2s ease, flex .2s ease;
+  }
+  html[data-theme="dark"] button.primary { color: #202124; }
+  button.primary:hover { background: var(--blue-dark); }
+  button.primary.running { background: var(--amber); animation: pulseBtn 1.2s infinite; }
+  @keyframes pulseBtn { 0%,100%{opacity:1;} 50%{opacity:.75;} }
+
+  button.stop-square {
+    display: none;
+    flex: 0 0 auto;
+    width: auto;
+    padding: 8px 10px;
+    background: var(--red);
+    color: #fff;
+    border: none;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  html[data-theme="dark"] button.stop-square { color: #202124; }
+  button.stop-square:hover { background: var(--red-dark); }
+  button.stop-square.show { display: inline-block; }
+  button.force-stop {
+    display: none;
+    flex: 0 0 auto;
+    width: auto;
+    padding: 8px 10px;
+    background: #7f1d1d;
+    color: #fff;
+    border: none;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  button.force-stop:hover { background: #450a0a; }
+  button.force-stop.show { display: inline-block; }
+
+  button.danger { background: #fdecea; border: 1px solid #e0a49c; color: var(--red); }
+  html[data-theme="dark"] button.danger { background: #3a2a28; }
+  button.link { background: none; border: none; color: var(--blue); padding: 4px 0; font-size: 11.5px; }
+
+  .btn-row { display: flex; gap: 8px; margin-top: 8px; }
+  .btn-row button { flex: 1; }
+
+  .progress-wrap { background: var(--surface-2); border-radius: 5px; height: 8px; overflow: hidden; margin-top: 12px; }
+  .progress-bar { background: var(--blue); height: 100%; width: 0%; transition: width .3s ease; }
+  .progress-text { font-size: 11px; color: var(--text-secondary); margin-top: 4px; }
+
+  .result-box {
+    margin-top: 12px; font-size: 12px; color: var(--text); white-space: pre-wrap;
+    background: var(--surface-2); border-radius: 6px; padding: 8px 10px; display: none;
+  }
+  .result-box.show { display: block; }
+
+  hr { border: none; border-top: 1px solid var(--border); margin: 16px 0; }
+
+  .similar-pair { border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px; margin-bottom: 8px; font-size: 12px; }
+  .similar-pair .reason { color: var(--text-secondary); font-size: 10.5px; margin-bottom: 4px; }
+  .similar-pair .btn-row button { font-size: 11px; padding: 5px 6px; }
+
+  .filter-rule-row { border: 1px solid var(--border); border-radius: 6px; padding: 8px; margin-bottom: 8px; }
+  .filter-rule-row .filter-rule-top { display: flex; gap: 6px; margin-bottom: 6px; }
+  .filter-rule-row select.match-type { flex: 0 0 90px; }
+  .filter-rule-row input.match-value { flex: 1; }
+  .filter-rule-row input.target-label { width: 100%; margin-bottom: 4px; }
+  .filter-rule-row .btn-row { margin-top: 4px; }
+  .filter-rule-row .btn-row button { font-size: 11px; padding: 5px 6px; }
+
+  .category-row { border: 1px solid var(--border); border-radius: 6px; padding: 8px; margin-bottom: 8px; }
+  .category-row input.category-name { width: 100%; font-weight: 600; margin-bottom: 4px; }
+  .category-row textarea.category-desc { width: 100%; font-size: 12px; resize: vertical; }
+  .category-row .btn-row { margin-top: 4px; }
+  .category-row .btn-row button { font-size: 11px; padding: 5px 6px; }
+
+  .apikey-row { border: 1px solid var(--border); border-radius: 6px; padding: 8px; margin-bottom: 8px; }
+  .apikey-row .apikey-top { display: flex; gap: 6px; margin-bottom: 6px; }
+  .apikey-row input.apikey-label { flex: 0 0 84px; }
+  .apikey-row input.apikey-value { flex: 1; }
+  .apikey-row .apikey-usage { font-size: 10.5px; color: var(--text-secondary); margin-bottom: 4px; }
+  .apikey-row .btn-row { margin-top: 4px; }
+  .apikey-row .btn-row button { font-size: 11px; padding: 5px 6px; }
+  .auto-learned-badge {
+    display: inline-block; font-size: 10px; font-weight: 600; color: var(--blue);
+    background: rgba(26,115,232,0.12); border-radius: 4px; padding: 1px 6px; margin-bottom: 4px;
+  }
+
+  #labelAnalysisChecklist { max-height: 140px; overflow-y: auto; border: 1px solid var(--border); border-radius: 6px; padding: 4px 8px; }
+  .label-check-row { display: flex; align-items: center; gap: 6px; font-size: 12.5px; padding: 3px 0; }
+  .label-check-row input { width: auto; margin: 0; }
+
+  .theme-row, .lang-row { display: flex; gap: 8px; margin-bottom: 4px; }
+  .theme-row button, .lang-row select { flex: 1; }
+  .theme-row button.active { background: var(--blue); color: #fff; border-color: var(--blue); }
+  html[data-theme="dark"] .theme-row button.active { color: #202124; }
+
+  .footer-link { text-align: center; padding: 8px 0 14px 0; }
+  .footer-link a { font-size: 11px; color: var(--blue); text-decoration: none; cursor: pointer; }
+</style>
+</head>
+<body>
+
+  <div class="header">
+    <h1 data-i18n="appTitle">Gmail AI Labeler</h1>
+    <button class="donate-btn" id="headerDonateBtn" data-i18n="btnDonateHeader">Donate</button>
+    <div class="status-pill" id="statusPill">
+      <span class="status-dot"></span><span id="statusPillText" data-i18n="statusIdle">Idle</span>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="classify" data-i18n="tabClassify">Classify</button>
+    <button class="tab-btn" data-tab="manage" data-i18n="tabManage">Labels</button>
+    <button class="tab-btn" data-tab="settings" data-i18n="tabSettings">Settings</button>
+    <button class="tab-btn" data-tab="advanced" data-i18n="tabAdvancedSettings">Advanced</button>
+  </div>
+
+  <!-- 분류 탭 -->
+  <div class="tab-panel active" id="panel-classify">
+    <div class="section-title" data-i18n="sectionRecentClassify">Classify recent mail</div>
+
+    <div class="field-row">
+      <label for="batchCountInput" data-i18n="labelBatchCount">Batches</label>
+      <input type="number" id="batchCountInput" value="1" min="1">
+    </div>
+    <div class="field-row">
+      <label for="emailCountInput" data-i18n="labelEmailCount">Emails to classify</label>
+      <input type="number" id="emailCountInput" value="37" min="1">
+    </div>
+    <div class="hint" id="batchHint"></div>
+
+    <div class="start-row">
+      <button class="primary" id="startBtn" data-i18n="btnStart">Start classifying</button>
+      <button class="stop-square" id="cancelBtn" data-i18n="btnStop">Stop</button>
+      <button class="force-stop" id="forceCancelBtn" data-i18n="btnForceStop">Force stop</button>
+    </div>
+
+    <div class="progress-wrap" id="progressWrap"><div class="progress-bar" id="progressBar"></div></div>
+    <div class="progress-text" id="progressText"></div>
+
+    <div class="btn-row">
+      <button id="logBtn" data-i18n="btnOpenLog">Open detailed log</button>
+    </div>
+
+    <div class="hint" id="quotaText" style="display:none; margin-top:10px;"></div>
+
+    <div class="result-box" id="resultBox"></div>
+
+    <details class="settings-group">
+      <summary data-i18n="sectionRepeat">Repeat classify</summary>
+      <div class="hint" data-i18n="hintRepeat"></div>
+      <div class="field-row">
+        <label for="repeatBatchesInput" data-i18n="labelRepeatBatches">Batches per round (1-5)</label>
+        <input type="number" id="repeatBatchesInput" value="2" min="1" max="5">
+      </div>
+      <div class="field-row">
+        <label for="repeatCountInput" data-i18n="labelRepeatCount">Number of rounds</label>
+        <input type="number" id="repeatCountInput" value="5" min="1">
+      </div>
+      <button class="primary" id="repeatBtn" style="width:100%; margin-top:6px;" data-i18n="btnStartRepeat">Start repeat classify</button>
+      <div class="progress-wrap" id="repeatProgressWrap"><div class="progress-bar" id="repeatProgressBar"></div></div>
+      <div class="progress-text" id="repeatProgressText"></div>
+      <div class="result-box" id="repeatResultBox"></div>
+    </details>
+  </div>
+
+  <!-- 라벨 관리 탭 -->
+  <div class="tab-panel" id="panel-manage">
+    <div class="section-title" data-i18n="sectionFilterRules">Personal filter rules</div>
+    <div class="hint" data-i18n="hintFilterRules"></div>
+    <div id="filterRulesList"></div>
+    <div class="btn-row">
+      <button id="addFilterRuleBtn" data-i18n="btnAddFilterRule">+ Add rule</button>
+      <button class="primary" id="saveFilterRulesBtn" data-i18n="btnSaveFilterRules">Save rules</button>
+    </div>
+    <div class="result-box" id="filterRulesResultBox"></div>
+
+    <details class="settings-group">
+      <summary data-i18n="sectionRelabelSplit">Relabel / split</summary>
+      <div class="hint" data-i18n="hintRelabelSplit"></div>
+      <select id="relabelSelect"></select>
+      <label class="checkbox-row">
+        <input type="checkbox" id="excludeSelfCheckbox">
+        <span data-i18n="checkboxExcludeSelf">Exclude this label from candidates (split mode)</span>
+      </label>
+      <button class="primary" id="relabelBtn" data-i18n="btnStartRelabel">Start relabeling</button>
+      <div class="result-box" id="relabelResultBox"></div>
+    </details>
+
+    <details class="settings-group">
+      <summary data-i18n="sectionDedupe">Clean up duplicate/miss-applied labels</summary>
+      <div class="hint" data-i18n="hintDedupe"></div>
+      <button class="danger" id="dedupeBtn" style="width:100%;" data-i18n="btnDedupe">Remove labels & reclassify</button>
+      <div class="result-box" id="dedupeResultBox"></div>
+    </details>
+
+    <details class="settings-group" open>
+      <summary data-i18n="sectionCategories">Label categories</summary>
+      <div class="hint" data-i18n="hintCategories"></div>
+      <div id="categoriesList"></div>
+      <div class="btn-row">
+        <button id="addCategoryBtn" data-i18n="btnAddCategory">+ Add category</button>
+        <button class="primary" id="saveCategoriesBtn" data-i18n="btnSaveCategories">Save</button>
+      </div>
+      <button id="resetCategoriesBtn" type="button" style="width:100%; margin-top:6px;" data-i18n="btnResetCategories">Reset to defaults</button>
+      <div class="result-box" id="categoryResultBox"></div>
+    </details>
+
+    <details class="settings-group">
+      <summary data-i18n="sectionLabelAnalysis">Analyze label for criteria</summary>
+      <div class="hint" data-i18n="hintLabelAnalysis"></div>
+      <div id="labelAnalysisChecklist"></div>
+      <div class="btn-row">
+        <button id="labelAnalysisSelectAllBtn" type="button" data-i18n="btnSelectAll">Select all</button>
+        <button id="labelAnalysisSelectNoneBtn" type="button" data-i18n="btnSelectNone">Select none</button>
+      </div>
+      <button class="primary" id="analyzeLabelBtn" style="width:100%; margin-top:6px;" data-i18n="btnAnalyzeLabel">Analyze</button>
+      <div class="progress-wrap" id="labelAnalysisProgressWrap"><div class="progress-bar" id="labelAnalysisProgressBar"></div></div>
+      <div class="progress-text" id="labelAnalysisProgressText"></div>
+      <div class="result-box" id="labelAnalysisResultBox"></div>
+
+      <div class="hint" data-i18n="hintScratchpad" style="margin-top:10px;"></div>
+      <textarea id="criteriaScratchpad" rows="7" data-i18n-placeholder="placeholderScratchpad" style="width:100%; font-size:12px;"></textarea>
+      <div class="btn-row">
+        <button class="primary" id="applyScratchpadBtn" data-i18n="btnApplyScratchpad">Apply to categories</button>
+        <button id="clearScratchpadBtn" data-i18n="btnClearScratchpad">Clear</button>
+      </div>
+    </details>
+
+    <details class="settings-group danger-group">
+      <summary data-i18n="sectionDeleteAllLabels">Delete all labels</summary>
+      <div class="hint" data-i18n="hintDeleteAllLabels"></div>
+      <button class="danger" id="deleteAllLabelsBtn" style="width:100%;" data-i18n="btnDeleteAllLabels">Delete all labels</button>
+      <div id="deleteAllLabelsConfirmBox" style="display:none; margin-top:8px; border:1px solid var(--red); border-radius:6px; padding:10px;">
+        <div class="hint" id="deleteAllLabelsConfirmText" style="color:var(--red);"></div>
+        <div class="btn-row">
+          <button id="deleteAllLabelsConfirmBtn" class="danger"></button>
+          <button id="deleteAllLabelsCancelBtn"></button>
+        </div>
+      </div>
+      <div class="result-box" id="deleteAllLabelsResultBox"></div>
+    </details>
+  </div>
+
+  <!-- 설정 탭 (기본 - 사용하려면 꼭 필요한 것들, 항상 펼쳐짐) -->
+  <div class="tab-panel" id="panel-settings">
+    <div class="section-title" data-i18n="sectionApiKey">Gemini API key</div>
+    <div class="hint" data-i18n="hintApiKey"></div>
+    <button class="link" id="openAiStudioBtn" type="button" style="padding-left:0;" data-i18n="btnGetApiKey">Get a key</button>
+    <div id="apiKeysList"></div>
+    <div class="btn-row">
+      <button id="addApiKeyBtn" data-i18n="btnAddApiKey">+ Add key</button>
+      <button class="primary" id="saveKeyBtn" data-i18n="btnSaveKey">Save</button>
+    </div>
+    <div class="result-box" id="keyResultBox"></div>
+
+    <hr>
+
+    <div class="section-title" data-i18n="sectionOAuth">Google account connection (personal OAuth)</div>
+    <div class="hint" data-i18n="hintOAuth"></div>
+    <div class="btn-row">
+      <button class="link" id="openOAuthGuideBtn" type="button" style="padding-left:0;" data-i18n="btnOAuthGuide">Open setup guide</button>
+      <button class="link" id="openOAuthConsoleBtn" type="button" data-i18n="btnOAuthGetCredentials">Get credentials</button>
+    </div>
+    <div class="field-row">
+      <label for="oauthClientIdInput" data-i18n="labelOAuthClientId">OAuth Client ID</label>
+    </div>
+    <input type="text" id="oauthClientIdInput" placeholder="xxxxxxxx.apps.googleusercontent.com">
+    <div class="field-row" style="margin-top:6px;">
+      <label for="oauthClientSecretInput" data-i18n="labelOAuthClientSecret">OAuth Client Secret</label>
+    </div>
+    <input type="password" id="oauthClientSecretInput" data-i18n-placeholder="placeholderOAuthSecret" placeholder="GOCSPX-... (optional)">
+    <div class="hint" data-i18n="hintOAuthSecretOptional"></div>
+    <div class="btn-row">
+      <button id="saveOAuthBtn" data-i18n="btnSaveOAuth">Save</button>
+    </div>
+    <div class="btn-row">
+      <button class="primary" id="connectOAuthBtn" data-i18n="btnConnectOAuth">Connect Google account</button>
+      <button class="danger" id="disconnectOAuthBtn" data-i18n="btnDisconnectOAuth">Disconnect</button>
+    </div>
+    <div class="hint" id="oauthStatusText" style="margin-top:6px;"></div>
+    <div class="result-box" id="oauthResultBox"></div>
+
+    <hr>
+
+    <div class="section-title" data-i18n="sectionBackupRestore">Backup / restore</div>
+    <div class="hint" data-i18n="hintDriveBackup"></div>
+    <label class="checkbox-row">
+      <input type="checkbox" id="includeCredentialsCheckbox" checked>
+      <span data-i18n="checkboxIncludeCredentials">Include API keys / OAuth credentials in backup</span>
+    </label>
+    <div class="hint" data-i18n="hintIncludeCredentials"></div>
+    <div class="field-row" style="margin-top:6px;">
+      <label for="backupPassphraseInput" data-i18n="labelBackupPassphrase">Encryption passphrase</label>
+    </div>
+    <input type="password" id="backupPassphraseInput" data-i18n-placeholder="placeholderBackupPassphrase" placeholder="Optional - encrypts your API keys/secrets">
+    <div class="hint" data-i18n="hintBackupPassphrase"></div>
+
+    <div class="field-row" style="margin-top:10px;">
+      <label data-i18n="labelLocalBackup">Local backup</label>
+    </div>
+    <div class="btn-row">
+      <button class="primary" id="backupLocalBtn" data-i18n="btnBackupLocal">Save to file</button>
+      <button id="restoreLocalBtn" data-i18n="btnRestoreLocal">Load from file</button>
+    </div>
+    <input type="file" id="restoreLocalFileInput" accept="application/json" style="display:none;">
+    <div class="result-box" id="localBackupResultBox"></div>
+
+    <div class="field-row" style="margin-top:10px;">
+      <label data-i18n="labelDriveBackup">Google Drive backup</label>
+    </div>
+    <div class="btn-row">
+      <button class="primary" id="backupToDriveBtn" data-i18n="btnBackupToDrive">Back up now</button>
+      <button id="restoreFromDriveBtn" data-i18n="btnRestoreFromDrive">Restore</button>
+    </div>
+    <label class="checkbox-row">
+      <input type="checkbox" id="autoBackupOnChangeCheckbox" checked>
+      <span data-i18n="checkboxAutoBackupOnChange">Automatically back up to Drive when settings change</span>
+    </label>
+    <div id="driveRestoreConfirmBox" style="display:none; margin-top:8px; border:1px solid var(--red); border-radius:6px; padding:10px;">
+      <div class="hint" id="driveRestoreConfirmText" style="color:var(--red);"></div>
+      <div class="btn-row">
+        <button id="driveRestoreConfirmBtn" class="danger"></button>
+        <button id="driveRestoreCancelBtn"></button>
+      </div>
+    </div>
+    <div class="hint" id="driveBackupStatusText" style="margin-top:6px;"></div>
+    <div class="result-box" id="driveBackupResultBox"></div>
+  </div>
+
+  <!-- 고급설정 탭 (자주 안 바꾸는 것들, 접이식) -->
+  <div class="tab-panel" id="panel-advanced">
+    <details class="settings-group">
+      <summary data-i18n="sectionLabelColors">Gmail label colors</summary>
+      <div class="hint" data-i18n="hintLabelColors"></div>
+      <button class="primary" id="applyColorsBtn" data-i18n="btnApplyColors">Apply colors to existing labels</button>
+      <div class="result-box" id="colorResultBox"></div>
+    </details>
+
+    <details class="settings-group">
+      <summary data-i18n="sectionTheme">Theme</summary>
+      <div class="theme-row">
+        <button id="themeLightBtn" data-i18n="themeLight">Light</button>
+        <button id="themeDarkBtn" data-i18n="themeDark">Dark</button>
+        <button id="themeSystemBtn" data-i18n="themeSystem">System</button>
+      </div>
+    </details>
+
+    <details class="settings-group">
+      <summary data-i18n="sectionLanguage">Language</summary>
+      <div class="hint" data-i18n="hintLanguage"></div>
+      <div class="lang-row">
+        <select id="languageSelect">
+          <option value="system" data-i18n="languageSystem">Match browser</option>
+          <option value="en">English</option>
+          <option value="ko">한국어</option>
+          <option value="ja">日本語</option>
+          <option value="zh_CN">简体中文</option>
+        </select>
+      </div>
+      <div id="translateLabelsConfirmBox" style="display:none; margin-top:8px; border:1px solid var(--blue); border-radius:6px; padding:10px;">
+        <div class="hint" id="translateLabelsConfirmText"></div>
+        <div class="btn-row">
+          <button id="translateLabelsYesBtn" class="primary"></button>
+          <button id="translateLabelsNoBtn"></button>
+        </div>
+      </div>
+    </details>
+
+    <details class="settings-group">
+      <summary data-i18n="sectionAutoClassify">Auto-classify new mail</summary>
+      <div class="hint" data-i18n="hintAutoClassify"></div>
+      <label class="checkbox-row">
+        <input type="checkbox" id="autoClassifyCheckbox" checked>
+        <span data-i18n="checkboxAutoClassify">Automatically classify when new mail arrives</span>
+      </label>
+      <div class="field-row">
+        <label for="autoClassifyThresholdInput" data-i18n="labelAutoClassifyThreshold">Trigger threshold</label>
+        <input type="number" id="autoClassifyThresholdInput" value="1" min="1" max="37">
+      </div>
+    </details>
+
+    <details class="settings-group">
+      <summary data-i18n="sectionAdvanced">Advanced</summary>
+      <label class="checkbox-row">
+        <input type="checkbox" id="correctionLearningCheckbox">
+        <span data-i18n="checkboxCorrectionLearning">Learn from my manual label corrections</span>
+      </label>
+      <div class="hint" data-i18n="hintCorrectionLearning"></div>
+      <label class="checkbox-row">
+        <input type="checkbox" id="showQuotaCheckbox">
+        <span data-i18n="checkboxShowQuota">Show API quota on the main screen</span>
+      </label>
+      <div class="hint" data-i18n="hintQuota"></div>
+    </details>
+
+    <details class="settings-group">
+      <summary data-i18n="sectionAbout">About</summary>
+      <div class="hint" id="aboutCopyright">© 2026 thk7410@gmail.com. All rights reserved.</div>
+      <button class="link" id="supportLinkBtn" type="button" style="padding-left:0;" data-i18n="btnSupportDeveloper">Support the developer</button>
+    </details>
+  </div>
+
+  <div class="footer-link">
+    <a id="advancedOptionsLink" data-i18n="footerOpenFull">Open full screen</a>
+  </div>
+
+<script src="../i18n.js"></script>
+<script src="../crypto-helper.js"></script>
+<script src="popup.js"></script>
+</body>
+</html>

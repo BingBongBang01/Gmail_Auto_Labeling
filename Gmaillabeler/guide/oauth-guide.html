@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title id="pageTitle">Google OAuth Setup Guide - Gmail AI Labeler</title>
+<style>
+  body {
+    font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 32px 24px 80px 24px;
+    color: #202124;
+    line-height: 1.7;
+  }
+  h1 { font-size: 22px; margin-bottom: 4px; }
+  .subtitle { color: #5f6368; font-size: 13px; margin-bottom: 28px; }
+  .why-box {
+    background: #fef7e0; border: 1px solid #f9d97b; border-radius: 8px;
+    padding: 14px 18px; margin-bottom: 28px; font-size: 13.5px;
+  }
+  .step {
+    border-left: 3px solid #1a73e8; padding: 4px 0 4px 18px; margin-bottom: 28px;
+  }
+  .step h2 { font-size: 16px; margin: 0 0 8px 0; color: #1a73e8; }
+  .step p, .step li { font-size: 14px; }
+  .step ul, .step ol { padding-left: 20px; }
+  code, .mono {
+    font-family: Consolas, monospace; background: #f1f3f4; padding: 2px 6px; border-radius: 4px; font-size: 13px;
+  }
+  .box {
+    background: #f8f9fa; border: 1px solid #e0e0e0; border-radius: 8px; padding: 12px 16px; margin: 10px 0;
+  }
+  a.btn {
+    display: inline-block; background: #1a73e8; color: #fff; text-decoration: none;
+    padding: 8px 14px; border-radius: 6px; font-size: 13px; margin-top: 6px;
+  }
+  .warn { color: #b3261e; font-weight: 600; }
+  .note { color: #5f6368; font-size: 12.5px; }
+  hr { border: none; border-top: 1px solid #e0e0e0; margin: 32px 0; }
+  img.shot { max-width: 100%; border: 1px solid #ddd; border-radius: 6px; margin: 8px 0; }
+</style>
+</head>
+<body>
+
+<h1 data-i18n="guideTitle">Google OAuth Client Setup Guide</h1>
+<div class="subtitle" data-i18n="guideSubtitle">Gmail AI Labeler - personal OAuth client setup</div>
+
+<div class="why-box" data-i18n-html="guideWhyBox"></div>
+
+<div class="box" style="border-color:#1a73e8;" data-i18n-html="guideNoBillingBox"></div>
+
+<div class="step">
+  <h2 data-i18n="guideStep1Title">Step 1. Create a Google Cloud project</h2>
+  <ol data-i18n-html="guideStep1List"></ol>
+</div>
+
+<div class="step">
+  <h2 data-i18n="guideStep2Title">Step 2. Enable Gmail API + Google Drive API</h2>
+  <ol data-i18n-html="guideStep2List"></ol>
+  <div class="box" data-i18n-html="guideStep2Box"></div>
+</div>
+
+<div class="step">
+  <h2 data-i18n="guideStep3Title">Step 3. Configure the OAuth consent screen</h2>
+  <ol data-i18n-html="guideStep3List"></ol>
+</div>
+
+<div class="step">
+  <h2 data-i18n="guideStep4Title">Step 4. Create the OAuth Client ID (redirect URI auto-computed)</h2>
+  <ol data-i18n-html="guideStep4List"></ol>
+  <div class="box">
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+      <span class="mono" id="redirectUriText" data-i18n="guideRedirectUriPlaceholder">https://(open this page from the extension to auto-fill).chromiumapp.org/</span>
+      <button id="copyRedirectBtn" style="background:#1a73e8; color:#fff; border:none; border-radius:6px; padding:6px 12px; font-size:12.5px; cursor:pointer; margin-left:10px; white-space:nowrap;" data-i18n="guideCopyBtn">Copy</button>
+    </div>
+  </div>
+  <ol start="6" data-i18n-html="guideStep4List2"></ol>
+  <div class="box" data-i18n-html="guideStep4WarnBox"></div>
+  <p class="note" data-i18n-html="guideStep4NoteBox"></p>
+</div>
+
+<div class="step">
+  <h2 data-i18n="guideStep5Title">Step 5. Enter it in the extension and connect</h2>
+  <ol data-i18n-html="guideStep5List"></ol>
+  <div class="box" data-i18n-html="guideStep5Box"></div>
+</div>
+
+<hr>
+<p class="note" data-i18n="guideFooterNote">
+  If something's not working, double-check: (1) the account you're signing in with is added as a test user, (2) the redirect URI exactly matches the auto-computed value above, (3) the application type is "Web application".
+</p>
+
+<script src="../i18n.js"></script>
+<script src="oauth-guide.js"></script>
+
+</body>
+</html>

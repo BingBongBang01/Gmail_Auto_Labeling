@@ -1,0 +1,1931 @@
+{
+  "extName": {
+    "message": "Gmail AI Labeler"
+  },
+  "extDescription": {
+    "message": "Gemini로 Gmail 메일을 자동 분류하고 라벨을 붙여주는 확장 프로그램. 배치 분류, 재분류/분할, 라벨 병합, 실시간 로그를 지원합니다."
+  },
+  "appTitle": {
+    "message": "Gmail AI Labeler"
+  },
+  "statusIdle": {
+    "message": "대기"
+  },
+  "statusRunning": {
+    "message": "진행 중"
+  },
+  "statusDone": {
+    "message": "완료"
+  },
+  "statusError": {
+    "message": "오류"
+  },
+  "statusCancelled": {
+    "message": "중지됨"
+  },
+  "statusQuotaExceeded": {
+    "message": "할당량 초과"
+  },
+  "tabClassify": {
+    "message": "분류"
+  },
+  "tabManage": {
+    "message": "라벨 관리"
+  },
+  "tabSettings": {
+    "message": "설정"
+  },
+  "sectionRecentClassify": {
+    "message": "최근 메일 분류"
+  },
+  "labelBatchCount": {
+    "message": "배치 수"
+  },
+  "labelEmailCount": {
+    "message": "분류할 메일 개수"
+  },
+  "batchHint": {
+    "message": "배치 1개당 메일 $BATCH$개 처리 (RPM $RPM$/TPM $TPM$/RPD $RPD$ 기준, 자동 연동됨)",
+    "placeholders": {
+      "batch": {
+        "content": "$1"
+      },
+      "rpm": {
+        "content": "$2"
+      },
+      "tpm": {
+        "content": "$3"
+      },
+      "rpd": {
+        "content": "$4"
+      }
+    }
+  },
+  "btnStart": {
+    "message": "분류 시작"
+  },
+  "btnStartRunning": {
+    "message": "분류 진행 중..."
+  },
+  "btnStop": {
+    "message": "중지"
+  },
+  "btnStopRequesting": {
+    "message": "중지 요청됨..."
+  },
+  "btnForceStop": {
+    "message": "강제 중지"
+  },
+  "btnForceStopping": {
+    "message": "강제 중지 중..."
+  },
+  "btnOpenLog": {
+    "message": "상세 로그 열기"
+  },
+  "progressIdle": {
+    "message": "대기 중"
+  },
+  "progressDone": {
+    "message": "완료"
+  },
+  "progressQuotaExceededShort": {
+    "message": "할당량 초과로 중단"
+  },
+  "progressErrorShort": {
+    "message": "오류로 중단됨"
+  },
+  "progressRunning": {
+    "message": "$PROCESSED$ / $TOTAL$개 (배치 $BATCHIDX$/$BATCHTOTAL$) - $PERCENT$%",
+    "placeholders": {
+      "processed": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      },
+      "batchidx": {
+        "content": "$3"
+      },
+      "batchtotal": {
+        "content": "$4"
+      },
+      "percent": {
+        "content": "$5"
+      }
+    }
+  },
+  "resultRequesting": {
+    "message": "$COUNT$개 메일 분류 요청 중...",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "resultLastRun": {
+    "message": "마지막 결과: $TOTAL$개 중 $SUCCESS$개 성공",
+    "placeholders": {
+      "success": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      }
+    }
+  },
+  "resultRequestsUsedSuffix": {
+    "message": " (요청 $REQUESTS$회)",
+    "placeholders": {
+      "requests": {
+        "content": "$1"
+      }
+    }
+  },
+  "resultFailReasonSuffix": {
+    "message": "\n실패 사유: $REASON$",
+    "placeholders": {
+      "reason": {
+        "content": "$1"
+      }
+    }
+  },
+  "resultCancelled": {
+    "message": "중지됨: $TOTAL$개 중 $SUCCESS$개까지 처리 후 중단",
+    "placeholders": {
+      "success": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      }
+    }
+  },
+  "resultQuotaExceeded": {
+    "message": "일일 API 할당량 초과로 중단: $TOTAL$개 중 $SUCCESS$개까지 처리됨. 자정 이후 다시 시도하세요.",
+    "placeholders": {
+      "success": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      }
+    }
+  },
+  "resultLastError": {
+    "message": "마지막 작업 오류: $ERROR$",
+    "placeholders": {
+      "error": {
+        "content": "$1"
+      }
+    }
+  },
+  "errorAlreadyRunning": {
+    "message": "이미 다른 작업이 진행 중입니다. 완료 또는 중지 후 다시 시도하세요."
+  },
+  "errorSelectLabel": {
+    "message": "라벨을 선택하세요."
+  },
+  "errorGenericPrefix": {
+    "message": "오류: $ERROR$",
+    "placeholders": {
+      "error": {
+        "content": "$1"
+      }
+    }
+  },
+  "requestSent": {
+    "message": "요청 전송됨"
+  },
+  "sectionRelabelSplit": {
+    "message": "라벨 재분류 / 분할"
+  },
+  "hintRelabelSplit": {
+    "message": "특정 라벨의 메일들을 다시 분류합니다. \"이 라벨 자체는 후보에서 제외\"를 켜면, 그 라벨에 쏠려있던 메일들이 다른 카테고리(또는 새 카테고리)로 강제 재배치되어 사실상 \"분할\" 효과를 냅니다."
+  },
+  "checkboxExcludeSelf": {
+    "message": "이 라벨 자체는 후보에서 제외하고 재분류(분할 모드)"
+  },
+  "btnStartRelabel": {
+    "message": "재분류 시작"
+  },
+  "relabelRequesting": {
+    "message": "재분류 요청 중..."
+  },
+  "sectionApiKey": {
+    "message": "Gemini API 키"
+  },
+  "hintApiKey": {
+    "message": "Gemini API 키를 여러 개(예: 다른 구글 계정에서 발급받은 키) 등록할 수 있습니다. 한 키가 일일 한도에 도달하면 자동으로 다음 키로 넘어가서, 사실상 하루 처리량이 등록한 키 수만큼 늘어납니다."
+  },
+  "btnGetApiKey": {
+    "message": "Google AI Studio에서 키 발급받기 (새 창)"
+  },
+  "btnSaveKey": {
+    "message": "저장"
+  },
+  "btnToggleKey": {
+    "message": "표시/숨김"
+  },
+  "warnApiKeyFormat": {
+    "message": "경고: 일반적인 Gemini API 키는 'AIza'로 시작합니다. 값을 다시 확인하세요."
+  },
+  "msgKeySaved": {
+    "message": "저장됨."
+  },
+  "msgEnterKey": {
+    "message": "키를 입력하세요."
+  },
+  "sectionCategories": {
+    "message": "라벨 카테고리 목록"
+  },
+  "hintCategories": {
+    "message": "AI는 이 목록 안에서만 고릅니다(새 카테고리를 스스로 만들지 않고, 애매하면 '기타'로 보냅니다). 카테고리마다 설명을 적어두면 그 기준으로 분류하고, 비워두면 이름만 보고 AI가 판단합니다."
+  },
+  "btnSaveCategories": {
+    "message": "저장"
+  },
+  "btnResetCategories": {
+    "message": "기본값 초기화"
+  },
+  "msgCategoriesSaved": {
+    "message": "저장됨 ($COUNT$개 카테고리).",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "msgCategoriesMin": {
+    "message": "최소 1개 이상의 카테고리가 필요합니다."
+  },
+  "msgCategoriesReset": {
+    "message": "기본값으로 초기화됨."
+  },
+  "sectionLabelColors": {
+    "message": "Gmail 라벨 색상"
+  },
+  "hintLabelColors": {
+    "message": "라벨을 처음 만들 땐 자동으로 색이 들어가지만, 예전에 색상 없이 만들어진 라벨이 있다면 아래 버튼으로 지금 카테고리 목록 기준 색상을 한 번에 입혀줍니다."
+  },
+  "btnApplyColors": {
+    "message": "기존 라벨에 색상 적용"
+  },
+  "colorRequesting": {
+    "message": "라벨 색상 적용 요청 중..."
+  },
+  "sectionAdvanced": {
+    "message": "고급 옵션"
+  },
+  "checkboxShowQuota": {
+    "message": "메인(분류) 화면에 API 할당량 표시"
+  },
+  "hintQuota": {
+    "message": "Gemini API는 키만으로 실시간 공식 쿼터를 조회하는 방법이 없어서, 이 확장이 실제로 보낸 요청 수를 자정 기준으로 직접 세어 보여주는 추정치입니다. Google 콘솔의 실제 값과 약간 다를 수 있습니다."
+  },
+  "quotaText": {
+    "message": "오늘 Gemini 요청(추정): $TODAY$ / $RPD$ (RPD 기준, 자정 초기화)",
+    "placeholders": {
+      "today": {
+        "content": "$1"
+      },
+      "rpd": {
+        "content": "$2"
+      }
+    }
+  },
+  "sectionTheme": {
+    "message": "테마"
+  },
+  "themeLight": {
+    "message": "라이트"
+  },
+  "themeDark": {
+    "message": "다크"
+  },
+  "themeSystem": {
+    "message": "시스템"
+  },
+  "sectionLanguage": {
+    "message": "언어"
+  },
+  "hintLanguage": {
+    "message": "기본값은 브라우저 언어를 따릅니다. 여기서 직접 바꿀 수 있습니다."
+  },
+  "languageSystem": {
+    "message": "브라우저 언어 따라가기 (테스트)"
+  },
+  "footerOpenFull": {
+    "message": "전체 화면으로 열기"
+  },
+  "logWindowTitle": {
+    "message": "Gmail AI Labeler - 상세 로그"
+  },
+  "logBtnExpandAll": {
+    "message": "전체 로그 보기"
+  },
+  "logBtnCollapse": {
+    "message": "최소 로그만 보기"
+  },
+  "logBtnCancel": {
+    "message": "중지"
+  },
+  "logBtnCancelRequested": {
+    "message": "중지 요청됨"
+  },
+  "logBtnClear": {
+    "message": "화면 지우기"
+  },
+  "logProgressNoInfo": {
+    "message": "진행 정보 없음"
+  },
+  "logProgressTemplate": {
+    "message": "$PROCESSED$ / $TOTAL$개 처리 (배치 $BATCHIDX$/$BATCHTOTAL$) - $PERCENT$%",
+    "placeholders": {
+      "processed": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      },
+      "batchidx": {
+        "content": "$3"
+      },
+      "batchtotal": {
+        "content": "$4"
+      },
+      "percent": {
+        "content": "$5"
+      }
+    }
+  },
+  "notifyTitleClassify": {
+    "message": "Gmail AI Labeler"
+  },
+  "notifyTitleRelabel": {
+    "message": "Gmail AI Labeler - 재분류($LABEL$)",
+    "placeholders": {
+      "label": {
+        "content": "$1"
+      }
+    }
+  },
+  "notifyTitleApplyColors": {
+    "message": "Gmail AI Labeler - 라벨 색상 적용"
+  },
+  "notifyTitleErrorSuffix": {
+    "message": "$TITLE$ - 오류",
+    "placeholders": {
+      "title": {
+        "content": "$1"
+      }
+    }
+  },
+  "msgNoMailToProcess": {
+    "message": "처리할 메일이 없음"
+  },
+  "msgSuccessSummary": {
+    "message": "$TOTAL$개 중 $SUCCESS$개 성공",
+    "placeholders": {
+      "success": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      }
+    }
+  },
+  "msgCancelledSummary": {
+    "message": "중지됨: $TOTAL$개 중 $SUCCESS$개까지 처리 후 중단",
+    "placeholders": {
+      "success": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      }
+    }
+  },
+  "msgQuotaExceededSummary": {
+    "message": "일일 할당량 초과로 중단: $TOTAL$개 중 $SUCCESS$개까지 처리",
+    "placeholders": {
+      "success": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      }
+    }
+  },
+  "msgFailSuffix": {
+    "message": "\n실패: $REASON$",
+    "placeholders": {
+      "reason": {
+        "content": "$1"
+      }
+    }
+  },
+  "logJobStarted": {
+    "message": "$TITLE$ 작업 시작",
+    "placeholders": {
+      "title": {
+        "content": "$1"
+      }
+    }
+  },
+  "logJobDone": {
+    "message": "작업 완료"
+  },
+  "logJobCancelled": {
+    "message": "작업이 사용자 요청으로 중지됨"
+  },
+  "logJobQuotaExceeded": {
+    "message": "일일 API 할당량 초과로 작업 중단됨"
+  },
+  "logJobError": {
+    "message": "작업 오류로 중단: $ERROR$",
+    "placeholders": {
+      "error": {
+        "content": "$1"
+      }
+    }
+  },
+  "detailCardText": {
+    "message": "✨ Gemini AI가 이 메일을 <strong>[$LABEL$]</strong>(으)로 분류했습니다.",
+    "placeholders": {
+      "label": {
+        "content": "$1"
+      }
+    }
+  },
+  "defaultCategoriesList": {
+    "message": "보안,광고,쇼핑,공지,뉴스레터,업무,개인,기타"
+  },
+  "sectionRestructure": {
+    "message": "라벨 구조 정리"
+  },
+  "hintRestructure": {
+    "message": "관련된 메일을 전부 다시 읽고 다시 라벨링하기 때문에(기존 라벨을 단순히 옮기는 게 아님) 시간이 꽤 걸릴 수 있습니다. AI가 전체 라벨 구성을 보고 알아서 정리합니다: 의미가 겹치는 라벨들은 하나의 상위 그룹 아래로 묶고, 성격이 다른 메일이 많이 섞인 라벨은 몇 개의 하위 라벨로 나눕니다. 하위 라벨은 충분한 양의 메일을 담을 때만 유지되고, 이름은 짧은 단어 하나로 유지됩니다. 기존 하위 라벨이 있으면 비슷한 걸 새로 안 만들고 재사용합니다."
+  },
+  "btnStartRestructure": {
+    "message": "라벨 구조 정리 시작"
+  },
+  "notifyTitleRestructure": {
+    "message": "Gmail AI Labeler - 라벨 구조 정리"
+  },
+  "restructureRequesting": {
+    "message": "라벨 구조 정리 요청 중..."
+  },
+  "resultNoChangeNeeded": {
+    "message": "뚜렷이 개선할 부분을 찾지 못해 변경 없이 종료됨."
+  },
+  "sectionAutoClassify": {
+    "message": "새 메일 자동 분류"
+  },
+  "hintAutoClassify": {
+    "message": "켜두면 라벨 없는 메일이 이 개수만큼 쌓일 때마다 백그라운드에서 1배치를 자동으로 분류합니다. 몇 분마다 한 번씩 확인합니다. 설정 범위: 1 ~ 현재 배치 크기."
+  },
+  "checkboxAutoClassify": {
+    "message": "새 메일이 오면 자동으로 분류"
+  },
+  "labelAutoClassifyThreshold": {
+    "message": "실행 기준(메일 개수)"
+  },
+  "hintCategoriesSubLabel": {
+    "message": "\"상위/하위\" 형식으로 하위 라벨을 미리 지정할 수도 있습니다(예: \"쇼핑/배송, 쇼핑/결제\"). 상위 이름은 카테고리 목록에 추가되고, 하위 라벨은 Gmail에 바로 생성되어 이후 분류 시 재사용됩니다."
+  },
+  "btnCancelAction": {
+    "message": "취소"
+  },
+  "sectionDedupe": {
+    "message": "중복/오분류 라벨 정리"
+  },
+  "hintDedupe": {
+    "message": "이 도구의 라벨이 이미 붙어있는 메일을 전부 찾아서 라벨을 뗀 뒤 처음부터 다시 분류합니다. 예전 로직으로 인해 라벨이 중복되거나 잘못 붙은 경우 정리할 때 씁니다."
+  },
+  "btnDedupe": {
+    "message": "라벨 지우고 재분류"
+  },
+  "notifyTitleDedupe": {
+    "message": "Gmail AI Labeler - 라벨 정리"
+  },
+  "dedupeRequesting": {
+    "message": "라벨 정리 요청 중..."
+  },
+  "sectionFilterRules": {
+    "message": "개인 필터 규칙"
+  },
+  "hintFilterRules": {
+    "message": "AI 분석 전에 먼저 확인되는 규칙입니다. 메일이 조건에 맞으면 AI 호출 없이 바로 지정한 라벨이 붙습니다."
+  },
+  "labelMatchType": {
+    "message": "기준"
+  },
+  "matchTypeFrom": {
+    "message": "보낸사람"
+  },
+  "matchTypeSubject": {
+    "message": "제목"
+  },
+  "labelMatchValue": {
+    "message": "포함 문자열"
+  },
+  "labelTargetLabel": {
+    "message": "적용할 라벨"
+  },
+  "btnAddFilterRule": {
+    "message": "+ 규칙 추가"
+  },
+  "btnSaveFilterRules": {
+    "message": "규칙 저장"
+  },
+  "btnDeleteRule": {
+    "message": "삭제"
+  },
+  "msgFilterRulesSaved": {
+    "message": "저장됨 (규칙 $COUNT$개).",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "placeholderMatchValue": {
+    "message": "예: noreply@example.com"
+  },
+  "placeholderTargetLabel": {
+    "message": "예: 쇼핑/영수증"
+  },
+  "sectionOAuth": {
+    "message": "Google 계정 연결 (개인 OAuth)"
+  },
+  "hintOAuth": {
+    "message": "사용자가 늘어도 이 확장이 심사 비용 없이 계속 무료로 쓰일 수 있도록, 공용 클라이언트 대신 각자 자신의 Google OAuth 클라이언트로 연결합니다. 처음 한 번만 약 10분 걸리며, 아래 안내서를 참고하세요."
+  },
+  "btnOAuthGuide": {
+    "message": "설정 안내서 보기"
+  },
+  "btnOAuthGetCredentials": {
+    "message": "발급받기 (Google Cloud Console)"
+  },
+  "labelOAuthClientId": {
+    "message": "OAuth 클라이언트 ID"
+  },
+  "labelOAuthClientSecret": {
+    "message": "OAuth 클라이언트 보안 비밀번호 (없으면 비워두세요)"
+  },
+  "btnSaveOAuth": {
+    "message": "저장"
+  },
+  "btnConnectOAuth": {
+    "message": "Google 계정 연결"
+  },
+  "btnDisconnectOAuth": {
+    "message": "연결 해제"
+  },
+  "oauthStatusConnected": {
+    "message": "연결됨"
+  },
+  "oauthStatusNotConnected": {
+    "message": "연결 안 됨"
+  },
+  "msgOAuthSaved": {
+    "message": "저장됨."
+  },
+  "msgOAuthConnecting": {
+    "message": "Google 로그인 창을 여는 중..."
+  },
+  "msgOAuthConnected": {
+    "message": "연결 완료."
+  },
+  "msgOAuthDisconnected": {
+    "message": "연결 해제됨."
+  },
+  "logBtnExportTxt": {
+    "message": "전체 로그 txt로 저장"
+  },
+  "logBtnExporting": {
+    "message": "내보내는 중..."
+  },
+  "logCountHint": {
+    "message": "전체 $TOTAL$줄 중 $SHOWN$줄 표시 중 (전체를 보려면 \"전체 로그 txt로 저장\" 사용)",
+    "placeholders": {
+      "shown": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      }
+    }
+  },
+  "placeholderOAuthSecret": {
+    "message": "GOCSPX-... (선택 사항)"
+  },
+  "hintOAuthSecretOptional": {
+    "message": "참고: \"Chrome 확장 프로그램\" 유형으로 만들면 Google이 시크릿을 아예 발급하지 않습니다(정상). 다만 리디렉션 URI 등록을 위해 반드시 \"웹 애플리케이션\" 유형으로 만들어야 하고, 그 경우엔 시크릿이 나오니 정말 안 나온다면 이 칸은 비워두세요."
+  },
+  "checkboxCorrectionLearning": {
+    "message": "내가 직접 고친 라벨을 학습에 반영"
+  },
+  "hintCorrectionLearning": {
+    "message": "AI가 분류한 것과 다르게 메일을 직접 다른 라벨로 옮기면, 다음 분류 때 비슷한 사례를 AI에게 참고 예시로 보여줘서 같은 실수를 반복하지 않게 합니다. 과거 정정 내역을 참고하지 않길 원하면 꺼두세요."
+  },
+  "btnAddCategory": {
+    "message": "+ 카테고리 추가"
+  },
+  "placeholderCategoryName": {
+    "message": "카테고리 이름 (예: 쇼핑)"
+  },
+  "placeholderCategoryDesc": {
+    "message": "분류 기준 설명 (선택) - 예: \"신용카드 결제, 청구서, 자동이체 알림\""
+  },
+  "badgeAutoLearned": {
+    "message": "AI 자동 추가"
+  },
+  "sectionRepeat": {
+    "message": "반복 작업"
+  },
+  "hintRepeat": {
+    "message": "한 번에 몰아서 처리하면(API 할당량을 넘겨서 오류로 멈출 수 있음) 위험하니, 작은 배치를 여러 번 나눠서 반복 실행합니다 - 밀린 메일이 많을 때 훨씬 안전합니다."
+  },
+  "labelRepeatBatches": {
+    "message": "라운드당 배치 수 (1~5)"
+  },
+  "labelRepeatCount": {
+    "message": "반복 횟수"
+  },
+  "btnStartRepeat": {
+    "message": "반복 작업 시작"
+  },
+  "notifyTitleRepeat": {
+    "message": "Gmail AI Labeler - 반복 작업"
+  },
+  "repeatRequesting": {
+    "message": "반복 작업 요청 중..."
+  },
+  "sectionDeleteAllLabels": {
+    "message": "라벨 전체 삭제"
+  },
+  "hintDeleteAllLabels": {
+    "message": "이 확장이 관리하는 모든 라벨을 삭제합니다(재분류는 하지 않음). 반복 작업이나 다시 분류하기 전에 깨끗하게 초기화하고 싶을 때 사용하세요."
+  },
+  "btnDeleteAllLabels": {
+    "message": "라벨 전체 삭제"
+  },
+  "confirmDeleteAllLabels": {
+    "message": "이 확장이 관리하는 모든 라벨이 Gmail에서 영구적으로 삭제됩니다. 메일 자체는 삭제되지 않고 라벨만 없어집니다. 되돌릴 수 없습니다. 계속할까요?"
+  },
+  "btnConfirmDeleteAllLabels": {
+    "message": "네, 라벨 전부 삭제"
+  },
+  "notifyTitleDeleteLabels": {
+    "message": "Gmail AI Labeler - 라벨 전체 삭제"
+  },
+  "deleteLabelsRequesting": {
+    "message": "라벨 삭제 요청 중..."
+  },
+  "resultLabelsDeleted": {
+    "message": "라벨 $COUNT$개 삭제됨.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "sectionAbout": {
+    "message": "정보"
+  },
+  "btnSupportDeveloper": {
+    "message": "개발자 후원하기"
+  },
+  "btnDonateHeader": {
+    "message": "♥ 후원"
+  },
+  "btnAddApiKey": {
+    "message": "+ 키 추가"
+  },
+  "placeholderApiKeyLabel": {
+    "message": "이름표 (선택)"
+  },
+  "msgKeysSaved": {
+    "message": "키 $COUNT$개 저장됨.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "quotaTextMultiKey": {
+    "message": "오늘 Gemini 요청(추정): $TODAY$ / $RPD$ (키 $KEYS$개 합산, 자정 초기화)",
+    "placeholders": {
+      "today": {
+        "content": "$1"
+      },
+      "rpd": {
+        "content": "$2"
+      },
+      "keys": {
+        "content": "$3"
+      }
+    }
+  },
+  "sectionDriveBackup": {
+    "message": "Google Drive에 백업"
+  },
+  "hintDriveBackup": {
+    "message": "카테고리, 필터 규칙 등 설정을 나중에 복원할 수 있도록 저장합니다 - 내 컴퓨터에 파일로 저장하거나, 본인 Google Drive에 저장할 수 있습니다."
+  },
+  "checkboxIncludeCredentials": {
+    "message": "API 키/OAuth 인증정보도 백업에 포함"
+  },
+  "hintIncludeCredentials": {
+    "message": "복원했을 때 바로 쓸 수 있도록 기본값은 켜짐입니다. 끄면 Gemini API 키와 OAuth 클라이언트 시크릿은 백업 파일에서 제외됩니다(그 Drive 파일을 다른 사람과 공유할 계획이면 끄는 게 안전합니다)."
+  },
+  "btnBackupToDrive": {
+    "message": "지금 백업"
+  },
+  "btnRestoreFromDrive": {
+    "message": "불러오기"
+  },
+  "confirmDriveRestore": {
+    "message": "현재 설정(카테고리, 필터 규칙 등)이 마지막으로 백업된 Drive 내용으로 덮어씌워집니다. 계속할까요?"
+  },
+  "btnConfirmDriveRestore": {
+    "message": "네, 불러오기"
+  },
+  "notifyTitleDriveBackup": {
+    "message": "Gmail AI Labeler - Drive 백업"
+  },
+  "notifyTitleDriveRestore": {
+    "message": "Gmail AI Labeler - Drive 불러오기"
+  },
+  "driveBackupRequesting": {
+    "message": "백업 요청 중..."
+  },
+  "driveRestoreRequesting": {
+    "message": "불러오기 요청 중..."
+  },
+  "msgDriveBackupDone": {
+    "message": "Google Drive에 백업 완료."
+  },
+  "msgDriveRestoreDone": {
+    "message": "Google Drive에서 설정 $COUNT$개를 불러왔습니다.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "lastBackupAt": {
+    "message": "마지막 백업: $DATE$",
+    "placeholders": {
+      "date": {
+        "content": "$1"
+      }
+    }
+  },
+  "noBackupYet": {
+    "message": "아직 백업한 적 없음."
+  },
+  "sectionLabelAnalysis": {
+    "message": "라벨 분석해서 분류 기준 만들기"
+  },
+  "hintLabelAnalysis": {
+    "message": "라벨을 고르면 AI가 그 라벨에 실제로 분류된 메일들(과 현재 등록된 분류 기준이 있으면 그것도 함께)을 보고, 쓸 수 있는 분류 기준 텍스트를 제안해줍니다."
+  },
+  "btnAnalyzeLabel": {
+    "message": "분석하기"
+  },
+  "labelAnalysisRequesting": {
+    "message": "분석 요청 중..."
+  },
+  "notifyTitleLabelAnalysis": {
+    "message": "Gmail AI Labeler - 라벨 분석"
+  },
+  "msgLabelAnalysisDone": {
+    "message": "\"$LABEL$\" 분석 완료 (전체 $TOTAL$개 중 $SAMPLE$개 샘플) - 아래 임시저장 칸에 추가됨.",
+    "placeholders": {
+      "label": {
+        "content": "$1"
+      },
+      "sample": {
+        "content": "$2"
+      },
+      "total": {
+        "content": "$3"
+      }
+    }
+  },
+  "hintScratchpad": {
+    "message": "임시저장 칸 - 위에서 생성한 제안이 팝업을 닫아도 여기 계속 남습니다(실수로 잘못 눌러도 안 사라짐). \"카테고리에 적용\"을 누르면 아래 해당 카테고리 설명 칸에 자동으로 채워지고, 먼저 내용을 고치고 싶으면 직접 수정한 뒤 눌러도 됩니다."
+  },
+  "placeholderScratchpad": {
+    "message": "(라벨이름)\n(제안된 분류 기준)"
+  },
+  "btnClearScratchpad": {
+    "message": "임시저장 비우기"
+  },
+  "notifyTitleOAuthConnect": {
+    "message": "Gmail AI Labeler - Google 계정 연결"
+  },
+  "oauthConnectRequesting": {
+    "message": "Google 로그인 창을 여는 중..."
+  },
+  "btnSelectAll": {
+    "message": "전체 선택"
+  },
+  "btnSelectNone": {
+    "message": "전체 해제"
+  },
+  "msgSelectAtLeastOneLabel": {
+    "message": "라벨을 하나 이상 체크해주세요."
+  },
+  "msgLabelAnalysisMultiDone": {
+    "message": "선택한 라벨 $TOTAL$개 중 $SUCCESS$개 분석 완료 - 아래 임시저장 칸에 추가됨.",
+    "placeholders": {
+      "success": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      }
+    }
+  },
+  "btnApplyScratchpad": {
+    "message": "카테고리에 적용"
+  },
+  "msgNoScratchpadEntries": {
+    "message": "임시저장 칸에서 유효한 항목을 못 찾았습니다(형식: 라벨이름, 줄바꿈, 분류기준 텍스트)."
+  },
+  "msgScratchpadApplied": {
+    "message": "임시저장 항목 $TOTAL$개 중 $APPLIED$개를 해당 카테고리에 적용했습니다.",
+    "placeholders": {
+      "applied": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      }
+    }
+  },
+  "msgScratchpadNotFound": {
+    "message": " 일치하는 카테고리 없음: $NAMES$.",
+    "placeholders": {
+      "names": {
+        "content": "$1"
+      }
+    }
+  },
+  "tabAdvancedSettings": {
+    "message": "고급설정"
+  },
+  "sectionBackupRestore": {
+    "message": "백업 / 복원"
+  },
+  "labelLocalBackup": {
+    "message": "로컬 백업"
+  },
+  "btnBackupLocal": {
+    "message": "파일로 저장"
+  },
+  "btnRestoreLocal": {
+    "message": "파일에서 불러오기"
+  },
+  "msgLocalBackupDone": {
+    "message": "로컬 파일로 저장 완료."
+  },
+  "msgLocalRestoreDone": {
+    "message": "파일에서 설정 $COUNT$개를 불러왔습니다.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "labelDriveBackup": {
+    "message": "Google Drive에 백업"
+  },
+  "checkboxAutoBackupOnChange": {
+    "message": "설정 변경 시 Drive에 자동 백업"
+  },
+  "logNoMailToProcess": {
+    "message": "처리할 메일이 없음"
+  },
+  "logFetchStart": {
+    "message": "총 $COUNT$개 메일 상세 조회 시작",
+    "placeholders": {
+      "count": {
+        "content": "$1$"
+      }
+    }
+  },
+  "logCancelledDuringFetch": {
+    "message": "중지 요청 확인됨. 상세 조회 $DONE$/$TOTAL$ 시점에서 작업 종료",
+    "placeholders": {
+      "done": {
+        "content": "$1$"
+      },
+      "total": {
+        "content": "$2$"
+      }
+    }
+  },
+  "logFetchItemDone": {
+    "message": "[상세조회 $DONE$/$TOTAL$] \"$SUBJECT$\" ($FROM$) 조회 완료",
+    "placeholders": {
+      "done": {
+        "content": "$1$"
+      },
+      "total": {
+        "content": "$2$"
+      },
+      "subject": {
+        "content": "$3$"
+      },
+      "from": {
+        "content": "$4$"
+      }
+    }
+  },
+  "logFetchItemFailed": {
+    "message": "[상세조회 $DONE$/$TOTAL$] 조회 실패 (id=$ID$): $ERR$",
+    "placeholders": {
+      "done": {
+        "content": "$1$"
+      },
+      "total": {
+        "content": "$2$"
+      },
+      "id": {
+        "content": "$3$"
+      },
+      "err": {
+        "content": "$4$"
+      }
+    }
+  },
+  "logFetchComplete": {
+    "message": "메일 상세 조회 완료 ($DONE$/$TOTAL$)",
+    "placeholders": {
+      "done": {
+        "content": "$1$"
+      },
+      "total": {
+        "content": "$2$"
+      }
+    }
+  },
+  "logFilterMatched": {
+    "message": "필터 규칙 매칭: \"$SUBJECT$\" → [$LABEL$] (AI 분석 건너뜀)",
+    "placeholders": {
+      "subject": {
+        "content": "$1$"
+      },
+      "label": {
+        "content": "$2$"
+      }
+    }
+  },
+  "logFilterAppliedCount": {
+    "message": "개인 필터 규칙으로 $COUNT$개 메일 즉시 분류 확정 (AI 호출 절약)",
+    "placeholders": {
+      "count": {
+        "content": "$1$"
+      }
+    }
+  },
+  "logCorrectionExamplesUsed": {
+    "message": "사용자가 직접 고친 과거 분류 사례 $COUNT$건을 이번 분류에 참고함",
+    "placeholders": {
+      "count": {
+        "content": "$1$"
+      }
+    }
+  },
+  "logClassifyStageStart": {
+    "message": "분류 단계 시작: 총 $BATCHES$개 배치로 분할 (배치당 최대 $BATCHSIZE$개)",
+    "placeholders": {
+      "batches": {
+        "content": "$1$"
+      },
+      "batchsize": {
+        "content": "$2$"
+      }
+    }
+  },
+  "logSplitModeExclude": {
+    "message": "분할 모드: \"$LABEL$\" 라벨은 분류 후보에서 제외됨",
+    "placeholders": {
+      "label": {
+        "content": "$1$"
+      }
+    }
+  },
+  "logCancelledBeforeBatch": {
+    "message": "중지 요청 확인됨. 분류 배치 $BATCH$/$TOTAL$ 시작 전 작업 종료",
+    "placeholders": {
+      "batch": {
+        "content": "$1$"
+      },
+      "total": {
+        "content": "$2$"
+      }
+    }
+  },
+  "logBatchRequesting": {
+    "message": "분류 배치 $BATCH$/$TOTAL$ Gemini 분석 요청 (메일 $COUNT$개)",
+    "placeholders": {
+      "batch": {
+        "content": "$1$"
+      },
+      "total": {
+        "content": "$2$"
+      },
+      "count": {
+        "content": "$3$"
+      }
+    }
+  },
+  "logBatchDone": {
+    "message": "분류 배치 $BATCH$/$TOTAL$ 분석 완료",
+    "placeholders": {
+      "batch": {
+        "content": "$1$"
+      },
+      "total": {
+        "content": "$2$"
+      }
+    }
+  },
+  "logBatchFailed": {
+    "message": "분류 배치 $BATCH$/$TOTAL$ 분석 실패: $ERR$",
+    "placeholders": {
+      "batch": {
+        "content": "$1$"
+      },
+      "total": {
+        "content": "$2$"
+      },
+      "err": {
+        "content": "$3$"
+      }
+    }
+  },
+  "logQuotaExhaustedStop": {
+    "message": "일일 API 할당량 초과로 판단되어 작업을 중단합니다."
+  },
+  "logCancelledAfterBatch": {
+    "message": "중지 요청 확인됨. 분류 배치 $BATCH$/$TOTAL$ 완료 후 작업 종료",
+    "placeholders": {
+      "batch": {
+        "content": "$1$"
+      },
+      "total": {
+        "content": "$2$"
+      }
+    }
+  },
+  "logClassifyDoneApplyStart": {
+    "message": "분류 단계 완료. 라벨 적용 시작 (대상 $COUNT$개)",
+    "placeholders": {
+      "count": {
+        "content": "$1$"
+      }
+    }
+  },
+  "logCancelledDuringApply": {
+    "message": "중지 요청 확인됨. 라벨 적용 $DONE$/$TOTAL$ 시점에서 작업 종료",
+    "placeholders": {
+      "done": {
+        "content": "$1$"
+      },
+      "total": {
+        "content": "$2$"
+      }
+    }
+  },
+  "logApplyItemDone": {
+    "message": "[적용 $DONE$/$TOTAL$] \"$SUBJECT$\" → [$LABEL$] 적용 완료",
+    "placeholders": {
+      "done": {
+        "content": "$1$"
+      },
+      "total": {
+        "content": "$2$"
+      },
+      "subject": {
+        "content": "$3$"
+      },
+      "label": {
+        "content": "$4$"
+      }
+    }
+  },
+  "logReplacedSuffix": {
+    "message": " (기존 라벨 제거함)"
+  },
+  "logApplyItemFailed": {
+    "message": "[적용 $DONE$/$TOTAL$] \"$SUBJECT$\" 라벨 적용 실패: $ERR$",
+    "placeholders": {
+      "done": {
+        "content": "$1$"
+      },
+      "total": {
+        "content": "$2$"
+      },
+      "subject": {
+        "content": "$3$"
+      },
+      "err": {
+        "content": "$4$"
+      }
+    }
+  },
+  "logApplyComplete": {
+    "message": "라벨 적용 완료 ($DONE$/$TOTAL$)",
+    "placeholders": {
+      "done": {
+        "content": "$1$"
+      },
+      "total": {
+        "content": "$2$"
+      }
+    }
+  },
+  "logQuotaReduced": {
+    "message": "요청한 $REQ$개 중 오늘 남은 할당량 추정치(요청 $REMAINING$회 = 최대 $MAX$개)에 맞춰 자동으로 축소함",
+    "placeholders": {
+      "req": {
+        "content": "$1$"
+      },
+      "remaining": {
+        "content": "$2$"
+      },
+      "max": {
+        "content": "$3$"
+      }
+    }
+  },
+  "logFetchingUnlabeled": {
+    "message": "라벨 없는 최근 메일 최대 $COUNT$개 조회",
+    "placeholders": {
+      "count": {
+        "content": "$1$"
+      }
+    }
+  },
+  "logFewerThanRequested": {
+    "message": "실제로 라벨 없는 메일이 $COUNT$개뿐이라, 그만큼만 처리하고 종료합니다.",
+    "placeholders": {
+      "count": {
+        "content": "$1$"
+      }
+    }
+  },
+  "errNoApiKey": {
+    "message": "Gemini API 키가 설정되지 않음. 확장 프로그램 옵션 페이지에서 키를 입력하세요."
+  },
+  "errNoOAuthClientId": {
+    "message": "Google OAuth 클라이언트 ID가 설정되지 않았습니다. 설정 탭에서 입력하고, 안내서를 참고해 발급받으세요."
+  },
+  "logRepeatStart": {
+    "message": "반복 작업 시작: 라운드당 배치 $BATCHES$개(최대 $MAX$개 메일) x 총 $ROUNDS$회 반복",
+    "placeholders": {
+      "batches": {
+        "content": "$1$"
+      },
+      "max": {
+        "content": "$2$"
+      },
+      "rounds": {
+        "content": "$3$"
+      }
+    }
+  },
+  "logRepeatCancelledBefore": {
+    "message": "중지 요청 확인됨. 반복 작업 $ROUND$/$TOTAL$ 라운드 시작 전 종료",
+    "placeholders": {
+      "round": {
+        "content": "$1$"
+      },
+      "total": {
+        "content": "$2$"
+      }
+    }
+  },
+  "logRepeatRoundStart": {
+    "message": "반복 작업 $ROUND$/$TOTAL$ 라운드 시작",
+    "placeholders": {
+      "round": {
+        "content": "$1$"
+      },
+      "total": {
+        "content": "$2$"
+      }
+    }
+  },
+  "logRepeatRoundFailed": {
+    "message": "반복 작업 $ROUND$/$TOTAL$ 라운드 실패: $ERR$",
+    "placeholders": {
+      "round": {
+        "content": "$1$"
+      },
+      "total": {
+        "content": "$2$"
+      },
+      "err": {
+        "content": "$3$"
+      }
+    }
+  },
+  "logRepeatRoundDone": {
+    "message": "반복 작업 $ROUND$/$TOTAL$ 라운드 완료: $SUCCESS$/$COUNT$",
+    "placeholders": {
+      "round": {
+        "content": "$1$"
+      },
+      "total": {
+        "content": "$2$"
+      },
+      "success": {
+        "content": "$3$"
+      },
+      "count": {
+        "content": "$4$"
+      }
+    }
+  },
+  "logRepeatQuotaStop": {
+    "message": "일일 API 할당량 초과로 반복 작업을 중단합니다."
+  },
+  "logRepeatNoMoreMail": {
+    "message": "더 이상 라벨 없는 메일이 없어서 반복 작업을 조기 종료합니다."
+  },
+  "logRepeatAllDone": {
+    "message": "반복 작업 전체 완료: 총 $SUCCESS$/$TOTAL$",
+    "placeholders": {
+      "success": {
+        "content": "$1$"
+      },
+      "total": {
+        "content": "$2$"
+      }
+    }
+  },
+  "logDeleteAllStart": {
+    "message": "관리 중인 라벨 전체 삭제 시작 (카테고리 $COUNT$개 대상)",
+    "placeholders": {
+      "count": {
+        "content": "$1$"
+      }
+    }
+  },
+  "logDeleteAllDone": {
+    "message": "라벨 $COUNT$개 삭제 완료",
+    "placeholders": {
+      "count": {
+        "content": "$1$"
+      }
+    }
+  },
+  "logDedupeNoLabels": {
+    "message": "현재 관리 중인 라벨이 하나도 없어서 정리할 대상이 없습니다."
+  },
+  "logDedupeFetchingMail": {
+    "message": "관리 라벨이 붙은 메일 조회 중 (라벨 $COUNT$개 대상)",
+    "placeholders": {
+      "count": {
+        "content": "$1$"
+      }
+    }
+  },
+  "logLabelFetchFailed": {
+    "message": "라벨 ID $ID$ 메일 조회 실패: $ERR$",
+    "placeholders": {
+      "id": {
+        "content": "$1$"
+      },
+      "err": {
+        "content": "$2$"
+      }
+    }
+  },
+  "logDedupeFoundMail": {
+    "message": "라벨이 붙어있는 메일 $COUNT$개 발견",
+    "placeholders": {
+      "count": {
+        "content": "$1$"
+      }
+    }
+  },
+  "logQuotaReducedGeneric": {
+    "message": "오늘 남은 할당량 추정치(요청 $REMAINING$회 = 최대 $MAX$개)에 맞춰 처리 대상을 자동으로 축소함.",
+    "placeholders": {
+      "remaining": {
+        "content": "$1$"
+      },
+      "max": {
+        "content": "$2$"
+      }
+    }
+  },
+  "logDedupeRemovingLabels": {
+    "message": "대상 메일의 기존 라벨을 제거하는 중 ($COUNT$개)",
+    "placeholders": {
+      "count": {
+        "content": "$1$"
+      }
+    }
+  },
+  "logRemoveLabelFailed": {
+    "message": "라벨 제거 실패 (id=$ID$): $ERR$",
+    "placeholders": {
+      "id": {
+        "content": "$1$"
+      },
+      "err": {
+        "content": "$2$"
+      }
+    }
+  },
+  "logDedupeRemovedReclassify": {
+    "message": "라벨 제거 완료. 재분류 시작"
+  },
+  "errLabelNotInCategories": {
+    "message": "\"$LABEL$\"은 관리 중인 카테고리 목록에 없습니다.",
+    "placeholders": {
+      "label": {
+        "content": "$1$"
+      }
+    }
+  },
+  "errTooFewCategoriesAfterExclude": {
+    "message": "제외 후 남은 카테고리가 너무 적습니다. 카테고리 목록을 먼저 늘리세요."
+  },
+  "logRelabelFetchingMail": {
+    "message": "\"$LABEL$\" 라벨 메일 조회 (재분류 대상)",
+    "placeholders": {
+      "label": {
+        "content": "$1$"
+      }
+    }
+  },
+  "logRelabelFoundMail": {
+    "message": "$COUNT$개 메일 발견",
+    "placeholders": {
+      "count": {
+        "content": "$1$"
+      }
+    }
+  },
+  "logFewerTargetThanRequested": {
+    "message": "대상 메일이 $COUNT$개뿐이라, 그만큼만 처리하고 종료합니다.",
+    "placeholders": {
+      "count": {
+        "content": "$1$"
+      }
+    }
+  },
+  "logColorsStart": {
+    "message": "카테고리 $COUNT$개에 Gmail 라벨 색상 적용 시작",
+    "placeholders": {
+      "count": {
+        "content": "$1$"
+      }
+    }
+  },
+  "logColorItemDone": {
+    "message": "\"$CAT$\" 라벨 색상 적용 완료",
+    "placeholders": {
+      "cat": {
+        "content": "$1$"
+      }
+    }
+  },
+  "logColorItemFailed": {
+    "message": "\"$CAT$\" 라벨 색상 적용 실패: $ERR$",
+    "placeholders": {
+      "cat": {
+        "content": "$1$"
+      },
+      "err": {
+        "content": "$2$"
+      }
+    }
+  },
+  "logColorsDone": {
+    "message": "라벨 색상 적용 완료: $SUCCESS$/$TOTAL$",
+    "placeholders": {
+      "success": {
+        "content": "$1$"
+      },
+      "total": {
+        "content": "$2$"
+      }
+    }
+  },
+  "logDriveBackupStart": {
+    "message": "Google Drive 설정 백업 시작"
+  },
+  "errDriveUploadFailed": {
+    "message": "Drive 백업 업로드 실패 (HTTP $STATUS$): $ERR$",
+    "placeholders": {
+      "status": {
+        "content": "$1$"
+      },
+      "err": {
+        "content": "$2$"
+      }
+    }
+  },
+  "logDriveRestoreStart": {
+    "message": "Google Drive에서 설정 불러오기 시작"
+  },
+  "errDriveDownloadFailed": {
+    "message": "Drive 백업 다운로드 실패 (HTTP $STATUS$). 아직 백업한 적이 없다면 먼저 백업을 실행하세요.",
+    "placeholders": {
+      "status": {
+        "content": "$1$"
+      }
+    }
+  },
+  "errDriveBackupEmpty": {
+    "message": "Drive의 백업 파일이 비어있습니다. 먼저 백업을 실행하세요."
+  },
+  "errDriveBackupInvalid": {
+    "message": "Drive 백업 파일 형식이 올바르지 않습니다."
+  },
+  "logDriveRestoreDone": {
+    "message": "Google Drive에서 설정 불러오기 완료 ($DATE$에 백업된 항목 $COUNT$개 적용됨)",
+    "placeholders": {
+      "date": {
+        "content": "$1$"
+      },
+      "count": {
+        "content": "$2$"
+      }
+    }
+  },
+  "logUnknownTime": {
+    "message": "알 수 없는 시각"
+  },
+  "logNewLabelsDetected": {
+    "message": "Gmail에서 직접 만든 새 라벨 감지: [$NAMES$] - 카테고리 목록에 자동 반영함",
+    "placeholders": {
+      "names": {
+        "content": "$1$"
+      }
+    }
+  },
+  "logDeletedLabelsDetected": {
+    "message": "Gmail에서 삭제된 라벨 감지: [$NAMES$] - 카테고리 목록에서 자동 제거함",
+    "placeholders": {
+      "names": {
+        "content": "$1$"
+      }
+    }
+  },
+  "errOAuthNoCode": {
+    "message": "OAuth 인증 코드가 반환되지 않았습니다."
+  },
+  "errOAuthTokenExchangeFailed": {
+    "message": "OAuth 토큰 교환 실패 (HTTP $STATUS$): $ERR$",
+    "placeholders": {
+      "status": {
+        "content": "$1$"
+      },
+      "err": {
+        "content": "$2$"
+      }
+    }
+  },
+  "errDriveCreateFailed": {
+    "message": "Drive 백업 파일 생성 실패 (HTTP $STATUS$)",
+    "placeholders": {
+      "status": {
+        "content": "$1$"
+      }
+    }
+  },
+  "errMessageListFailed": {
+    "message": "메일 목록 조회 실패 (HTTP $STATUS$)",
+    "placeholders": {
+      "status": {
+        "content": "$1$"
+      }
+    }
+  },
+  "errLabelMessageListFailed": {
+    "message": "\"$LABEL$\" 라벨 메일 조회 실패 (HTTP $STATUS$)",
+    "placeholders": {
+      "label": {
+        "content": "$1$"
+      },
+      "status": {
+        "content": "$2$"
+      }
+    }
+  },
+  "errMessageContentFailed": {
+    "message": "메일 내용 조회 실패 (HTTP $STATUS$)",
+    "placeholders": {
+      "status": {
+        "content": "$1$"
+      }
+    }
+  },
+  "errLabelListFailed": {
+    "message": "라벨 목록 조회 실패 (HTTP $STATUS$): $ERR$",
+    "placeholders": {
+      "status": {
+        "content": "$1$"
+      },
+      "err": {
+        "content": "$2$"
+      }
+    }
+  },
+  "errLabelCreateFailed": {
+    "message": "라벨 생성 실패: $LABEL$ (HTTP $STATUS$)",
+    "placeholders": {
+      "label": {
+        "content": "$1$"
+      },
+      "status": {
+        "content": "$2$"
+      }
+    }
+  },
+  "errLabelApplyFailed": {
+    "message": "라벨 적용 실패 (HTTP $STATUS$)",
+    "placeholders": {
+      "status": {
+        "content": "$1$"
+      }
+    }
+  },
+  "errGemini429Retries": {
+    "message": "Gemini API 429(요청 한도 초과) 재시도 초과: $ERR$",
+    "placeholders": {
+      "err": {
+        "content": "$1$"
+      }
+    }
+  },
+  "logGemini429Retry": {
+    "message": "Gemini 429 응답 - 속도를 늦춰서 재시도 (호출 간격 $INTERVAL$ms, 시도 $ATTEMPT$/$MAX$)",
+    "placeholders": {
+      "interval": {
+        "content": "$1$"
+      },
+      "attempt": {
+        "content": "$2$"
+      },
+      "max": {
+        "content": "$3$"
+      }
+    }
+  },
+  "errGeminiHttpError": {
+    "message": "Gemini API 오류 (HTTP $STATUS$): $ERR$",
+    "placeholders": {
+      "status": {
+        "content": "$1$"
+      },
+      "err": {
+        "content": "$2$"
+      }
+    }
+  },
+  "errGeminiNoResult": {
+    "message": "Gemini 응답에 분석 결과가 없음"
+  },
+  "errGeminiNotArray": {
+    "message": "Gemini 응답이 배열 형식이 아님"
+  },
+  "logLabelAnalysisStart": {
+    "message": "\"$LABEL$\" 라벨 분석 시작",
+    "placeholders": {
+      "label": {
+        "content": "$1$"
+      }
+    }
+  },
+  "logLabelAnalysisFoundMail": {
+    "message": "\"$LABEL$\" 라벨이 붙은 메일 $COUNT$개 발견",
+    "placeholders": {
+      "label": {
+        "content": "$1$"
+      },
+      "count": {
+        "content": "$2$"
+      }
+    }
+  },
+  "errLabelAnalysisNoMail": {
+    "message": "\"$LABEL$\" 라벨이 붙은 메일이 없어서 분석할 수 없습니다.",
+    "placeholders": {
+      "label": {
+        "content": "$1$"
+      }
+    }
+  },
+  "logAnalysisSampleDone": {
+    "message": "[분석 대상 $DONE$/$TOTAL$] \"$SUBJECT$\" 조회 완료",
+    "placeholders": {
+      "done": {
+        "content": "$1$"
+      },
+      "total": {
+        "content": "$2$"
+      },
+      "subject": {
+        "content": "$3$"
+      }
+    }
+  },
+  "logAnalysisSampleFailed": {
+    "message": "분석 대상 메일 조회 실패 (id=$ID$): $ERR$",
+    "placeholders": {
+      "id": {
+        "content": "$1$"
+      },
+      "err": {
+        "content": "$2$"
+      }
+    }
+  },
+  "errAnalysisNoSample": {
+    "message": "샘플 메일을 하나도 조회하지 못해서 분석할 수 없습니다."
+  },
+  "logAnalysisRequestSent": {
+    "message": "\"$LABEL$\" 라벨 분석용 Gemini 요청 전송",
+    "placeholders": {
+      "label": {
+        "content": "$1$"
+      }
+    }
+  },
+  "errAnalysisNoSuggestion": {
+    "message": "AI가 분류 기준을 생성하지 못했습니다."
+  },
+  "logAnalysisDone": {
+    "message": "\"$LABEL$\" 라벨 분석 완료 - 분류 기준 제안 생성됨: \"$SUGGESTION$\"",
+    "placeholders": {
+      "label": {
+        "content": "$1$"
+      },
+      "suggestion": {
+        "content": "$2$"
+      }
+    }
+  },
+  "logMultiAnalysisStart": {
+    "message": "선택한 라벨 $COUNT$개 순차 분석 시작",
+    "placeholders": {
+      "count": {
+        "content": "$1$"
+      }
+    }
+  },
+  "logMultiAnalysisSkipped": {
+    "message": "카테고리 목록에 없어서 건너뜀: $NAMES$",
+    "placeholders": {
+      "names": {
+        "content": "$1$"
+      }
+    }
+  },
+  "logMultiAnalysisCancelled": {
+    "message": "중지 요청 확인됨. $DONE$/$TOTAL$개까지 처리 후 종료",
+    "placeholders": {
+      "done": {
+        "content": "$1$"
+      },
+      "total": {
+        "content": "$2$"
+      }
+    }
+  },
+  "logMultiAnalysisItemStart": {
+    "message": "[$IDX$/$TOTAL$] \"$LABEL$\" 분석 시작",
+    "placeholders": {
+      "idx": {
+        "content": "$1$"
+      },
+      "total": {
+        "content": "$2$"
+      },
+      "label": {
+        "content": "$3$"
+      }
+    }
+  },
+  "logMultiAnalysisItemFailed": {
+    "message": "[$IDX$/$TOTAL$] \"$LABEL$\" 분석 실패: $ERR$",
+    "placeholders": {
+      "idx": {
+        "content": "$1$"
+      },
+      "total": {
+        "content": "$2$"
+      },
+      "label": {
+        "content": "$3$"
+      },
+      "err": {
+        "content": "$4$"
+      }
+    }
+  },
+  "logMultiAnalysisDone": {
+    "message": "선택한 라벨 분석 전체 완료: $SUCCESS$/$TOTAL$개 성공",
+    "placeholders": {
+      "success": {
+        "content": "$1$"
+      },
+      "total": {
+        "content": "$2$"
+      }
+    }
+  },
+  "errLabelMoveFailed": {
+    "message": "라벨 이동 실패 (HTTP $STATUS$)",
+    "placeholders": {
+      "status": {
+        "content": "$1$"
+      }
+    }
+  },
+  "errLabelIdMessageListFailed": {
+    "message": "라벨 ID 기준 메일 조회 실패 (HTTP $STATUS$)",
+    "placeholders": {
+      "status": {
+        "content": "$1$"
+      }
+    }
+  },
+  "errLabelColorApplyFailed": {
+    "message": "라벨 색상 적용 실패 (HTTP $STATUS$)",
+    "placeholders": {
+      "status": {
+        "content": "$1$"
+      }
+    }
+  },
+  "logUserRequestedStop": {
+    "message": "사용자가 중지를 요청함"
+  },
+  "logTranslateStart": {
+    "message": "카테고리/라벨을 $LANG$(으)로 번역하는 중",
+    "placeholders": {
+      "lang": {
+        "content": "$1$"
+      }
+    }
+  },
+  "logTranslateLabelRenamed": {
+    "message": "Gmail 라벨 이름 변경: \"$OLD$\" → \"$NEW$\"",
+    "placeholders": {
+      "old": {
+        "content": "$1$"
+      },
+      "new": {
+        "content": "$2$"
+      }
+    }
+  },
+  "logTranslateLabelRenameFailed": {
+    "message": "Gmail 라벨 이름 변경 실패 (\"$OLD$\" → \"$NEW$\"): $ERR$",
+    "placeholders": {
+      "old": {
+        "content": "$1$"
+      },
+      "new": {
+        "content": "$2$"
+      },
+      "err": {
+        "content": "$3$"
+      }
+    }
+  },
+  "logTranslateDone": {
+    "message": "카테고리/라벨 번역 및 적용 완료"
+  },
+  "errTranslateNoResult": {
+    "message": "AI가 번역 결과를 생성하지 못했습니다."
+  },
+  "confirmTranslateLabels": {
+    "message": "지금 라벨 이름이 $OLD$(으)로 되어 있습니다. $NEW$(으)로 언어를 바꾸셨는데, 라벨 이름과 분류 기준, 그리고 실제 Gmail 라벨명까지 AI로 번역해서 적용할까요?",
+    "placeholders": {
+      "old": {
+        "content": "$1"
+      },
+      "new": {
+        "content": "$2"
+      }
+    }
+  },
+  "notifyTitleTranslate": {
+    "message": "Gmail AI Labeler - 라벨 번역"
+  },
+  "guideTitle": {
+    "message": "Google OAuth 클라이언트 발급 안내서"
+  },
+  "guideSubtitle": {
+    "message": "Gmail AI Labeler - 개인 OAuth 클라이언트 설정 (Google Cloud를 한 번도 안 써본 계정 기준, 약 10분 소요)"
+  },
+  "guideWhyBox": {
+    "message": "<strong>왜 이 과정이 필요한가요?</strong><br>Google은 Gmail 데이터를 다루는 확장 프로그램이 \"많은 사람\"에게 배포되면 보안 심사(사용자 100명 초과 시)를 요구하고, 이 과정에서 개발자에게 비용/절차 부담이 생길 수 있습니다. 대신 <strong>각자 자기 이름으로 발급받은 OAuth 클라이언트</strong>를 사용하면, Google은 이를 \"개인적인 개발/테스트 목적\"으로 인식해서 별도 심사 없이 계속 쓸 수 있습니다. 번거롭지만 한 번만 해두면 계속 그대로 사용됩니다."
+  },
+  "guideNoBillingBox": {
+    "message": "<strong>참고</strong>: 이 확장이 쓰는 Gmail API/Drive API는 <strong>둘 다 무료 API라 결제 계정(카드 등록) 없이도 사용 설정이 됩니다.</strong> 아래 과정 중 결제 관련 화면이 뜨면 그건 이 확장과 무관한 다른 유료 서비스 안내이니, \"건너뛰기\"나 뒤로가기로 넘어가면 됩니다."
+  },
+  "guideStep1Title": {
+    "message": "1단계. Google Cloud 프로젝트 만들기"
+  },
+  "guideStep1List": {
+    "message": "<li><a class=\"btn\" href=\"https://console.cloud.google.com/projectcreate\" target=\"_blank\">Google Cloud Console에서 새 프로젝트 만들기</a></li><li class=\"note\"><span class=\"warn\">이 계정으로 Cloud Console을 처음 방문하신 거라면</span>, 프로젝트 생성 화면 대신 \"국가 선택 + 서비스 약관 동의\" 웰컴 화면이 먼저 뜰 수 있습니다. 약관에 체크하고 \"동의 및 계속\"을 누르면 원래 가려던 프로젝트 생성 화면으로 자동 이동합니다.</li><li>프로젝트 이름은 아무거나 괜찮습니다 (예: \"gmail-labeler-personal\"). \"만들기\"를 누르고 몇 초 기다립니다(우측 상단 종 모양 알림에 진행 상황이 표시됩니다).</li><li>생성이 끝나면 화면 상단 프로젝트 선택 드롭다운에서 방금 만든 프로젝트가 선택되어 있는지 확인합니다(자동으로 안 잡혀있으면 직접 클릭해서 선택).</li>"
+  },
+  "guideStep2Title": {
+    "message": "2단계. Gmail API + Google Drive API 사용 설정"
+  },
+  "guideStep2List": {
+    "message": "<li><a class=\"btn\" href=\"https://console.cloud.google.com/apis/library/gmail.googleapis.com\" target=\"_blank\">Gmail API 라이브러리 페이지 열기</a></li><li>(방금 만든 프로젝트가 선택된 상태에서) 파란색 <strong>\"사용 설정(ENABLE)\"</strong> 버튼 클릭. 몇 초 걸립니다.</li><li><a class=\"btn\" href=\"https://console.cloud.google.com/apis/library/drive.googleapis.com\" target=\"_blank\">Google Drive API 라이브러리 페이지 열기</a></li><li>마찬가지로 <strong>\"사용 설정\"</strong> 클릭 (설정 백업 기능을 쓰기 위함 - 안 쓸 거면 건너뛰어도 됨)</li>"
+  },
+  "guideStep2Box": {
+    "message": "이 확장은 Drive의 <span class=\"mono\">drive.file</span> 범위만 사용합니다 - 이 확장이 직접 만든 백업 파일 하나만 접근할 수 있고, 드라이브의 다른 파일은 전혀 볼 수 없습니다. Google 정책상 \"민감하지 않은\" 범위라 별도 보안 심사 없이 그대로 쓸 수 있습니다."
+  },
+  "guideStep3Title": {
+    "message": "3단계. OAuth 동의 화면 설정"
+  },
+  "guideStep3List": {
+    "message": "<li><a class=\"btn\" href=\"https://console.cloud.google.com/apis/credentials/consent\" target=\"_blank\">OAuth 동의 화면 페이지 열기</a></li><li>User Type: <strong>외부(External)</strong> 선택 후 만들기</li><li>앱 이름(아무거나, 예: \"Gmail Labeler\"), 사용자 지원 이메일(본인 Gmail), 개발자 연락처 이메일(본인 Gmail)만 입력하고 저장 후 계속</li><li>범위(Scopes) 화면은 그냥 저장 후 계속 (건너뛰어도 됨)</li><li><span class=\"warn\">테스트 사용자(Test users)</span> 화면에서 \"ADD USERS\"를 눌러 <strong>본인의 Gmail 주소</strong>를 추가합니다. 이 확장 프로그램을 쓸 계정은 전부 여기에 추가돼야 합니다.</li><li>저장 후 계속 → 요약 확인 → 대시보드로 돌아가기</li><li class=\"note\">게시 상태(Publishing status)는 <strong>\"테스트(Testing)\"</strong>로 그대로 둡니다. \"프로덕션으로 게시\"를 누르면 안 됩니다 - 그러면 심사 대상이 됩니다.</li>"
+  },
+  "guideStep4Title": {
+    "message": "4단계. OAuth 클라이언트 ID 만들기 (리디렉션 URI 자동 계산됨)"
+  },
+  "guideStep4List": {
+    "message": "<li><a class=\"btn\" href=\"https://console.cloud.google.com/apis/credentials\" target=\"_blank\">사용자 인증 정보 페이지 열기</a></li><li>상단 \"+ 사용자 인증 정보 만들기\" → \"OAuth 클라이언트 ID\" 선택</li><li>애플리케이션 유형: <strong>웹 애플리케이션(Web application)</strong> 선택 (중요 - \"데스크톱 앱\"이 아닙니다)</li><li>이름은 아무거나 (예: \"Gmail Labeler Extension\")</li><li>\"승인된 리디렉션 URI\" 항목에 아래 값을 그대로 붙여넣습니다(이 페이지가 이미 확장 프로그램 ID를 읽어서 자동으로 계산해뒀습니다 - chrome://extensions에 따로 안 가셔도 됩니다):</li>"
+  },
+  "guideRedirectUriPlaceholder": {
+    "message": "https://(확장 프로그램 페이지에서 열어야 자동으로 채워집니다).chromiumapp.org/"
+  },
+  "guideCopyBtn": {
+    "message": "복사"
+  },
+  "guideStep4List2": {
+    "message": "<li>만들기를 누르면 <strong>클라이언트 ID</strong>와 <strong>클라이언트 보안 비밀번호(secret)</strong>가 표시됩니다. 둘 다 복사해둡니다.</li>"
+  },
+  "guideStep4WarnBox": {
+    "message": "<span class=\"warn\">주의:</span> 목록에 \"Chrome 확장 프로그램(Chrome Extension)\"이라는 유형도 보이는데, 이건 고르지 마세요. 그 유형은 커스텀 리디렉션 URI를 등록할 수 없고(우리 방식과 안 맞음), 애초에 <strong>시크릿을 아예 발급하지도 않습니다</strong>. 반드시 <strong>\"웹 애플리케이션\"</strong>을 선택해야 위 리디렉션 URI 입력창이 나타나고 시크릿도 정상 발급됩니다."
+  },
+  "guideStep4NoteBox": {
+    "message": "만약 \"웹 애플리케이션\"으로 만들었는데도 시크릿이 안 보인다면, 사용자 인증 정보 목록에서 방금 만든 클라이언트를 클릭해 상세 페이지로 들어가면 \"클라이언트 보안 비밀번호\" 항목에 값이 있습니다(가려져 있으면 눈 모양 아이콘을 클릭). 그래도 정말 없다면 확장 프로그램 설정에서 보안 비밀번호 칸은 비워두고 저장해도 됩니다 - 클라이언트 ID만으로도 연결을 시도합니다."
+  },
+  "guideStep5Title": {
+    "message": "5단계. 확장 프로그램에 입력 및 연결"
+  },
+  "guideStep5List": {
+    "message": "<li>확장 프로그램 팝업 → 설정 탭 → \"Google 계정 연결(개인 OAuth)\" 섹션에 클라이언트 ID/보안 비밀번호를 붙여넣고 저장</li><li>\"Google 계정 연결\" 버튼 클릭 → 새 창에서 Google 로그인 진행</li><li><span class=\"warn\">\"Google에서 이 앱을 확인하지 않았습니다\"</span> 경고 화면이 뜨면, 본인이 3단계에서 테스트 사용자로 등록한 계정이 맞다면 안전합니다 → <strong>\"고급\"</strong> 클릭 → <strong>\"[앱 이름](안전하지 않음)으로 이동\"</strong> 클릭 → 권한 허용</li><li>연결 완료 후 팝업으로 돌아오면 정상적으로 분류 기능을 사용할 수 있습니다.</li>"
+  },
+  "guideStep5Box": {
+    "message": "<span class=\"warn\">이미 예전에 연결해두신 분</span>: Drive 백업 기능이 새로 추가되면서 필요한 권한 범위가 늘었습니다. 설정 탭에서 \"연결 해제\" → \"Google 계정 연결\"을 한 번 다시 눌러서 재인증해야 Drive 백업 기능이 정상 작동합니다."
+  },
+  "guideFooterNote": {
+    "message": "문제가 있다면: (1) 테스트 사용자에 로그인하려는 계정이 등록되어 있는지, (2) 리디렉션 URI가 위 자동계산 값과 정확히 일치하는지(오타/공백 없이), (3) 애플리케이션 유형이 \"웹 애플리케이션\"인지 다시 확인해보세요."
+  },
+  "labelBackupPassphrase": {
+    "message": "암호화 비밀번호"
+  },
+  "placeholderBackupPassphrase": {
+    "message": "선택 사항 - 입력하면 API 키/시크릿을 암호화합니다"
+  },
+  "hintBackupPassphrase": {
+    "message": "여기에 암호를 입력하고 백업하면, API 키/OAuth 시크릿만 이 암호로 암호화되어 저장됩니다(다른 설정은 그대로 저장됨). 복원할 때도 같은 암호를 여기 입력해야 풀립니다. 암호는 저장되지 않으니 잊으면 그 자격증명은 복구할 수 없습니다(직접 다시 입력하면 됩니다). 비워두면 예전처럼 평문으로 저장됩니다."
+  },
+  "msgLocalBackupDoneEncrypted": {
+    "message": "로컬 파일로 저장 완료 (API 키/시크릿은 암호화됨)."
+  },
+  "errBackupPassphraseNeeded": {
+    "message": "이 백업의 API 키/시크릿은 암호화되어 있습니다. 복원하려면 암호화 비밀번호 칸에 백업할 때 쓴 암호를 입력하세요."
+  },
+  "errBackupPassphraseWrong": {
+    "message": "암호가 틀렸거나 백업 파일이 손상되어 API 키/시크릿을 복호화하지 못했습니다."
+  },
+  "logDriveBackupDone": {
+    "message": "Google Drive 설정 백업 완료 (설정 항목 $COUNT$개)",
+    "placeholders": {
+      "count": {
+        "content": "$1$"
+      }
+    }
+  },
+  "logDriveBackupDoneEncrypted": {
+    "message": "Google Drive 설정 백업 완료 (설정 항목 $COUNT$개, API 키/시크릿은 암호화됨)",
+    "placeholders": {
+      "count": {
+        "content": "$1$"
+      }
+    }
+  }
+}

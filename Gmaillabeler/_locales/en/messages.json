@@ -1,0 +1,1931 @@
+{
+  "extName": {
+    "message": "Gmail AI Labeler"
+  },
+  "extDescription": {
+    "message": "Automatically classifies Gmail messages and applies labels using Gemini. Supports batch classification, relabeling/splitting, label merging, and live logs."
+  },
+  "appTitle": {
+    "message": "Gmail AI Labeler"
+  },
+  "statusIdle": {
+    "message": "Idle"
+  },
+  "statusRunning": {
+    "message": "Running"
+  },
+  "statusDone": {
+    "message": "Done"
+  },
+  "statusError": {
+    "message": "Error"
+  },
+  "statusCancelled": {
+    "message": "Cancelled"
+  },
+  "statusQuotaExceeded": {
+    "message": "Quota exceeded"
+  },
+  "tabClassify": {
+    "message": "Classify"
+  },
+  "tabManage": {
+    "message": "Labels"
+  },
+  "tabSettings": {
+    "message": "Settings"
+  },
+  "sectionRecentClassify": {
+    "message": "Classify recent mail"
+  },
+  "labelBatchCount": {
+    "message": "Batches"
+  },
+  "labelEmailCount": {
+    "message": "Emails to classify"
+  },
+  "batchHint": {
+    "message": "Each batch processes $BATCH$ emails (based on RPM $RPM$ / TPM $TPM$ / RPD $RPD$, auto-linked)",
+    "placeholders": {
+      "batch": {
+        "content": "$1"
+      },
+      "rpm": {
+        "content": "$2"
+      },
+      "tpm": {
+        "content": "$3"
+      },
+      "rpd": {
+        "content": "$4"
+      }
+    }
+  },
+  "btnStart": {
+    "message": "Start classifying"
+  },
+  "btnStartRunning": {
+    "message": "Classifying…"
+  },
+  "btnStop": {
+    "message": "Stop"
+  },
+  "btnStopRequesting": {
+    "message": "Stopping…"
+  },
+  "btnForceStop": {
+    "message": "Force stop"
+  },
+  "btnForceStopping": {
+    "message": "Force stopping…"
+  },
+  "btnOpenLog": {
+    "message": "Open detailed log"
+  },
+  "progressIdle": {
+    "message": "Idle"
+  },
+  "progressDone": {
+    "message": "Done"
+  },
+  "progressQuotaExceededShort": {
+    "message": "Stopped: quota exceeded"
+  },
+  "progressErrorShort": {
+    "message": "Stopped due to an error"
+  },
+  "progressRunning": {
+    "message": "$PROCESSED$ / $TOTAL$ (batch $BATCHIDX$/$BATCHTOTAL$) - $PERCENT$%",
+    "placeholders": {
+      "processed": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      },
+      "batchidx": {
+        "content": "$3"
+      },
+      "batchtotal": {
+        "content": "$4"
+      },
+      "percent": {
+        "content": "$5"
+      }
+    }
+  },
+  "resultRequesting": {
+    "message": "Requesting classification of $COUNT$ emails…",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "resultLastRun": {
+    "message": "Last result: $SUCCESS$ of $TOTAL$ succeeded",
+    "placeholders": {
+      "success": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      }
+    }
+  },
+  "resultRequestsUsedSuffix": {
+    "message": " ($REQUESTS$ API requests)",
+    "placeholders": {
+      "requests": {
+        "content": "$1"
+      }
+    }
+  },
+  "resultFailReasonSuffix": {
+    "message": "\nFailure reason: $REASON$",
+    "placeholders": {
+      "reason": {
+        "content": "$1"
+      }
+    }
+  },
+  "resultCancelled": {
+    "message": "Cancelled: processed $SUCCESS$ of $TOTAL$ before stopping",
+    "placeholders": {
+      "success": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      }
+    }
+  },
+  "resultQuotaExceeded": {
+    "message": "Stopped due to daily quota: processed $SUCCESS$ of $TOTAL$. Try again after midnight.",
+    "placeholders": {
+      "success": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      }
+    }
+  },
+  "resultLastError": {
+    "message": "Last run error: $ERROR$",
+    "placeholders": {
+      "error": {
+        "content": "$1"
+      }
+    }
+  },
+  "errorAlreadyRunning": {
+    "message": "Another task is already running. Wait for it to finish or stop it first."
+  },
+  "errorSelectLabel": {
+    "message": "Please select a label."
+  },
+  "errorGenericPrefix": {
+    "message": "Error: $ERROR$",
+    "placeholders": {
+      "error": {
+        "content": "$1"
+      }
+    }
+  },
+  "requestSent": {
+    "message": "Request sent"
+  },
+  "sectionRelabelSplit": {
+    "message": "Relabel / split"
+  },
+  "hintRelabelSplit": {
+    "message": "Reclassifies all mail under a chosen label. Turning on \"exclude this label\" forces those emails into other (or new) categories - effectively splitting an overloaded label."
+  },
+  "checkboxExcludeSelf": {
+    "message": "Exclude this label from candidates (split mode)"
+  },
+  "btnStartRelabel": {
+    "message": "Start relabeling"
+  },
+  "relabelRequesting": {
+    "message": "Requesting relabel…"
+  },
+  "sectionApiKey": {
+    "message": "Gemini API key"
+  },
+  "hintApiKey": {
+    "message": "You can register multiple Gemini API keys (e.g. from different Google accounts). When one key hits its daily limit, the extension automatically switches to the next one - effectively multiplying your daily throughput."
+  },
+  "btnGetApiKey": {
+    "message": "Get a key from Google AI Studio (new tab)"
+  },
+  "btnSaveKey": {
+    "message": "Save"
+  },
+  "btnToggleKey": {
+    "message": "Show/hide"
+  },
+  "warnApiKeyFormat": {
+    "message": "Warning: Gemini API keys usually start with 'AIza'. Please double-check."
+  },
+  "msgKeySaved": {
+    "message": "Saved."
+  },
+  "msgEnterKey": {
+    "message": "Please enter a key."
+  },
+  "sectionCategories": {
+    "message": "Label categories"
+  },
+  "hintCategories": {
+    "message": "AI only picks from this list (never invents a new one - unclear mail goes to \"Other\"). Add a description under a category to steer how it's classified; leave it blank to let the AI judge from the name alone."
+  },
+  "btnSaveCategories": {
+    "message": "Save"
+  },
+  "btnResetCategories": {
+    "message": "Reset to defaults"
+  },
+  "msgCategoriesSaved": {
+    "message": "Saved ($COUNT$ categories).",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "msgCategoriesMin": {
+    "message": "At least one category is required."
+  },
+  "msgCategoriesReset": {
+    "message": "Reset to defaults."
+  },
+  "sectionLabelColors": {
+    "message": "Gmail label colors"
+  },
+  "hintLabelColors": {
+    "message": "New labels get a color automatically. If some older labels have no color, use this button to apply colors based on the current category list."
+  },
+  "btnApplyColors": {
+    "message": "Apply colors to existing labels"
+  },
+  "colorRequesting": {
+    "message": "Requesting color update…"
+  },
+  "sectionAdvanced": {
+    "message": "Advanced"
+  },
+  "checkboxShowQuota": {
+    "message": "Show API quota on the main screen"
+  },
+  "hintQuota": {
+    "message": "Gemini's API-key auth has no official endpoint to check real-time quota, so this is our own count of requests we've sent, reset at midnight. It may differ slightly from Google's console."
+  },
+  "quotaText": {
+    "message": "Gemini requests today (estimate): $TODAY$ / $RPD$ (resets at midnight)",
+    "placeholders": {
+      "today": {
+        "content": "$1"
+      },
+      "rpd": {
+        "content": "$2"
+      }
+    }
+  },
+  "sectionTheme": {
+    "message": "Theme"
+  },
+  "themeLight": {
+    "message": "Light"
+  },
+  "themeDark": {
+    "message": "Dark"
+  },
+  "themeSystem": {
+    "message": "System"
+  },
+  "sectionLanguage": {
+    "message": "Language"
+  },
+  "hintLanguage": {
+    "message": "By default this follows your browser's language. You can override it here."
+  },
+  "languageSystem": {
+    "message": "Match browser (test)"
+  },
+  "footerOpenFull": {
+    "message": "Open full screen"
+  },
+  "logWindowTitle": {
+    "message": "Gmail AI Labeler - Detailed log"
+  },
+  "logBtnExpandAll": {
+    "message": "Show all logs"
+  },
+  "logBtnCollapse": {
+    "message": "Show summary only"
+  },
+  "logBtnCancel": {
+    "message": "Stop"
+  },
+  "logBtnCancelRequested": {
+    "message": "Stop requested"
+  },
+  "logBtnClear": {
+    "message": "Clear view"
+  },
+  "logProgressNoInfo": {
+    "message": "No progress info"
+  },
+  "logProgressTemplate": {
+    "message": "$PROCESSED$ / $TOTAL$ processed (batch $BATCHIDX$/$BATCHTOTAL$) - $PERCENT$%",
+    "placeholders": {
+      "processed": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      },
+      "batchidx": {
+        "content": "$3"
+      },
+      "batchtotal": {
+        "content": "$4"
+      },
+      "percent": {
+        "content": "$5"
+      }
+    }
+  },
+  "notifyTitleClassify": {
+    "message": "Gmail AI Labeler"
+  },
+  "notifyTitleRelabel": {
+    "message": "Gmail AI Labeler - Relabel ($LABEL$)",
+    "placeholders": {
+      "label": {
+        "content": "$1"
+      }
+    }
+  },
+  "notifyTitleApplyColors": {
+    "message": "Gmail AI Labeler - Apply label colors"
+  },
+  "notifyTitleErrorSuffix": {
+    "message": "$TITLE$ - Error",
+    "placeholders": {
+      "title": {
+        "content": "$1"
+      }
+    }
+  },
+  "msgNoMailToProcess": {
+    "message": "No mail to process"
+  },
+  "msgSuccessSummary": {
+    "message": "$SUCCESS$ of $TOTAL$ succeeded",
+    "placeholders": {
+      "success": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      }
+    }
+  },
+  "msgCancelledSummary": {
+    "message": "Cancelled: processed $SUCCESS$ of $TOTAL$ before stopping",
+    "placeholders": {
+      "success": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      }
+    }
+  },
+  "msgQuotaExceededSummary": {
+    "message": "Stopped due to daily quota: processed $SUCCESS$ of $TOTAL$",
+    "placeholders": {
+      "success": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      }
+    }
+  },
+  "msgFailSuffix": {
+    "message": "\nFailure: $REASON$",
+    "placeholders": {
+      "reason": {
+        "content": "$1"
+      }
+    }
+  },
+  "logJobStarted": {
+    "message": "Starting: $TITLE$",
+    "placeholders": {
+      "title": {
+        "content": "$1"
+      }
+    }
+  },
+  "logJobDone": {
+    "message": "Task finished"
+  },
+  "logJobCancelled": {
+    "message": "Task stopped by user request"
+  },
+  "logJobQuotaExceeded": {
+    "message": "Task stopped: daily API quota exceeded"
+  },
+  "logJobError": {
+    "message": "Task stopped due to an error: $ERROR$",
+    "placeholders": {
+      "error": {
+        "content": "$1"
+      }
+    }
+  },
+  "detailCardText": {
+    "message": "✨ Gemini AI classified this email as <strong>[$LABEL$]</strong>.",
+    "placeholders": {
+      "label": {
+        "content": "$1"
+      }
+    }
+  },
+  "defaultCategoriesList": {
+    "message": "Security,Ads,Shopping,Notices,Newsletters,Work,Personal,Other"
+  },
+  "sectionRestructure": {
+    "message": "Label structure cleanup"
+  },
+  "hintRestructure": {
+    "message": "This can take a long time since it re-reads and re-labels every email involved (not just moving existing labels). Lets AI look at your whole label set and reorganize it: labels with overlapping meaning get grouped under a shared parent, and labels with too many different kinds of mail get split into a few clear sub-labels. Sub-labels are only kept if they'd hold a meaningful number of emails, and names are kept to a single short word. Existing sub-labels are reused instead of creating near-duplicates."
+  },
+  "btnStartRestructure": {
+    "message": "Start label reorganization"
+  },
+  "notifyTitleRestructure": {
+    "message": "Gmail AI Labeler - Label reorganization"
+  },
+  "restructureRequesting": {
+    "message": "Requesting label reorganization…"
+  },
+  "resultNoChangeNeeded": {
+    "message": "No clear improvement found - nothing changed."
+  },
+  "sectionAutoClassify": {
+    "message": "Auto-classify new mail"
+  },
+  "hintAutoClassify": {
+    "message": "When enabled, once this many unlabeled emails pile up, one batch is classified automatically in the background. Checked every few minutes. Range: 1 to the current batch size."
+  },
+  "checkboxAutoClassify": {
+    "message": "Automatically classify when new mail arrives"
+  },
+  "labelAutoClassifyThreshold": {
+    "message": "Trigger threshold (emails)"
+  },
+  "hintCategoriesSubLabel": {
+    "message": "You can also pre-define a sub-label directly using \"Parent/Child\" (e.g. \"Shopping/Shipping, Shopping/Payment\"). The parent is added as a top-level category and the sub-label is created in Gmail right away, so future classification reuses it."
+  },
+  "btnCancelAction": {
+    "message": "Cancel"
+  },
+  "sectionDedupe": {
+    "message": "Clean up duplicate/miss-applied labels"
+  },
+  "hintDedupe": {
+    "message": "Finds every email that already has one of this tool's labels, removes those labels, and re-classifies them from scratch. Useful when labels ended up duplicated or wrong from earlier runs."
+  },
+  "btnDedupe": {
+    "message": "Remove labels & reclassify"
+  },
+  "notifyTitleDedupe": {
+    "message": "Gmail AI Labeler - Label cleanup"
+  },
+  "dedupeRequesting": {
+    "message": "Requesting label cleanup…"
+  },
+  "sectionFilterRules": {
+    "message": "Personal filter rules"
+  },
+  "hintFilterRules": {
+    "message": "Rules are checked before AI classification. If an email matches, it's labeled directly (saving an API call) instead of being analyzed."
+  },
+  "labelMatchType": {
+    "message": "Match on"
+  },
+  "matchTypeFrom": {
+    "message": "Sender"
+  },
+  "matchTypeSubject": {
+    "message": "Subject"
+  },
+  "labelMatchValue": {
+    "message": "Contains text"
+  },
+  "labelTargetLabel": {
+    "message": "Apply label"
+  },
+  "btnAddFilterRule": {
+    "message": "+ Add rule"
+  },
+  "btnSaveFilterRules": {
+    "message": "Save rules"
+  },
+  "btnDeleteRule": {
+    "message": "Delete"
+  },
+  "msgFilterRulesSaved": {
+    "message": "Saved ($COUNT$ rules).",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "placeholderMatchValue": {
+    "message": "e.g. noreply@example.com"
+  },
+  "placeholderTargetLabel": {
+    "message": "e.g. Shopping/Receipt"
+  },
+  "sectionOAuth": {
+    "message": "Google account connection (personal OAuth)"
+  },
+  "hintOAuth": {
+    "message": "To keep this extension free of review costs as more people use it, each person connects using their own Google OAuth client instead of a shared one. It takes about 10 minutes the first time; see the setup guide."
+  },
+  "btnOAuthGuide": {
+    "message": "Open setup guide"
+  },
+  "btnOAuthGetCredentials": {
+    "message": "Get credentials (Google Cloud Console)"
+  },
+  "labelOAuthClientId": {
+    "message": "OAuth Client ID"
+  },
+  "labelOAuthClientSecret": {
+    "message": "OAuth Client Secret (leave blank if none was issued)"
+  },
+  "btnSaveOAuth": {
+    "message": "Save"
+  },
+  "btnConnectOAuth": {
+    "message": "Connect Google account"
+  },
+  "btnDisconnectOAuth": {
+    "message": "Disconnect"
+  },
+  "oauthStatusConnected": {
+    "message": "Connected"
+  },
+  "oauthStatusNotConnected": {
+    "message": "Not connected"
+  },
+  "msgOAuthSaved": {
+    "message": "Saved."
+  },
+  "msgOAuthConnecting": {
+    "message": "Opening Google sign-in…"
+  },
+  "msgOAuthConnected": {
+    "message": "Connected successfully."
+  },
+  "msgOAuthDisconnected": {
+    "message": "Disconnected."
+  },
+  "logBtnExportTxt": {
+    "message": "Export full log (.txt)"
+  },
+  "logBtnExporting": {
+    "message": "Exporting…"
+  },
+  "logCountHint": {
+    "message": "Showing $SHOWN$ of $TOTAL$ log lines (use \"Export full log\" to see everything)",
+    "placeholders": {
+      "shown": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      }
+    }
+  },
+  "placeholderOAuthSecret": {
+    "message": "GOCSPX-... (optional)"
+  },
+  "hintOAuthSecretOptional": {
+    "message": "Note: if you created a \"Chrome Extension\" type client, Google won't issue a secret at all - that's expected. Just make sure you picked \"Web application\" type (required for the redirect URI to work), and leave this field blank if your console genuinely shows no secret."
+  },
+  "checkboxCorrectionLearning": {
+    "message": "Learn from my manual label corrections"
+  },
+  "hintCorrectionLearning": {
+    "message": "When you manually move an email to a different label than the AI chose, the extension remembers this and shows similar corrections to the AI next time, so it doesn't keep repeating the same mistake. Turn off if you'd rather it not reference past corrections."
+  },
+  "btnAddCategory": {
+    "message": "+ Add category"
+  },
+  "placeholderCategoryName": {
+    "message": "Category name (e.g. Shopping)"
+  },
+  "placeholderCategoryDesc": {
+    "message": "Classification guide (optional) - e.g. \"Card payments, bills, autopay notices\""
+  },
+  "badgeAutoLearned": {
+    "message": "AI auto-added"
+  },
+  "sectionRepeat": {
+    "message": "Repeat classify"
+  },
+  "hintRepeat": {
+    "message": "Instead of processing everything in one big burst (which can run past the API quota and stop with an error), this repeats a small batch several times - much safer for clearing a large backlog."
+  },
+  "labelRepeatBatches": {
+    "message": "Batches per round (1-5)"
+  },
+  "labelRepeatCount": {
+    "message": "Number of rounds"
+  },
+  "btnStartRepeat": {
+    "message": "Start repeat classify"
+  },
+  "notifyTitleRepeat": {
+    "message": "Gmail AI Labeler - Repeat classify"
+  },
+  "repeatRequesting": {
+    "message": "Requesting repeat classify…"
+  },
+  "sectionDeleteAllLabels": {
+    "message": "Delete all labels"
+  },
+  "hintDeleteAllLabels": {
+    "message": "Deletes every label this extension manages (without reclassifying afterward). Use this if you just want a clean slate before running Repeat classify or Full label reset."
+  },
+  "btnDeleteAllLabels": {
+    "message": "Delete all labels"
+  },
+  "confirmDeleteAllLabels": {
+    "message": "This will permanently delete every label managed by this extension from Gmail. Mail itself is not deleted, only the labels. This cannot be undone. Continue?"
+  },
+  "btnConfirmDeleteAllLabels": {
+    "message": "Yes, delete all labels"
+  },
+  "notifyTitleDeleteLabels": {
+    "message": "Gmail AI Labeler - Delete all labels"
+  },
+  "deleteLabelsRequesting": {
+    "message": "Requesting label deletion…"
+  },
+  "resultLabelsDeleted": {
+    "message": "$COUNT$ labels deleted.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "sectionAbout": {
+    "message": "About"
+  },
+  "btnSupportDeveloper": {
+    "message": "Support the developer"
+  },
+  "btnDonateHeader": {
+    "message": "♥ Donate"
+  },
+  "btnAddApiKey": {
+    "message": "+ Add key"
+  },
+  "placeholderApiKeyLabel": {
+    "message": "Label (optional)"
+  },
+  "msgKeysSaved": {
+    "message": "$COUNT$ key(s) saved.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "quotaTextMultiKey": {
+    "message": "Today's Gemini requests (est.): $TODAY$ / $RPD$ combined across $KEYS$ keys (resets at midnight)",
+    "placeholders": {
+      "today": {
+        "content": "$1"
+      },
+      "rpd": {
+        "content": "$2"
+      },
+      "keys": {
+        "content": "$3"
+      }
+    }
+  },
+  "sectionDriveBackup": {
+    "message": "Backup to Google Drive"
+  },
+  "hintDriveBackup": {
+    "message": "Save your categories, filter rules, and other settings so you can restore them later - as a local file on your computer, or in your own Google Drive."
+  },
+  "checkboxIncludeCredentials": {
+    "message": "Include API keys / OAuth credentials in backup"
+  },
+  "hintIncludeCredentials": {
+    "message": "On by default so a restore fully brings back a working setup. Turning this off excludes your Gemini API keys and OAuth client secret from the Drive file (safer if you share that Drive file)."
+  },
+  "btnBackupToDrive": {
+    "message": "Back up now"
+  },
+  "btnRestoreFromDrive": {
+    "message": "Restore"
+  },
+  "confirmDriveRestore": {
+    "message": "This will overwrite your current settings (categories, filter rules, etc.) with the ones from your last Drive backup. Continue?"
+  },
+  "btnConfirmDriveRestore": {
+    "message": "Yes, restore"
+  },
+  "notifyTitleDriveBackup": {
+    "message": "Gmail AI Labeler - Drive backup"
+  },
+  "notifyTitleDriveRestore": {
+    "message": "Gmail AI Labeler - Drive restore"
+  },
+  "driveBackupRequesting": {
+    "message": "Requesting backup…"
+  },
+  "driveRestoreRequesting": {
+    "message": "Requesting restore…"
+  },
+  "msgDriveBackupDone": {
+    "message": "Backup saved to Google Drive."
+  },
+  "msgDriveRestoreDone": {
+    "message": "Restored $COUNT$ setting(s) from Google Drive.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "lastBackupAt": {
+    "message": "Last backup: $DATE$",
+    "placeholders": {
+      "date": {
+        "content": "$1"
+      }
+    }
+  },
+  "noBackupYet": {
+    "message": "No backup yet."
+  },
+  "sectionLabelAnalysis": {
+    "message": "Analyze a label for its classification criteria"
+  },
+  "hintLabelAnalysis": {
+    "message": "Pick a label and the AI will look at the mail actually sorted under it (plus its current criteria, if any) and suggest a classification criteria description you can use."
+  },
+  "btnAnalyzeLabel": {
+    "message": "Analyze"
+  },
+  "labelAnalysisRequesting": {
+    "message": "Requesting analysis…"
+  },
+  "notifyTitleLabelAnalysis": {
+    "message": "Gmail AI Labeler - Label analysis"
+  },
+  "msgLabelAnalysisDone": {
+    "message": "Analyzed \"$LABEL$\" ($SAMPLE$ of $TOTAL$ mail) - suggestion added below.",
+    "placeholders": {
+      "label": {
+        "content": "$1"
+      },
+      "sample": {
+        "content": "$2"
+      },
+      "total": {
+        "content": "$3"
+      }
+    }
+  },
+  "hintScratchpad": {
+    "message": "Scratchpad - every suggestion generated above is kept here permanently (even if you close the popup) so nothing gets lost by an accidental click. Click \"Apply to categories\" to auto-fill matching categories below, or copy/edit manually first."
+  },
+  "placeholderScratchpad": {
+    "message": "(label name)\n(suggested classification criteria)"
+  },
+  "btnClearScratchpad": {
+    "message": "Clear scratchpad"
+  },
+  "notifyTitleOAuthConnect": {
+    "message": "Gmail AI Labeler - Google account connection"
+  },
+  "oauthConnectRequesting": {
+    "message": "Opening Google sign-in…"
+  },
+  "btnSelectAll": {
+    "message": "Select all"
+  },
+  "btnSelectNone": {
+    "message": "Select none"
+  },
+  "msgSelectAtLeastOneLabel": {
+    "message": "Check at least one label first."
+  },
+  "msgLabelAnalysisMultiDone": {
+    "message": "Analyzed $SUCCESS$ of $TOTAL$ selected labels - suggestions added below.",
+    "placeholders": {
+      "success": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      }
+    }
+  },
+  "btnApplyScratchpad": {
+    "message": "Apply to categories"
+  },
+  "msgNoScratchpadEntries": {
+    "message": "No valid entries found in the scratchpad (expected: label name, newline, criteria text)."
+  },
+  "msgScratchpadApplied": {
+    "message": "Applied $APPLIED$ of $TOTAL$ scratchpad entries to their categories.",
+    "placeholders": {
+      "applied": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      }
+    }
+  },
+  "msgScratchpadNotFound": {
+    "message": " No matching category for: $NAMES$.",
+    "placeholders": {
+      "names": {
+        "content": "$1"
+      }
+    }
+  },
+  "tabAdvancedSettings": {
+    "message": "Advanced"
+  },
+  "sectionBackupRestore": {
+    "message": "Backup / restore"
+  },
+  "labelLocalBackup": {
+    "message": "Local backup"
+  },
+  "btnBackupLocal": {
+    "message": "Save to file"
+  },
+  "btnRestoreLocal": {
+    "message": "Load from file"
+  },
+  "msgLocalBackupDone": {
+    "message": "Saved to a local file."
+  },
+  "msgLocalRestoreDone": {
+    "message": "Restored $COUNT$ setting(s) from the file.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "labelDriveBackup": {
+    "message": "Google Drive backup"
+  },
+  "checkboxAutoBackupOnChange": {
+    "message": "Automatically back up to Drive when settings change"
+  },
+  "logNoMailToProcess": {
+    "message": "No mail to process"
+  },
+  "logFetchStart": {
+    "message": "Starting to fetch details for $COUNT$ email(s)",
+    "placeholders": {
+      "count": {
+        "content": "$1$"
+      }
+    }
+  },
+  "logCancelledDuringFetch": {
+    "message": "Stop requested - ending during detail fetch ($DONE$/$TOTAL$)",
+    "placeholders": {
+      "done": {
+        "content": "$1$"
+      },
+      "total": {
+        "content": "$2$"
+      }
+    }
+  },
+  "logFetchItemDone": {
+    "message": "[Fetch $DONE$/$TOTAL$] \"$SUBJECT$\" ($FROM$) fetched",
+    "placeholders": {
+      "done": {
+        "content": "$1$"
+      },
+      "total": {
+        "content": "$2$"
+      },
+      "subject": {
+        "content": "$3$"
+      },
+      "from": {
+        "content": "$4$"
+      }
+    }
+  },
+  "logFetchItemFailed": {
+    "message": "[Fetch $DONE$/$TOTAL$] Failed (id=$ID$): $ERR$",
+    "placeholders": {
+      "done": {
+        "content": "$1$"
+      },
+      "total": {
+        "content": "$2$"
+      },
+      "id": {
+        "content": "$3$"
+      },
+      "err": {
+        "content": "$4$"
+      }
+    }
+  },
+  "logFetchComplete": {
+    "message": "Email detail fetch complete ($DONE$/$TOTAL$)",
+    "placeholders": {
+      "done": {
+        "content": "$1$"
+      },
+      "total": {
+        "content": "$2$"
+      }
+    }
+  },
+  "logFilterMatched": {
+    "message": "Filter rule matched: \"$SUBJECT$\" → [$LABEL$] (AI analysis skipped)",
+    "placeholders": {
+      "subject": {
+        "content": "$1$"
+      },
+      "label": {
+        "content": "$2$"
+      }
+    }
+  },
+  "logFilterAppliedCount": {
+    "message": "$COUNT$ email(s) classified instantly via personal filter rules (saved AI calls)",
+    "placeholders": {
+      "count": {
+        "content": "$1$"
+      }
+    }
+  },
+  "logCorrectionExamplesUsed": {
+    "message": "Referenced $COUNT$ past manual correction(s) for this classification run",
+    "placeholders": {
+      "count": {
+        "content": "$1$"
+      }
+    }
+  },
+  "logClassifyStageStart": {
+    "message": "Classification stage starting: split into $BATCHES$ batch(es) (up to $BATCHSIZE$ per batch)",
+    "placeholders": {
+      "batches": {
+        "content": "$1$"
+      },
+      "batchsize": {
+        "content": "$2$"
+      }
+    }
+  },
+  "logSplitModeExclude": {
+    "message": "Split mode: label \"$LABEL$\" excluded from classification candidates",
+    "placeholders": {
+      "label": {
+        "content": "$1$"
+      }
+    }
+  },
+  "logCancelledBeforeBatch": {
+    "message": "Stop requested - ending before classification batch $BATCH$/$TOTAL$",
+    "placeholders": {
+      "batch": {
+        "content": "$1$"
+      },
+      "total": {
+        "content": "$2$"
+      }
+    }
+  },
+  "logBatchRequesting": {
+    "message": "Classification batch $BATCH$/$TOTAL$: requesting Gemini analysis ($COUNT$ email(s))",
+    "placeholders": {
+      "batch": {
+        "content": "$1$"
+      },
+      "total": {
+        "content": "$2$"
+      },
+      "count": {
+        "content": "$3$"
+      }
+    }
+  },
+  "logBatchDone": {
+    "message": "Classification batch $BATCH$/$TOTAL$ analysis complete",
+    "placeholders": {
+      "batch": {
+        "content": "$1$"
+      },
+      "total": {
+        "content": "$2$"
+      }
+    }
+  },
+  "logBatchFailed": {
+    "message": "Classification batch $BATCH$/$TOTAL$ analysis failed: $ERR$",
+    "placeholders": {
+      "batch": {
+        "content": "$1$"
+      },
+      "total": {
+        "content": "$2$"
+      },
+      "err": {
+        "content": "$3$"
+      }
+    }
+  },
+  "logQuotaExhaustedStop": {
+    "message": "Daily API quota appears to be exhausted - stopping the job."
+  },
+  "logCancelledAfterBatch": {
+    "message": "Stop requested - ending after classification batch $BATCH$/$TOTAL$",
+    "placeholders": {
+      "batch": {
+        "content": "$1$"
+      },
+      "total": {
+        "content": "$2$"
+      }
+    }
+  },
+  "logClassifyDoneApplyStart": {
+    "message": "Classification stage complete. Starting label application ($COUNT$ target(s))",
+    "placeholders": {
+      "count": {
+        "content": "$1$"
+      }
+    }
+  },
+  "logCancelledDuringApply": {
+    "message": "Stop requested - ending during label application ($DONE$/$TOTAL$)",
+    "placeholders": {
+      "done": {
+        "content": "$1$"
+      },
+      "total": {
+        "content": "$2$"
+      }
+    }
+  },
+  "logApplyItemDone": {
+    "message": "[Apply $DONE$/$TOTAL$] \"$SUBJECT$\" → [$LABEL$] applied",
+    "placeholders": {
+      "done": {
+        "content": "$1$"
+      },
+      "total": {
+        "content": "$2$"
+      },
+      "subject": {
+        "content": "$3$"
+      },
+      "label": {
+        "content": "$4$"
+      }
+    }
+  },
+  "logReplacedSuffix": {
+    "message": " (removed previous label)"
+  },
+  "logApplyItemFailed": {
+    "message": "[Apply $DONE$/$TOTAL$] \"$SUBJECT$\" label application failed: $ERR$",
+    "placeholders": {
+      "done": {
+        "content": "$1$"
+      },
+      "total": {
+        "content": "$2$"
+      },
+      "subject": {
+        "content": "$3$"
+      },
+      "err": {
+        "content": "$4$"
+      }
+    }
+  },
+  "logApplyComplete": {
+    "message": "Label application complete ($DONE$/$TOTAL$)",
+    "placeholders": {
+      "done": {
+        "content": "$1$"
+      },
+      "total": {
+        "content": "$2$"
+      }
+    }
+  },
+  "logQuotaReduced": {
+    "message": "Requested $REQ$, automatically reduced to fit today's remaining quota estimate ($REMAINING$ request(s) = up to $MAX$)",
+    "placeholders": {
+      "req": {
+        "content": "$1$"
+      },
+      "remaining": {
+        "content": "$2$"
+      },
+      "max": {
+        "content": "$3$"
+      }
+    }
+  },
+  "logFetchingUnlabeled": {
+    "message": "Fetching up to $COUNT$ recent unlabeled email(s)",
+    "placeholders": {
+      "count": {
+        "content": "$1$"
+      }
+    }
+  },
+  "logFewerThanRequested": {
+    "message": "Only $COUNT$ unlabeled email(s) actually found - processing just that many.",
+    "placeholders": {
+      "count": {
+        "content": "$1$"
+      }
+    }
+  },
+  "errNoApiKey": {
+    "message": "No Gemini API key set. Enter one on the extension's options page."
+  },
+  "errNoOAuthClientId": {
+    "message": "No Google OAuth Client ID set. Enter one in the Settings tab - see the setup guide for how to get one."
+  },
+  "logRepeatStart": {
+    "message": "Repeat classify starting: $BATCHES$ batch(es) per round (up to $MAX$ email(s)) x $ROUNDS$ round(s)",
+    "placeholders": {
+      "batches": {
+        "content": "$1$"
+      },
+      "max": {
+        "content": "$2$"
+      },
+      "rounds": {
+        "content": "$3$"
+      }
+    }
+  },
+  "logRepeatCancelledBefore": {
+    "message": "Stop requested - ending before repeat round $ROUND$/$TOTAL$",
+    "placeholders": {
+      "round": {
+        "content": "$1$"
+      },
+      "total": {
+        "content": "$2$"
+      }
+    }
+  },
+  "logRepeatRoundStart": {
+    "message": "Repeat round $ROUND$/$TOTAL$ starting",
+    "placeholders": {
+      "round": {
+        "content": "$1$"
+      },
+      "total": {
+        "content": "$2$"
+      }
+    }
+  },
+  "logRepeatRoundFailed": {
+    "message": "Repeat round $ROUND$/$TOTAL$ failed: $ERR$",
+    "placeholders": {
+      "round": {
+        "content": "$1$"
+      },
+      "total": {
+        "content": "$2$"
+      },
+      "err": {
+        "content": "$3$"
+      }
+    }
+  },
+  "logRepeatRoundDone": {
+    "message": "Repeat round $ROUND$/$TOTAL$ complete: $SUCCESS$/$COUNT$",
+    "placeholders": {
+      "round": {
+        "content": "$1$"
+      },
+      "total": {
+        "content": "$2$"
+      },
+      "success": {
+        "content": "$3$"
+      },
+      "count": {
+        "content": "$4$"
+      }
+    }
+  },
+  "logRepeatQuotaStop": {
+    "message": "Daily API quota exhausted - stopping repeat classify."
+  },
+  "logRepeatNoMoreMail": {
+    "message": "No more unlabeled mail - ending repeat classify early."
+  },
+  "logRepeatAllDone": {
+    "message": "Repeat classify fully complete: $SUCCESS$/$TOTAL$ total",
+    "placeholders": {
+      "success": {
+        "content": "$1$"
+      },
+      "total": {
+        "content": "$2$"
+      }
+    }
+  },
+  "logDeleteAllStart": {
+    "message": "Starting to delete all managed labels ($COUNT$ categorie(s) targeted)",
+    "placeholders": {
+      "count": {
+        "content": "$1$"
+      }
+    }
+  },
+  "logDeleteAllDone": {
+    "message": "$COUNT$ label(s) deleted",
+    "placeholders": {
+      "count": {
+        "content": "$1$"
+      }
+    }
+  },
+  "logDedupeNoLabels": {
+    "message": "No managed labels exist yet, so there's nothing to clean up."
+  },
+  "logDedupeFetchingMail": {
+    "message": "Looking up mail with managed labels ($COUNT$ label(s) targeted)",
+    "placeholders": {
+      "count": {
+        "content": "$1$"
+      }
+    }
+  },
+  "logLabelFetchFailed": {
+    "message": "Failed to fetch mail for label ID $ID$: $ERR$",
+    "placeholders": {
+      "id": {
+        "content": "$1$"
+      },
+      "err": {
+        "content": "$2$"
+      }
+    }
+  },
+  "logDedupeFoundMail": {
+    "message": "Found $COUNT$ email(s) with labels attached",
+    "placeholders": {
+      "count": {
+        "content": "$1$"
+      }
+    }
+  },
+  "logQuotaReducedGeneric": {
+    "message": "Automatically reduced the target to fit today's remaining quota estimate ($REMAINING$ request(s) = up to $MAX$).",
+    "placeholders": {
+      "remaining": {
+        "content": "$1$"
+      },
+      "max": {
+        "content": "$2$"
+      }
+    }
+  },
+  "logDedupeRemovingLabels": {
+    "message": "Removing existing labels from target mail ($COUNT$)",
+    "placeholders": {
+      "count": {
+        "content": "$1$"
+      }
+    }
+  },
+  "logRemoveLabelFailed": {
+    "message": "Failed to remove label (id=$ID$): $ERR$",
+    "placeholders": {
+      "id": {
+        "content": "$1$"
+      },
+      "err": {
+        "content": "$2$"
+      }
+    }
+  },
+  "logDedupeRemovedReclassify": {
+    "message": "Labels removed. Starting reclassification"
+  },
+  "errLabelNotInCategories": {
+    "message": "\"$LABEL$\" is not in the managed category list.",
+    "placeholders": {
+      "label": {
+        "content": "$1$"
+      }
+    }
+  },
+  "errTooFewCategoriesAfterExclude": {
+    "message": "Too few categories remain after excluding this one. Add more categories first."
+  },
+  "logRelabelFetchingMail": {
+    "message": "Fetching mail for label \"$LABEL$\" (relabel target)",
+    "placeholders": {
+      "label": {
+        "content": "$1$"
+      }
+    }
+  },
+  "logRelabelFoundMail": {
+    "message": "$COUNT$ email(s) found",
+    "placeholders": {
+      "count": {
+        "content": "$1$"
+      }
+    }
+  },
+  "logFewerTargetThanRequested": {
+    "message": "Only $COUNT$ target email(s) found - processing just that many.",
+    "placeholders": {
+      "count": {
+        "content": "$1$"
+      }
+    }
+  },
+  "logColorsStart": {
+    "message": "Applying Gmail label colors to $COUNT$ categorie(s)",
+    "placeholders": {
+      "count": {
+        "content": "$1$"
+      }
+    }
+  },
+  "logColorItemDone": {
+    "message": "\"$CAT$\" label color applied",
+    "placeholders": {
+      "cat": {
+        "content": "$1$"
+      }
+    }
+  },
+  "logColorItemFailed": {
+    "message": "\"$CAT$\" label color application failed: $ERR$",
+    "placeholders": {
+      "cat": {
+        "content": "$1$"
+      },
+      "err": {
+        "content": "$2$"
+      }
+    }
+  },
+  "logColorsDone": {
+    "message": "Label color application complete: $SUCCESS$/$TOTAL$",
+    "placeholders": {
+      "success": {
+        "content": "$1$"
+      },
+      "total": {
+        "content": "$2$"
+      }
+    }
+  },
+  "logDriveBackupStart": {
+    "message": "Starting settings backup to Google Drive"
+  },
+  "errDriveUploadFailed": {
+    "message": "Drive backup upload failed (HTTP $STATUS$): $ERR$",
+    "placeholders": {
+      "status": {
+        "content": "$1$"
+      },
+      "err": {
+        "content": "$2$"
+      }
+    }
+  },
+  "logDriveRestoreStart": {
+    "message": "Starting to restore settings from Google Drive"
+  },
+  "errDriveDownloadFailed": {
+    "message": "Drive backup download failed (HTTP $STATUS$). If you haven't backed up yet, run a backup first.",
+    "placeholders": {
+      "status": {
+        "content": "$1$"
+      }
+    }
+  },
+  "errDriveBackupEmpty": {
+    "message": "The Drive backup file is empty. Run a backup first."
+  },
+  "errDriveBackupInvalid": {
+    "message": "The Drive backup file format is invalid."
+  },
+  "logDriveRestoreDone": {
+    "message": "Restored settings from Google Drive ($COUNT$ item(s) from a backup made $DATE$)",
+    "placeholders": {
+      "count": {
+        "content": "$1$"
+      },
+      "date": {
+        "content": "$2$"
+      }
+    }
+  },
+  "logUnknownTime": {
+    "message": "an unknown time"
+  },
+  "logNewLabelsDetected": {
+    "message": "Detected new label(s) created directly in Gmail: [$NAMES$] - automatically added to the category list",
+    "placeholders": {
+      "names": {
+        "content": "$1$"
+      }
+    }
+  },
+  "logDeletedLabelsDetected": {
+    "message": "Detected label(s) deleted in Gmail: [$NAMES$] - automatically removed from the category list",
+    "placeholders": {
+      "names": {
+        "content": "$1$"
+      }
+    }
+  },
+  "errOAuthNoCode": {
+    "message": "No OAuth authorization code was returned."
+  },
+  "errOAuthTokenExchangeFailed": {
+    "message": "OAuth token exchange failed (HTTP $STATUS$): $ERR$",
+    "placeholders": {
+      "status": {
+        "content": "$1$"
+      },
+      "err": {
+        "content": "$2$"
+      }
+    }
+  },
+  "errDriveCreateFailed": {
+    "message": "Failed to create Drive backup file (HTTP $STATUS$)",
+    "placeholders": {
+      "status": {
+        "content": "$1$"
+      }
+    }
+  },
+  "errMessageListFailed": {
+    "message": "Failed to fetch message list (HTTP $STATUS$)",
+    "placeholders": {
+      "status": {
+        "content": "$1$"
+      }
+    }
+  },
+  "errLabelMessageListFailed": {
+    "message": "Failed to fetch mail for label \"$LABEL$\" (HTTP $STATUS$)",
+    "placeholders": {
+      "label": {
+        "content": "$1$"
+      },
+      "status": {
+        "content": "$2$"
+      }
+    }
+  },
+  "errMessageContentFailed": {
+    "message": "Failed to fetch message content (HTTP $STATUS$)",
+    "placeholders": {
+      "status": {
+        "content": "$1$"
+      }
+    }
+  },
+  "errLabelListFailed": {
+    "message": "Failed to fetch label list (HTTP $STATUS$): $ERR$",
+    "placeholders": {
+      "status": {
+        "content": "$1$"
+      },
+      "err": {
+        "content": "$2$"
+      }
+    }
+  },
+  "errLabelCreateFailed": {
+    "message": "Failed to create label: $LABEL$ (HTTP $STATUS$)",
+    "placeholders": {
+      "label": {
+        "content": "$1$"
+      },
+      "status": {
+        "content": "$2$"
+      }
+    }
+  },
+  "errLabelApplyFailed": {
+    "message": "Failed to apply label (HTTP $STATUS$)",
+    "placeholders": {
+      "status": {
+        "content": "$1$"
+      }
+    }
+  },
+  "errGemini429Retries": {
+    "message": "Gemini API 429 (rate limited) - exceeded retry attempts: $ERR$",
+    "placeholders": {
+      "err": {
+        "content": "$1$"
+      }
+    }
+  },
+  "logGemini429Retry": {
+    "message": "Gemini returned 429 - slowing down and retrying (interval $INTERVAL$ms, attempt $ATTEMPT$/$MAX$)",
+    "placeholders": {
+      "interval": {
+        "content": "$1$"
+      },
+      "attempt": {
+        "content": "$2$"
+      },
+      "max": {
+        "content": "$3$"
+      }
+    }
+  },
+  "errGeminiHttpError": {
+    "message": "Gemini API error (HTTP $STATUS$): $ERR$",
+    "placeholders": {
+      "status": {
+        "content": "$1$"
+      },
+      "err": {
+        "content": "$2$"
+      }
+    }
+  },
+  "errGeminiNoResult": {
+    "message": "Gemini response contained no analysis result"
+  },
+  "errGeminiNotArray": {
+    "message": "Gemini response was not in array format"
+  },
+  "logLabelAnalysisStart": {
+    "message": "Starting analysis of label \"$LABEL$\"",
+    "placeholders": {
+      "label": {
+        "content": "$1$"
+      }
+    }
+  },
+  "logLabelAnalysisFoundMail": {
+    "message": "Found $COUNT$ email(s) with label \"$LABEL$\"",
+    "placeholders": {
+      "count": {
+        "content": "$1$"
+      },
+      "label": {
+        "content": "$2$"
+      }
+    }
+  },
+  "errLabelAnalysisNoMail": {
+    "message": "No mail has label \"$LABEL$\", so it can't be analyzed.",
+    "placeholders": {
+      "label": {
+        "content": "$1$"
+      }
+    }
+  },
+  "logAnalysisSampleDone": {
+    "message": "[Sample $DONE$/$TOTAL$] \"$SUBJECT$\" fetched",
+    "placeholders": {
+      "done": {
+        "content": "$1$"
+      },
+      "total": {
+        "content": "$2$"
+      },
+      "subject": {
+        "content": "$3$"
+      }
+    }
+  },
+  "logAnalysisSampleFailed": {
+    "message": "Failed to fetch sample mail (id=$ID$): $ERR$",
+    "placeholders": {
+      "id": {
+        "content": "$1$"
+      },
+      "err": {
+        "content": "$2$"
+      }
+    }
+  },
+  "errAnalysisNoSample": {
+    "message": "Couldn't fetch any sample mail, so analysis isn't possible."
+  },
+  "logAnalysisRequestSent": {
+    "message": "Sent Gemini analysis request for label \"$LABEL$\"",
+    "placeholders": {
+      "label": {
+        "content": "$1$"
+      }
+    }
+  },
+  "errAnalysisNoSuggestion": {
+    "message": "The AI failed to generate a classification criteria."
+  },
+  "logAnalysisDone": {
+    "message": "Analysis of label \"$LABEL$\" complete - suggested criteria: \"$SUGGESTION$\"",
+    "placeholders": {
+      "label": {
+        "content": "$1$"
+      },
+      "suggestion": {
+        "content": "$2$"
+      }
+    }
+  },
+  "logMultiAnalysisStart": {
+    "message": "Starting sequential analysis of $COUNT$ selected label(s)",
+    "placeholders": {
+      "count": {
+        "content": "$1$"
+      }
+    }
+  },
+  "logMultiAnalysisSkipped": {
+    "message": "Skipped (not in category list): $NAMES$",
+    "placeholders": {
+      "names": {
+        "content": "$1$"
+      }
+    }
+  },
+  "logMultiAnalysisCancelled": {
+    "message": "Stop requested - ending after processing $DONE$/$TOTAL$",
+    "placeholders": {
+      "done": {
+        "content": "$1$"
+      },
+      "total": {
+        "content": "$2$"
+      }
+    }
+  },
+  "logMultiAnalysisItemStart": {
+    "message": "[$IDX$/$TOTAL$] Analyzing \"$LABEL$\"",
+    "placeholders": {
+      "idx": {
+        "content": "$1$"
+      },
+      "total": {
+        "content": "$2$"
+      },
+      "label": {
+        "content": "$3$"
+      }
+    }
+  },
+  "logMultiAnalysisItemFailed": {
+    "message": "[$IDX$/$TOTAL$] \"$LABEL$\" analysis failed: $ERR$",
+    "placeholders": {
+      "idx": {
+        "content": "$1$"
+      },
+      "total": {
+        "content": "$2$"
+      },
+      "label": {
+        "content": "$3$"
+      },
+      "err": {
+        "content": "$4$"
+      }
+    }
+  },
+  "logMultiAnalysisDone": {
+    "message": "Selected label analysis complete: $SUCCESS$/$TOTAL$ succeeded",
+    "placeholders": {
+      "success": {
+        "content": "$1$"
+      },
+      "total": {
+        "content": "$2$"
+      }
+    }
+  },
+  "errLabelMoveFailed": {
+    "message": "Label move failed (HTTP $STATUS$)",
+    "placeholders": {
+      "status": {
+        "content": "$1$"
+      }
+    }
+  },
+  "errLabelIdMessageListFailed": {
+    "message": "Failed to fetch mail by label ID (HTTP $STATUS$)",
+    "placeholders": {
+      "status": {
+        "content": "$1$"
+      }
+    }
+  },
+  "errLabelColorApplyFailed": {
+    "message": "Failed to apply label color (HTTP $STATUS$)",
+    "placeholders": {
+      "status": {
+        "content": "$1$"
+      }
+    }
+  },
+  "logUserRequestedStop": {
+    "message": "User requested a stop"
+  },
+  "logTranslateStart": {
+    "message": "Translating categories/labels to $LANG$",
+    "placeholders": {
+      "lang": {
+        "content": "$1$"
+      }
+    }
+  },
+  "logTranslateLabelRenamed": {
+    "message": "Renamed Gmail label: \"$OLD$\" → \"$NEW$\"",
+    "placeholders": {
+      "old": {
+        "content": "$1$"
+      },
+      "new": {
+        "content": "$2$"
+      }
+    }
+  },
+  "logTranslateLabelRenameFailed": {
+    "message": "Failed to rename Gmail label (\"$OLD$\" → \"$NEW$\"): $ERR$",
+    "placeholders": {
+      "old": {
+        "content": "$1$"
+      },
+      "new": {
+        "content": "$2$"
+      },
+      "err": {
+        "content": "$3$"
+      }
+    }
+  },
+  "logTranslateDone": {
+    "message": "Category/label translation applied"
+  },
+  "errTranslateNoResult": {
+    "message": "The AI failed to generate a translation."
+  },
+  "confirmTranslateLabels": {
+    "message": "Your labels are currently in $OLD$. You just switched the language to $NEW$ - translate the label names, criteria text, and the actual Gmail label names using AI and apply them?",
+    "placeholders": {
+      "old": {
+        "content": "$1"
+      },
+      "new": {
+        "content": "$2"
+      }
+    }
+  },
+  "notifyTitleTranslate": {
+    "message": "Gmail AI Labeler - Label translation"
+  },
+  "guideTitle": {
+    "message": "Google OAuth Client Setup Guide"
+  },
+  "guideSubtitle": {
+    "message": "Gmail AI Labeler - personal OAuth client setup (assuming an account that has never used Google Cloud before, about 10 minutes)"
+  },
+  "guideWhyBox": {
+    "message": "<strong>Why is this needed?</strong><br>When an extension that handles Gmail data is used by \"many people,\" Google requires a security review (once past 100 users), which can create cost/process burden for the developer. Instead, if <strong>each person uses an OAuth client issued in their own name</strong>, Google treats it as \"personal development/testing use\" and no review is required. It's a bit of a hassle, but you only need to do it once."
+  },
+  "guideNoBillingBox": {
+    "message": "<strong>Note</strong>: The Gmail API/Drive API used by this extension are <strong>both free APIs, so they can be enabled without a billing account (card registration).</strong> If a billing-related screen appears during the steps below, it's about some other paid service unrelated to this extension - just skip it or go back."
+  },
+  "guideStep1Title": {
+    "message": "Step 1. Create a Google Cloud project"
+  },
+  "guideStep1List": {
+    "message": "<li><a class=\"btn\" href=\"https://console.cloud.google.com/projectcreate\" target=\"_blank\">Create a new project in Google Cloud Console</a></li><li class=\"note\"><span class=\"warn\">If this is your first time visiting Cloud Console with this account</span>, a \"select country + accept terms of service\" welcome screen may appear before the project creation screen. Check the box and click \"Agree and continue\" to be taken automatically to the project creation screen.</li><li>Any project name is fine (e.g. \"gmail-labeler-personal\"). Click \"Create\" and wait a few seconds (progress shows in the bell icon top right).</li><li>Once created, check that the project you just made is selected in the project dropdown at the top (click it and select manually if not).</li>"
+  },
+  "guideStep2Title": {
+    "message": "Step 2. Enable Gmail API + Google Drive API"
+  },
+  "guideStep2List": {
+    "message": "<li><a class=\"btn\" href=\"https://console.cloud.google.com/apis/library/gmail.googleapis.com\" target=\"_blank\">Open the Gmail API library page</a></li><li>(with the project you just made selected) Click the blue <strong>\"ENABLE\"</strong> button. Takes a few seconds.</li><li><a class=\"btn\" href=\"https://console.cloud.google.com/apis/library/drive.googleapis.com\" target=\"_blank\">Open the Google Drive API library page</a></li><li>Click <strong>\"ENABLE\"</strong> here too (needed for the settings backup feature - skip if you won't use it)</li>"
+  },
+  "guideStep2Box": {
+    "message": "This extension only uses the <span class=\"mono\">drive.file</span> scope - it can only access the one backup file it created itself, and can't see any other files in your Drive. Under Google's policy this is a \"non-sensitive\" scope, so it can be used as-is without a separate security review."
+  },
+  "guideStep3Title": {
+    "message": "Step 3. Configure the OAuth consent screen"
+  },
+  "guideStep3List": {
+    "message": "<li><a class=\"btn\" href=\"https://console.cloud.google.com/apis/credentials/consent\" target=\"_blank\">Open the OAuth consent screen page</a></li><li>User Type: choose <strong>External</strong>, then create</li><li>Enter an app name (anything, e.g. \"Gmail Labeler\"), user support email (your Gmail), and developer contact email (your Gmail), then save and continue</li><li>On the Scopes screen, just save and continue (can be skipped)</li><li>On the <span class=\"warn\">Test users</span> screen, click \"ADD USERS\" to add <strong>your own Gmail address</strong>. Every account that will use this extension must be added here.</li><li>Save and continue → review summary → back to dashboard</li><li class=\"note\">Leave the publishing status as <strong>\"Testing\"</strong>. Do not click \"Publish to production\" - that would make it subject to review.</li>"
+  },
+  "guideStep4Title": {
+    "message": "Step 4. Create the OAuth Client ID (redirect URI auto-computed)"
+  },
+  "guideStep4List": {
+    "message": "<li><a class=\"btn\" href=\"https://console.cloud.google.com/apis/credentials\" target=\"_blank\">Open the Credentials page</a></li><li>Click \"+ Create Credentials\" at the top → choose \"OAuth client ID\"</li><li>Application type: choose <strong>Web application</strong> (important - not \"Desktop app\")</li><li>Name it anything (e.g. \"Gmail Labeler Extension\")</li><li>Paste the value below into \"Authorized redirect URIs\" exactly as shown (this page already read your extension ID and computed it automatically - no need to visit chrome://extensions):</li>"
+  },
+  "guideRedirectUriPlaceholder": {
+    "message": "https://(open this page from the extension to auto-fill).chromiumapp.org/"
+  },
+  "guideCopyBtn": {
+    "message": "Copy"
+  },
+  "guideStep4List2": {
+    "message": "<li>Clicking Create shows your <strong>Client ID</strong> and <strong>Client Secret</strong>. Copy both.</li>"
+  },
+  "guideStep4WarnBox": {
+    "message": "<span class=\"warn\">Note:</span> You'll also see a \"Chrome Extension\" type in the list - don't pick that one. It can't register a custom redirect URI (doesn't match our setup) and <strong>doesn't issue a secret at all</strong>. You must pick <strong>\"Web application\"</strong> so the redirect URI field appears and a secret is issued normally."
+  },
+  "guideStep4NoteBox": {
+    "message": "If you created a \"Web application\" client but still don't see a secret, click into the client's detail page from the credentials list - the \"Client secret\" field should have a value there (click the eye icon if it's hidden). If it's genuinely still not there, you can leave the secret field blank in the extension settings and save anyway - it will still try to connect using just the Client ID."
+  },
+  "guideStep5Title": {
+    "message": "Step 5. Enter it in the extension and connect"
+  },
+  "guideStep5List": {
+    "message": "<li>In the extension popup → Settings tab → paste the Client ID/Secret into the \"Google account connection (personal OAuth)\" section and save</li><li>Click \"Connect Google account\" → sign in to Google in the new window</li><li>If a <span class=\"warn\">\"Google hasn't verified this app\"</span> warning appears, it's safe as long as you're signing in with the account you added as a test user in step 3 → click <strong>\"Advanced\"</strong> → click <strong>\"Go to [app name] (unsafe)\"</strong> → grant permission</li><li>Once connected and back in the popup, classification features will work normally.</li>"
+  },
+  "guideStep5Box": {
+    "message": "<span class=\"warn\">If you connected before this update</span>: the required permission scope grew when the Drive backup feature was added. Click \"Disconnect\" → \"Connect Google account\" again in the Settings tab to re-authenticate so Drive backup works properly."
+  },
+  "guideFooterNote": {
+    "message": "If something's not working, double-check: (1) the account you're signing in with is added as a test user, (2) the redirect URI exactly matches the auto-computed value above (no typos/spaces), (3) the application type is \"Web application\"."
+  },
+  "labelBackupPassphrase": {
+    "message": "Encryption passphrase"
+  },
+  "placeholderBackupPassphrase": {
+    "message": "Optional - encrypts your API keys/secrets"
+  },
+  "hintBackupPassphrase": {
+    "message": "If you enter a passphrase here before backing up, only your API keys/OAuth secret get encrypted with it (other settings are stored as-is). You'll need to enter the same passphrase here to restore them. The passphrase itself is never stored, so if you forget it those credentials can't be recovered (you can just re-enter them manually). Leave this blank to store them in plain text as before."
+  },
+  "msgLocalBackupDoneEncrypted": {
+    "message": "Saved to a local file (API keys/secrets are encrypted)."
+  },
+  "errBackupPassphraseNeeded": {
+    "message": "This backup's API keys/secrets are encrypted. Enter the passphrase you used when backing up in the Encryption passphrase field to restore them."
+  },
+  "errBackupPassphraseWrong": {
+    "message": "The passphrase was wrong or the backup file is corrupted - couldn't decrypt the API keys/secrets."
+  },
+  "logDriveBackupDone": {
+    "message": "Settings backed up to Google Drive ($COUNT$ item(s))",
+    "placeholders": {
+      "count": {
+        "content": "$1$"
+      }
+    }
+  },
+  "logDriveBackupDoneEncrypted": {
+    "message": "Settings backed up to Google Drive ($COUNT$ item(s), API keys/secrets encrypted)",
+    "placeholders": {
+      "count": {
+        "content": "$1$"
+      }
+    }
+  }
+}

@@ -1,0 +1,58 @@
+Gmail AI Labeler — Source-Available License
+Copyright (c) 2026 김태형 (thk7410@gmail.com)
+All rights reserved.
+
+This is not an open-source license (e.g. MIT/GPL). It is closer to what many
+donation-supported browser extensions use: the source is visible so users can
+verify what the extension does, but reuse of that source is restricted so the
+developer's ability to receive support/donations for their own work isn't
+undercut by copies or forks distributed under a different name.
+
+1. PERMITTED USE
+   You may download, install, and run this extension, in its original or in
+   a personally-modified form, for your own private/personal use, including
+   loading an unpacked or self-built copy in developer mode.
+
+2. NOT PERMITTED without prior written permission from the copyright holder
+   a. Publishing this extension (original, modified, or rebranded) to the
+      Chrome Web Store, any other browser extension/add-on marketplace, or
+      any other public distribution channel, under this name or any other.
+   b. Selling, sublicensing, renting, or otherwise commercially exploiting
+      this extension or any derivative of it.
+   c. Removing, hiding, or altering the copyright notice, the developer's
+      identity, the LICENSE file, or the in-app donation/support link.
+   d. Distributing a modified copy in a way likely to divert users,
+      goodwill, or donation/support revenue from the copyright holder's own
+      release of this extension (e.g. presenting a fork as "the" official
+      version, or soliciting donations for a copy of this work).
+   e. Using the name "Gmail AI Labeler", the developer's name, or the
+      extension's icon/branding to represent a modified or unrelated project
+      as if it were this one or endorsed by its author.
+
+3. DONATIONS AND SUPPORT
+   This project is offered free of charge and supported voluntarily through
+   donations/tips (see the "Support the developer" link in the extension).
+   Nothing in this license obligates any user to pay; nothing in this
+   license grants a payer any additional rights beyond Section 1.
+
+4. THIRD-PARTY SERVICES
+   This extension operates using your own Google API credentials (Gemini
+   API key, OAuth client) that you provide and control. The copyright
+   holder is not a party to, and has no visibility into, your usage of
+   those third-party services, and is not responsible for your compliance
+   with Google's or any other third party's terms of service.
+
+5. NO WARRANTY
+   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+   OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+   MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT.
+   IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER
+   LIABILITY ARISING FROM THE USE OF THIS SOFTWARE.
+
+6. TERMINATION
+   Any use in violation of Section 2 automatically terminates the
+   permission granted in Section 1 for the violating party.
+
+For licensing inquiries (including requests to redistribute, or to use this
+project as a base for something you plan to publish), contact:
+thk7410@gmail.com

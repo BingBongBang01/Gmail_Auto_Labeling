@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Gmail AI Labeler - Log</title>
+  <style>
+    :root {
+      --bg: #1e1e1e; --panel: #111; --border: #333; --text: #d4d4d4;
+      --time: #6a9955; --error: #f48771; --warn: #dcdcaa; --info: #d4d4d4;
+      --btn-bg: #333; --btn-text: #eee; --btn-border: #555;
+    }
+    html[data-theme="light"] {
+      --bg: #f8f9fa; --panel: #fff; --border: #ddd; --text: #202124;
+      --time: #1a7a1a; --error: #b3261e; --warn: #7a5b00; --info: #202124;
+      --btn-bg: #f1f3f4; --btn-text: #202124; --btn-border: #ccc;
+    }
+    body {
+      font-family: 'Segoe UI', Consolas, monospace;
+      margin: 0;
+      padding: 16px;
+      background: var(--bg);
+      color: var(--text);
+    }
+    h3 { margin: 0 0 8px 0; color: var(--text); }
+    .topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; flex-wrap: wrap; gap: 6px; }
+    .progress-wrap {
+      background: var(--btn-bg); border-radius: 6px; height: 18px; overflow: hidden; margin: 8px 0 4px 0;
+    }
+    .progress-bar {
+      background: #4caf50; height: 100%; width: 0%; transition: width 0.3s ease;
+    }
+    .progress-text { font-size: 12px; color: var(--text); opacity: .7; margin-bottom: 10px; }
+    .status-badge {
+      display: inline-block; padding: 2px 10px; border-radius: 10px; font-size: 12px; font-weight: bold;
+    }
+    .status-running { background: #ffecb3; color: #7a5b00; }
+    .status-done { background: #c8e6c9; color: #1b5e20; }
+    .status-error { background: #ffcdd2; color: #b71c1c; }
+    .status-cancelled { background: #e0e0e0; color: #424242; }
+    button {
+      background: var(--btn-bg); color: var(--btn-text); border: 1px solid var(--btn-border); border-radius: 4px;
+      padding: 6px 12px; cursor: pointer; font-size: 12px; margin-left: 6px;
+    }
+    button:hover { filter: brightness(1.15); }
+    #logBox {
+      background: var(--panel); border: 1px solid var(--border); border-radius: 6px; padding: 10px;
+      height: 480px; overflow-y: auto; font-size: 12.5px; line-height: 1.6;
+      white-space: pre-wrap; word-break: break-word;
+    }
+    .log-line { padding: 1px 0; }
+    .log-time { color: var(--time); margin-right: 6px; }
+    .log-error { color: var(--error); }
+    .log-warn { color: var(--warn); }
+    .log-info { color: var(--info); }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <h3 id="titleText">Gmail AI Labeler - Log <span class="status-badge" id="statusBadge">-</span></h3>
+    <div>
+      <button id="expandBtn">-</button>
+      <button id="exportBtn">-</button>
+      <button id="cancelBtn">-</button>
+      <button id="clearBtn">-</button>
+    </div>
+  </div>
+
+  <div class="progress-wrap"><div class="progress-bar" id="progressBar"></div></div>
+  <div class="progress-text" id="progressText">-</div>
+
+  <div id="logCountHint" style="font-size:11px; opacity:.7; margin-bottom:6px;"></div>
+  <div id="logBox"></div>
+
+  <script src="../i18n.js"></script>
+  <script src="log.js"></script>
+</body>
+</html>
