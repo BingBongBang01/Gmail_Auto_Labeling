@@ -294,7 +294,6 @@ async function main() {
   const startBtn = document.getElementById("startBtn");
   const cancelBtn = document.getElementById("cancelBtn");
   const forceCancelBtn = document.getElementById("forceCancelBtn");
-  const batchCountInput = document.getElementById("batchCountInput");
   const emailCountInput = document.getElementById("emailCountInput");
   const batchHint = document.getElementById("batchHint");
   const resultBox = document.getElementById("resultBox");
@@ -329,40 +328,40 @@ async function main() {
   let config = { batchSize: 40, maxBatchCountPerRun: 10, maxEmailCountPerRun: 400 };
   let syncing = false;
 
-  function syncFromEmailCount() {
+  // 사용자가 정해야 하는 값은 "몇 통 처리할지" 하나뿐이다.
+  // 예전에는 "배치 수"와 "메일 개수" 두 칸이 서로 자동 계산되며 함께 떠 있어서,
+  // 둘의 관계를 사용자가 추측해야 했다. 배치는 내부 구현이므로 힌트 문장으로만 설명한다.
+  function clampEmailCount() {
     if (syncing) return;
     syncing = true;
     let count = parseInt(emailCountInput.value, 10);
     if (isNaN(count) || count < 1) count = 1;
     if (count > config.maxEmailCountPerRun) count = config.maxEmailCountPerRun;
     emailCountInput.value = count;
-    batchCountInput.value = Math.max(1, Math.ceil(count / config.batchSize));
     syncing = false;
+    updateCountHint();
   }
 
-  function syncFromBatchCount() {
-    if (syncing) return;
-    syncing = true;
-    let batches = parseInt(batchCountInput.value, 10);
-    if (isNaN(batches) || batches < 1) batches = 1;
-    if (batches > config.maxBatchCountPerRun) batches = config.maxBatchCountPerRun;
-    batchCountInput.value = batches;
-    emailCountInput.value = batches * config.batchSize;
-    syncing = false;
+  // 이 설정이 API 요청을 몇 번 쓰는지 사용자 언어로 알려준다(RPM/TPM 같은 용어를 그대로 노출하지 않는다).
+  function updateCountHint() {
+    if (!batchHint) return;
+    const count = Math.max(1, parseInt(emailCountInput.value, 10) || 1);
+    const requests = Math.max(1, Math.ceil(count / config.batchSize));
+    batchHint.textContent = t("hintEmailCount", [config.batchSize, requests, config.rpd, config.maxEmailCountPerRun]);
   }
 
-  emailCountInput.addEventListener("input", syncFromEmailCount);
-  batchCountInput.addEventListener("input", syncFromBatchCount);
+  emailCountInput.addEventListener("input", clampEmailCount);
 
   function initConfig() {
     chrome.runtime.sendMessage({ action: "getConfig" }, (result) => {
       if (chrome.runtime.lastError || !result) return;
       config = result;
-      batchCountInput.max = config.maxBatchCountPerRun;
       emailCountInput.max = config.maxEmailCountPerRun;
-      batchHint.textContent = t("batchHint", [config.batchSize, config.rpm, config.tpm, config.rpd]);
-      emailCountInput.value = config.batchSize;
-      syncFromEmailCount();
+      // 기본값은 37 같은 내부 배치 크기 대신 사람이 읽기 쉬운 값으로 둔다
+      const defaultCount = Math.min(50, config.maxEmailCountPerRun);
+      if (!emailCountInput.value || parseInt(emailCountInput.value, 10) < 1) emailCountInput.value = defaultCount;
+      clampEmailCount();
+      updateRepeatHint();
       const autoInput = document.getElementById("autoClassifyThresholdInput");
       if (autoInput) autoInput.max = config.batchSize;
     });
@@ -371,7 +370,6 @@ async function main() {
 
   function setClassifyRunningUi(isRunningThis, isAnyRunning) {
     startBtn.disabled = isAnyRunning;
-    batchCountInput.disabled = isAnyRunning;
     emailCountInput.disabled = isAnyRunning;
     if (isRunningThis) {
       startBtn.classList.add("running");
@@ -725,17 +723,34 @@ async function main() {
   const repeatProgressBar = document.getElementById("repeatProgressBar");
   const repeatProgressText = document.getElementById("repeatProgressText");
 
-  repeatBatchesInput.addEventListener("change", () => {
+  // "배치"는 내부 단위라 숫자만 봐서는 몇 통이 처리되는지 알 수 없다.
+  // 실제 처리량(라운드당 메일 수 x 라운드 수)을 힌트로 함께 보여준다.
+  function updateRepeatHint() {
+    const hint = document.getElementById("repeatHint");
+    if (!hint) return;
+    const batchesEl = document.getElementById("repeatBatchesInput");
+    const roundsEl = document.getElementById("repeatCountInput");
+    if (!batchesEl || !roundsEl) return;
+    const batches = Math.max(1, Math.min(5, parseInt(batchesEl.value, 10) || 1));
+    const rounds = Math.max(1, parseInt(roundsEl.value, 10) || 1);
+    const perRound = batches * config.batchSize;
+    hint.textContent = t("hintRepeatRounds", [perRound, rounds, perRound * rounds]);
+  }
+
+  repeatBatchesInput.addEventListener("input", () => {
     let v = parseInt(repeatBatchesInput.value, 10);
     if (isNaN(v) || v < 1) v = 1;
     if (v > 5) v = 5;
     repeatBatchesInput.value = v;
+    updateRepeatHint();
   });
-  repeatCountInput.addEventListener("change", () => {
+  repeatCountInput.addEventListener("input", () => {
     let v = parseInt(repeatCountInput.value, 10);
     if (isNaN(v) || v < 1) v = 1;
     repeatCountInput.value = v;
+    updateRepeatHint();
   });
+  updateRepeatHint();
 
   function setRepeatRunningUi(isRunningThis, isAnyRunning) {
     repeatBtn.disabled = isAnyRunning;

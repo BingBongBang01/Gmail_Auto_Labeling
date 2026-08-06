@@ -2248,7 +2248,7 @@ async function processAnalyzeMultipleLabelsCriteria(labelNames) {
   };
 }
 
-// 선택한 라벨의 메일 목록을 수집하여 Gemini AI로 한국어 요약 및 중요 메일 선별 리포트를 생성한다.
+// 선택한 라벨의 메일 목록을 수집하여 Gemini AI로 요약 및 중요 메일 선별 리포트를 생성한다(출력 언어는 현재 UI 언어).
 async function processSummarizeLabelEmails(labelName, maxEmails, filterCriteria) {
   const { categoryDefs, categories, token } = await initGeminiAndGmailContext();
   const emailLimit = Math.max(1, Math.min(100, parseInt(maxEmails, 10) || 20));
@@ -2313,7 +2313,7 @@ async function processSummarizeLabelEmails(labelName, maxEmails, filterCriteria)
     throw new Error("메일 본문을 읽어오지 못했습니다.");
   }
 
-  await addLog(`[요약] Gemini AI를 통해 한국어 메일 요약 및 선별 수행 중 (${emailDetails.length}개)...`);
+  await addLog(`[요약] Gemini AI로 메일 요약 및 선별 수행 중 (${emailDetails.length}개, 출력 언어: ${LANGUAGE_NAME_BY_LOCALE[i18nCurrentLocale()] || "한국어"})...`);
 
   const emailListText = emailDetails
     .map((item) => `[idx=${item.idx}] 발신자: ${item.from} / 제목: ${item.subject} / 내용: ${item.snippet}`)
@@ -2336,16 +2336,21 @@ async function processSummarizeLabelEmails(labelName, maxEmails, filterCriteria)
     `- "중" (공지/일정/업무): ${criteria.medium}\n` +
     `- "하" (정보/참고): ${criteria.low}\n\n`;
 
+  // 요약 결과가 보일 화면의 언어와 맞춰야 하므로, 출력 언어는 현재 UI 언어를 따른다.
+  // (예전에는 프롬프트에 "반드시 한국어로"가 박혀 있어서 영어/일본어/중국어 UI에서도 본문만 한국어로 나왔다)
+  const summaryLangName = LANGUAGE_NAME_BY_LOCALE[i18nCurrentLocale()] || "한국어";
+
   const prompt =
-    `아래는 '${labelName}' 라벨에 정리된 이메일 목록이다. 이 이메일들 중 중요하거나 사용자에게 필요한 메일만 선별하여 반드시 한국어(Korean)로 깔끔하게 요약해라.\n\n` +
+    `아래는 '${labelName}' 라벨에 정리된 이메일 목록이다. 이 이메일들 중 중요하거나 사용자에게 필요한 메일만 선별하여 반드시 ${summaryLangName}로 깔끔하게 요약해라.\n\n` +
     filterInstruction +
     importanceCriteriaInstruction +
     `[지침]\n` +
     `1. 스팸, 단순 반복 알림, 불필요한 홍보성 메일은 선별 대상에서 제외해라.\n` +
-    `2. 중요하거나 선별된 메일에 대해 핵심 내용 요약, 중요도(상/중/하 - 위 정밀 기준 준수), 그리고 발신자가 요구하거나 사용자가 해야 할 조치 사항(Action Item)을 한국어로 작성해라.\n` +
-    `3. 각 메일별로 디스코드(Discord) 채널 알림 전송 필요 여부('discordNotificationNeeded': true/false - 단순 뉴스레터는 false, 중요/긴급/조치 필요 메일은 true)와 디스코드 카테고리('discordCategory': "긴급/조치필요" | "공지/일정" | "일반/리포트"), 및 디스코드 채널 전용 한 줄 핵심 브리핑('discordSummaryText')을 AI 판단으로 자동 분류해라.\n` +
-    `4. 전체 메일을 종합한 'overallSummary'(전체 요약 브리핑, 한국어 2~4문장)를 작성해라.\n` +
-    `5. 선별된 메일 목록 'selectedEmails' 배열에 정보를 담아 반환해라.\n\n` +
+    `2. 중요하거나 선별된 메일에 대해 핵심 내용 요약, 중요도(상/중/하 - 위 정밀 기준 준수), 그리고 발신자가 요구하거나 사용자가 해야 할 조치 사항(Action Item)을 ${summaryLangName}로 작성해라.\n` +
+    `3. 각 메일별로 디스코드(Discord) 채널 알림 전송 필요 여부('discordNotificationNeeded': true/false - 단순 뉴스레터는 false, 중요/긴급/조치 필요 메일은 true)와 디스코드 카테고리('discordCategory': "긴급/조치필요" | "공지/일정" | "일반/리포트"), 및 디스코드 채널 전용 한 줄 핵심 브리핑('discordSummaryText', ${summaryLangName})을 AI 판단으로 자동 분류해라.\n` +
+    `4. 전체 메일을 종합한 'overallSummary'(전체 요약 브리핑, ${summaryLangName} 2~4문장)를 작성해라.\n` +
+    `5. 선별된 메일 목록 'selectedEmails' 배열에 정보를 담아 반환해라.\n` +
+    `6. 조치할 것이 없는 메일은 'actionRequired'를 다른 표현 없이 정확히 "없음"으로만 적어라(화면에서 이 값을 기준으로 조치 항목을 숨긴다).\n\n` +
     `[이메일 목록]\n` +
     emailListText;
 
@@ -2416,7 +2421,7 @@ async function processSummarizeLabelEmails(labelName, maxEmails, filterCriteria)
   };
 
   await chrome.storage.local.set({ lastLabelSummary: summaryReport });
-  await addLog(`[요약 완료] ${emailDetails.length}개 중 ${enrichedSelectedEmails.length}개 메일 선별 및 한국어 요약 완료.`);
+  await addLog(`[요약 완료] ${emailDetails.length}개 중 ${enrichedSelectedEmails.length}개 메일 선별 및 요약 완료.`);
 
   return {
     total: emailDetails.length,

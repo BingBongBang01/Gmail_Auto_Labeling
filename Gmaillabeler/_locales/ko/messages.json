@@ -51,7 +51,7 @@
     "message": "예: 중요한 업무 공지 및 결제 내역만 선별"
   },
   "btnStartSummary": {
-    "message": "한국어 요약 생성"
+    "message": "요약 생성"
   },
   "btnCopySummary": {
     "message": "요약 복사"
@@ -2568,5 +2568,36 @@
   },
   "defaultCriteriaLow": {
     "message": "뉴스레터, 정기 보고서, 마케팅/프로모션, 회신이나 조치가 필요 없는 정보성 알림"
+  },
+  "hintEmailCount": {
+    "message": "AI 요청 1회에 메일 $BATCH$개를 묶어서 보냅니다. 지금 설정은 요청 약 $REQUESTS$회를 씁니다(하루 추정 한도 $RPD$회). 최대 $MAX$개까지 지정할 수 있어요.",
+    "placeholders": {
+      "batch": {
+        "content": "$1"
+      },
+      "requests": {
+        "content": "$2"
+      },
+      "rpd": {
+        "content": "$3"
+      },
+      "max": {
+        "content": "$4"
+      }
+    }
+  },
+  "hintRepeatRounds": {
+    "message": "라운드당 최대 $PERROUND$개 × $ROUNDS$라운드 = 최대 $TOTAL$개 처리",
+    "placeholders": {
+      "perround": {
+        "content": "$1"
+      },
+      "rounds": {
+        "content": "$2"
+      },
+      "total": {
+        "content": "$3"
+      }
+    }
   }
 }

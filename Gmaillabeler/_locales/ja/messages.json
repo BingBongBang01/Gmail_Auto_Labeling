@@ -51,7 +51,7 @@
     "message": "例：重要な連絡や支払い通知のみ選別"
   },
   "btnStartSummary": {
-    "message": "韓国語要約を生成"
+    "message": "要約を生成"
   },
   "btnCopySummary": {
     "message": "要約をコピー"
@@ -2568,5 +2568,36 @@
   },
   "defaultCriteriaLow": {
     "message": "ニュースレター、定期レポート、マーケティング/プロモーション、返信や対応の不要な情報通知"
+  },
+  "hintEmailCount": {
+    "message": "AI リクエスト1回でメール $BATCH$ 件をまとめて処理します。この設定ではおよそ $REQUESTS$ 回のリクエストを使います(1日の推定上限 $RPD$ 回)。最大 $MAX$ 件まで指定できます。",
+    "placeholders": {
+      "batch": {
+        "content": "$1"
+      },
+      "requests": {
+        "content": "$2"
+      },
+      "rpd": {
+        "content": "$3"
+      },
+      "max": {
+        "content": "$4"
+      }
+    }
+  },
+  "hintRepeatRounds": {
+    "message": "1ラウンド最大 $PERROUND$ 件 × $ROUNDS$ ラウンド = 最大 $TOTAL$ 件",
+    "placeholders": {
+      "perround": {
+        "content": "$1"
+      },
+      "rounds": {
+        "content": "$2"
+      },
+      "total": {
+        "content": "$3"
+      }
+    }
   }
 }

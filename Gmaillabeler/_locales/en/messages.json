@@ -51,7 +51,7 @@
     "message": "e.g., Filter important work notices & payment details"
   },
   "btnStartSummary": {
-    "message": "Generate Korean Summary"
+    "message": "Generate summary"
   },
   "btnCopySummary": {
     "message": "Copy summary"
@@ -2568,5 +2568,36 @@
   },
   "defaultCriteriaLow": {
     "message": "Newsletters, periodic reports, marketing and promotions, informational notices needing no reply"
+  },
+  "hintEmailCount": {
+    "message": "Each AI request covers $BATCH$ emails. This setting uses about $REQUESTS$ request(s) of your estimated $RPD$ daily limit. You can go up to $MAX$.",
+    "placeholders": {
+      "batch": {
+        "content": "$1"
+      },
+      "requests": {
+        "content": "$2"
+      },
+      "rpd": {
+        "content": "$3"
+      },
+      "max": {
+        "content": "$4"
+      }
+    }
+  },
+  "hintRepeatRounds": {
+    "message": "Up to $PERROUND$ per round × $ROUNDS$ rounds = up to $TOTAL$ emails",
+    "placeholders": {
+      "perround": {
+        "content": "$1"
+      },
+      "rounds": {
+        "content": "$2"
+      },
+      "total": {
+        "content": "$3"
+      }
+    }
   }
 }

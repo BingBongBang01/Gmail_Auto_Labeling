@@ -51,7 +51,7 @@
     "message": "例：仅筛选重要工作通知及支付记录"
   },
   "btnStartSummary": {
-    "message": "生成韩语摘要"
+    "message": "生成摘要"
   },
   "btnCopySummary": {
     "message": "复制摘要"
@@ -2568,5 +2568,36 @@
   },
   "defaultCriteriaLow": {
     "message": "订阅通讯、定期报告、营销促销、无需回复或处理的信息通知"
+  },
+  "hintEmailCount": {
+    "message": "每次 AI 请求处理 $BATCH$ 封邮件。当前设置约使用 $REQUESTS$ 次请求（每日估算上限 $RPD$ 次）。最多可设置 $MAX$ 封。",
+    "placeholders": {
+      "batch": {
+        "content": "$1"
+      },
+      "requests": {
+        "content": "$2"
+      },
+      "rpd": {
+        "content": "$3"
+      },
+      "max": {
+        "content": "$4"
+      }
+    }
+  },
+  "hintRepeatRounds": {
+    "message": "每轮最多 $PERROUND$ 封 × $ROUNDS$ 轮 = 最多 $TOTAL$ 封",
+    "placeholders": {
+      "perround": {
+        "content": "$1"
+      },
+      "rounds": {
+        "content": "$2"
+      },
+      "total": {
+        "content": "$3"
+      }
+    }
   }
 }

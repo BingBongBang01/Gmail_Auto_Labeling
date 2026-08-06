@@ -349,12 +349,8 @@
     <div class="section-title" data-i18n="sectionRecentClassify">Classify recent mail</div>
 
     <div class="field-row">
-      <label for="batchCountInput" data-i18n="labelBatchCount">Batches</label>
-      <input type="number" id="batchCountInput" value="1" min="1">
-    </div>
-    <div class="field-row">
       <label for="emailCountInput" data-i18n="labelEmailCount">Emails to classify</label>
-      <input type="number" id="emailCountInput" value="37" min="1">
+      <input type="number" id="emailCountInput" value="50" min="1">
     </div>
     <div class="hint" id="batchHint"></div>
 
@@ -386,6 +382,7 @@
         <label for="repeatCountInput" data-i18n="labelRepeatCount">Number of rounds</label>
         <input type="number" id="repeatCountInput" value="5" min="1">
       </div>
+      <div class="hint" id="repeatHint"></div>
       <button class="primary" id="repeatBtn" style="width:100%; margin-top:6px;" data-i18n="btnStartRepeat">Start repeat classify</button>
       <div class="progress-wrap" id="repeatProgressWrap"><div class="progress-bar" id="repeatProgressBar"></div></div>
       <div class="progress-text" id="repeatProgressText"></div>
