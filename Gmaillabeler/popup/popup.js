@@ -942,6 +942,19 @@ async function main() {
     const summaryLabelSelect = document.getElementById("summaryLabelSelect");
     if (summaryLabelSelect) {
       summaryLabelSelect.innerHTML = optionsHtml;
+      // 마지막으로 요약했던 라벨을 그대로 다시 골라준다(팝업은 열 때마다 새로 그려지므로 필요).
+      chrome.storage.local.get(["lastSummaryLabel"], (stored) => {
+        if (stored.lastSummaryLabel && currentCategoryDefs.some((c) => c.name === stored.lastSummaryLabel)) {
+          summaryLabelSelect.value = stored.lastSummaryLabel;
+        }
+      });
+    }
+    const autoSummaryLabelSelect = document.getElementById("autoSummaryLabelSelect");
+    if (autoSummaryLabelSelect) {
+      autoSummaryLabelSelect.innerHTML = `<option value=""></option>` + optionsHtml;
+      chrome.storage.local.get(["autoSummaryLabel"], (stored) => {
+        if (stored.autoSummaryLabel) autoSummaryLabelSelect.value = stored.autoSummaryLabel;
+      });
     }
     renderLabelAnalysisChecklist();
   }
@@ -1621,6 +1634,16 @@ async function main() {
     "discordWebhookUrlHigh",
     "discordWebhookUrlMedium",
     "discordWebhookUrlLow",
+    "discordWebhookUrlPersonal",
+    "customDiscordWebhooks",
+    "personalIdentityHints",
+    "lastSummaryLabel",
+    "lastSummaryCriteria",
+    "autoSummaryEnabled",
+    "autoSummaryLabel",
+    "autoSummaryMaxCount",
+    "autoSummaryCriteria",
+    "autoSummarySendDiscord",
     "lastLabelSummary",
     "criteriaScratchpad"
   ];
@@ -1840,6 +1863,7 @@ async function main() {
         showResult(summaryResultBox, t("errorSelectSummaryLabel"));
         return;
       }
+      chrome.storage.local.set({ lastSummaryLabel: labelName });
 
       if (summaryActionRow) summaryActionRow.style.display = "none";
       showResult(summaryResultBox, t("summaryRequesting"));
@@ -1861,6 +1885,105 @@ async function main() {
     });
   }
 
+  // 요약 대상 라벨/필터 조건은 다음에 팝업을 열어도 그대로 남아 있어야 한다.
+  if (summaryLabelSelect) {
+    summaryLabelSelect.addEventListener("change", () => {
+      chrome.storage.local.set({ lastSummaryLabel: summaryLabelSelect.value });
+    });
+  }
+  if (summaryCriteriaInput) {
+    chrome.storage.local.get(["lastSummaryCriteria"], (stored) => {
+      if (stored.lastSummaryCriteria) summaryCriteriaInput.value = stored.lastSummaryCriteria;
+    });
+    summaryCriteriaInput.addEventListener("change", () => {
+      chrome.storage.local.set({ lastSummaryCriteria: summaryCriteriaInput.value.trim() });
+    });
+  }
+
+  // ---------------- 요약 판단 기준 AI 자동 생성 ----------------
+  const generateCriteriaBtn = document.getElementById("generateCriteriaBtn");
+  if (generateCriteriaBtn) {
+    generateCriteriaBtn.addEventListener("click", () => {
+      const labelName = summaryLabelSelect ? summaryLabelSelect.value : "";
+      const origText = generateCriteriaBtn.textContent;
+      generateCriteriaBtn.disabled = true;
+      generateCriteriaBtn.textContent = t("msgGeneratingCriteria");
+      showResult(summaryResultBox, t("msgGeneratingCriteria"));
+
+      chrome.runtime.sendMessage({ action: "generateSummaryCriteria", labelName, sampleCount: 25 }, (res) => {
+        generateCriteriaBtn.disabled = false;
+        generateCriteriaBtn.textContent = origText;
+
+        if (chrome.runtime.lastError || !res || !res.ok) {
+          const detail = (res && (res.error || translateResponse(res))) || (chrome.runtime.lastError && chrome.runtime.lastError.message) || "";
+          showResult(summaryResultBox, t("errorGenericPrefix", [detail]));
+          return;
+        }
+
+        if (summaryCriteriaInput) {
+          summaryCriteriaInput.value = res.filterCriteria || "";
+          chrome.storage.local.set({ lastSummaryCriteria: summaryCriteriaInput.value });
+        }
+        const criteria = res.importanceCriteria || {};
+        const fill = (id, value) => {
+          const el = document.getElementById(id);
+          if (el && value) el.value = value;
+        };
+        fill("criteriaHighInput", criteria.high);
+        fill("criteriaMediumInput", criteria.medium);
+        fill("criteriaLowInput", criteria.low);
+
+        // 생성 결과는 곧바로 저장하지 않고 화면에만 채운다. 사용자가 확인·수정한 뒤 각 '저장'을 누르면 반영된다.
+        showResult(summaryResultBox, t("msgCriteriaGenerated", [String(res.sampleSize || 0)]));
+      });
+    });
+  }
+
+  // ---------------- 자동 요약 설정 (변경 즉시 저장) ----------------
+  const autoSummaryEnabledCheckbox = document.getElementById("autoSummaryEnabledCheckbox");
+  const autoSummaryLabelSelect = document.getElementById("autoSummaryLabelSelect");
+  const autoSummaryMaxCountInput = document.getElementById("autoSummaryMaxCountInput");
+  const autoSummarySendDiscordCheckbox = document.getElementById("autoSummarySendDiscordCheckbox");
+  const autoSummaryResultBox = document.getElementById("autoSummaryResultBox");
+
+  if (autoSummaryEnabledCheckbox) {
+    chrome.storage.local.get(
+      ["autoSummaryEnabled", "autoSummaryMaxCount", "autoSummarySendDiscord"],
+      (stored) => {
+        autoSummaryEnabledCheckbox.checked = stored.autoSummaryEnabled === true;
+        if (autoSummaryMaxCountInput && stored.autoSummaryMaxCount) {
+          autoSummaryMaxCountInput.value = stored.autoSummaryMaxCount;
+        }
+        if (autoSummarySendDiscordCheckbox) {
+          autoSummarySendDiscordCheckbox.checked = stored.autoSummarySendDiscord !== false;
+        }
+      }
+    );
+
+    const saveAutoSummarySettings = () => {
+      chrome.storage.local.set(
+        {
+          autoSummaryEnabled: autoSummaryEnabledCheckbox.checked,
+          autoSummaryLabel: autoSummaryLabelSelect ? autoSummaryLabelSelect.value : "",
+          autoSummaryMaxCount: Math.max(1, Math.min(100, parseInt(autoSummaryMaxCountInput ? autoSummaryMaxCountInput.value : "20", 10) || 20)),
+          autoSummarySendDiscord: autoSummarySendDiscordCheckbox ? autoSummarySendDiscordCheckbox.checked : true,
+          autoSummaryCriteria: summaryCriteriaInput ? summaryCriteriaInput.value.trim() : "",
+        },
+        () => {
+          if (autoSummaryEnabledCheckbox.checked && autoSummaryLabelSelect && !autoSummaryLabelSelect.value) {
+            showResult(autoSummaryResultBox, t("errorSelectSummaryLabel"));
+          } else {
+            showResult(autoSummaryResultBox, t("msgSettingsAutoSaved"));
+          }
+        }
+      );
+    };
+
+    [autoSummaryEnabledCheckbox, autoSummaryLabelSelect, autoSummaryMaxCountInput, autoSummarySendDiscordCheckbox]
+      .filter(Boolean)
+      .forEach((el) => el.addEventListener("change", saveAutoSummarySettings));
+  }
+
   if (copySummaryBtn) {
     copySummaryBtn.addEventListener("click", () => {
       if (!lastSummaryPlainText) return;
@@ -1877,18 +2000,37 @@ async function main() {
   const sendDiscordBtn = document.getElementById("sendDiscordBtn");
   if (sendDiscordBtn) {
     sendDiscordBtn.addEventListener("click", () => {
-      chrome.storage.local.get(["lastLabelSummary", "discordWebhookUrl", "discordWebhookUrlHigh", "discordWebhookUrlMedium", "discordWebhookUrlLow"], (stored) => {
+      chrome.storage.local.get([
+        "lastLabelSummary",
+        "discordWebhookUrl",
+        "discordWebhookUrlHigh",
+        "discordWebhookUrlMedium",
+        "discordWebhookUrlLow",
+        "discordWebhookUrlPersonal",
+        "customDiscordWebhooks",
+      ], (stored) => {
         if (!stored.lastLabelSummary) {
           showResult(summaryResultBox, t("dashMsgNoReport"));
           return;
         }
+        const customs = Array.isArray(stored.customDiscordWebhooks) ? stored.customDiscordWebhooks : [];
         const webhookInput = {
           defaultUrl: stored.discordWebhookUrl || "",
           highUrl: stored.discordWebhookUrlHigh || "",
           mediumUrl: stored.discordWebhookUrlMedium || "",
           lowUrl: stored.discordWebhookUrlLow || "",
+          personalUrl: stored.discordWebhookUrlPersonal || "",
+          custom: customs,
         };
-        if (!webhookInput.defaultUrl && !webhookInput.highUrl && !webhookInput.mediumUrl && !webhookInput.lowUrl) {
+        const hasCustom = customs.some((w) => w && w.enabled !== false && w.url);
+        if (
+          !webhookInput.defaultUrl &&
+          !webhookInput.highUrl &&
+          !webhookInput.mediumUrl &&
+          !webhookInput.lowUrl &&
+          !webhookInput.personalUrl &&
+          !hasCustom
+        ) {
           showResult(summaryResultBox, t("errDiscordWebhookMissing"));
           return;
         }
@@ -1910,18 +2052,36 @@ async function main() {
   const savePopupDiscordBtn = document.getElementById("savePopupDiscordBtn");
   const discordResultBox = document.getElementById("discordResultBox");
 
+  const popupDiscordWebhookPersonal = document.getElementById("popupDiscordWebhookPersonal");
+  const popupPersonalIdentityHints = document.getElementById("popupPersonalIdentityHints");
+
   if (popupDiscordWebhookUrl) {
-    chrome.storage.local.get(["discordWebhookUrl"], (stored) => {
-      if (stored.discordWebhookUrl) popupDiscordWebhookUrl.value = stored.discordWebhookUrl;
-    });
+    chrome.storage.local.get(
+      ["discordWebhookUrl", "discordWebhookUrlPersonal", "personalIdentityHints"],
+      (stored) => {
+        if (stored.discordWebhookUrl) popupDiscordWebhookUrl.value = stored.discordWebhookUrl;
+        if (popupDiscordWebhookPersonal && stored.discordWebhookUrlPersonal) {
+          popupDiscordWebhookPersonal.value = stored.discordWebhookUrlPersonal;
+        }
+        if (popupPersonalIdentityHints && stored.personalIdentityHints) {
+          popupPersonalIdentityHints.value = stored.personalIdentityHints;
+        }
+      }
+    );
   }
 
   if (savePopupDiscordBtn && popupDiscordWebhookUrl) {
     savePopupDiscordBtn.addEventListener("click", () => {
-      const url = popupDiscordWebhookUrl.value.trim();
-      chrome.storage.local.set({ discordWebhookUrl: url }, () => {
-        showResult(discordResultBox, t("msgDiscordWebhookSaved"));
-      });
+      chrome.storage.local.set(
+        {
+          discordWebhookUrl: popupDiscordWebhookUrl.value.trim(),
+          discordWebhookUrlPersonal: popupDiscordWebhookPersonal ? popupDiscordWebhookPersonal.value.trim() : "",
+          personalIdentityHints: popupPersonalIdentityHints ? popupPersonalIdentityHints.value.trim() : "",
+        },
+        () => {
+          showResult(discordResultBox, t("msgDiscordWebhookSaved"));
+        }
+      );
     });
   }
 

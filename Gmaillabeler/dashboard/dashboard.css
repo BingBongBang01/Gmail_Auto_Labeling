@@ -1302,3 +1302,56 @@ select#dashEmailCount {
 }
 
 .result-card-time { font-size: 11px; color: var(--text-sub); }
+
+/* ---- 사용자 정의 Discord 웹훅 카드 ---- */
+.dash-custom-webhook {
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 12px;
+  margin-bottom: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.dash-custom-webhook-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.dash-custom-webhook-rules {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 6px;
+  border-top: 1px dashed var(--border-color);
+}
+
+.dash-rule-line {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.dash-rule-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-sub);
+  min-width: 76px;
+}
+
+.dash-inline-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--text-main);
+  white-space: nowrap;
+}
+
+.dash-inline-check input { margin: 0; }
+
+.dash-del-webhook-btn { flex: 0 0 auto; }

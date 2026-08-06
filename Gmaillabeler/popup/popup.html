@@ -441,7 +441,34 @@
     <div style="margin-top: 8px;">
       <label for="summaryCriteriaInput" style="font-size: 12.5px; color: var(--text);" data-i18n="labelSummaryCriteria">Filter criteria (optional)</label>
       <textarea id="summaryCriteriaInput" rows="2" data-i18n-placeholder="placeholderSummaryCriteria" placeholder="예: 중요한 업무 공지 및 결제 내역만 선별" style="margin-top: 4px; font-size: 12px;"></textarea>
+      <div class="btn-row" style="margin-top:4px;">
+        <button id="generateCriteriaBtn" data-i18n="btnGenerateCriteria">✨ Generate criteria with AI</button>
+      </div>
+      <div class="hint" data-i18n="hintGenerateCriteria"></div>
     </div>
+
+    <details class="settings-group" style="margin-top:10px;">
+      <summary data-i18n="sectionAutoSummary">Auto-summarize &amp; auto-send</summary>
+      <div class="hint" data-i18n="hintAutoSummary"></div>
+      <label class="checkbox-row">
+        <input type="checkbox" id="autoSummaryEnabledCheckbox">
+        <span data-i18n="checkboxAutoSummary">Summarize automatically when new mail lands on the label</span>
+      </label>
+      <div class="field-row" style="flex-direction:column; align-items:stretch; gap:4px;">
+        <label for="autoSummaryLabelSelect" data-i18n="labelAutoSummaryLabel">Label to watch</label>
+        <select id="autoSummaryLabelSelect"></select>
+      </div>
+      <div class="field-row">
+        <label for="autoSummaryMaxCountInput" data-i18n="labelAutoSummaryMaxCount">Max emails per run</label>
+        <input type="number" id="autoSummaryMaxCountInput" value="20" min="1" max="100">
+      </div>
+      <label class="checkbox-row">
+        <input type="checkbox" id="autoSummarySendDiscordCheckbox" checked>
+        <span data-i18n="checkboxAutoSummarySendDiscord">Send the result to Discord automatically</span>
+      </label>
+      <div class="hint" data-i18n="hintAutoSummaryDiscord"></div>
+      <div class="result-box" id="autoSummaryResultBox"></div>
+    </details>
 
     <div class="start-row" style="margin-top: 12px;">
       <button class="primary" id="startSummaryBtn" data-i18n="btnStartSummary">Generate Korean Summary</button>
@@ -628,9 +655,22 @@
       <summary data-i18n="sectionDiscordWebhook">Discord Integration (Discord Webhook)</summary>
       <div class="hint" data-i18n="hintDiscordPopup"></div>
       <input type="password" id="popupDiscordWebhookUrl" data-i18n-placeholder="placeholderDiscordWebhookUrl" placeholder="https://discord.com/api/webhooks/...">
+
+      <div class="field-row" style="margin-top:10px;">
+        <label for="popupDiscordWebhookPersonal" data-i18n="dashLabelWebhookPersonal">🙋 Webhook URL (only mail related to me)</label>
+      </div>
+      <input type="password" id="popupDiscordWebhookPersonal" data-i18n-placeholder="dashPlaceholderWebhookPersonal" placeholder="🙋 Personal channel webhook URL">
+      <div class="hint" data-i18n="dashPersonalWebhookDesc"></div>
+
+      <div class="field-row" style="margin-top:6px;">
+        <label for="popupPersonalIdentityHints" data-i18n="dashLabelIdentityHints">Names / aliases that mean me</label>
+      </div>
+      <input type="text" id="popupPersonalIdentityHints" data-i18n-placeholder="dashPlaceholderIdentityHints" placeholder="e.g. 김태형, TH Kim">
+
       <div class="btn-row" style="margin-top:6px;">
         <button class="primary" id="savePopupDiscordBtn">Save Discord Webhook</button>
       </div>
+      <div class="hint" data-i18n="hintCustomWebhookInDashboard" style="margin-top:6px;"></div>
       <div class="result-box" id="discordResultBox"></div>
     </details>
 <details class="settings-group">

@@ -326,7 +326,8 @@ async function saveStoredOAuthTokens(tokens) {
 }
 
 async function clearStoredOAuthTokens() {
-  await chrome.storage.local.remove(["oauthTokens"]);
+  // 계정이 바뀌면 캐시된 내 메일 주소도 같이 버려야 '나와 관련된 메일' 판별이 엉뚱해지지 않는다.
+  await chrome.storage.local.remove(["oauthTokens", "myEmailAddress"]);
 }
 
 function createOAuthReauthRequiredError() {
@@ -570,6 +571,16 @@ const BACKUP_SETTING_KEYS = [
   "discordWebhookUrlHigh",
   "discordWebhookUrlMedium",
   "discordWebhookUrlLow",
+  "discordWebhookUrlPersonal",
+  "customDiscordWebhooks",
+  "personalIdentityHints",
+  "lastSummaryLabel",
+  "lastSummaryCriteria",
+  "autoSummaryEnabled",
+  "autoSummaryLabel",
+  "autoSummaryMaxCount",
+  "autoSummaryCriteria",
+  "autoSummarySendDiscord",
   "lastLabelSummary",
   "criteriaScratchpad"
 ];
@@ -838,7 +849,8 @@ const MAX_BODY_CHARS_FOR_AI = 350;
 // 빠른 모드: 본문 전체(format=full)를 받지 않고 필요한 헤더 3개 + Gmail 자동 미리보기(snippet)만 받는다.
 // 전송량이 메일당 수십 KB에서 1KB 안쪽으로 줄지만, 본문 하단의 "수신거부/프로모션" 신호를 못 보므로
 // 광고성 메일 판별 정확도가 떨어질 수 있다. 그래서 기본값은 꺼짐이고 사용자가 직접 켜야 한다.
-const LIGHT_FETCH_METADATA_HEADERS = ["Subject", "From", "Date"];
+// To/Cc는 "나와 관련된 메일" 판별(개인 관련성)에 쓰이므로 가벼운 조회 모드에서도 함께 받아온다.
+const LIGHT_FETCH_METADATA_HEADERS = ["Subject", "From", "Date", "To", "Cc"];
 let lightMailFetchCache = null;
 
 async function isLightMailFetchEnabled() {
@@ -872,6 +884,8 @@ async function getEmailContent(token, messageId) {
   const subject = headers.find((h) => h.name === "Subject")?.value || "(제목 없음)";
   const from = headers.find((h) => h.name === "From")?.value || "";
   const date = headers.find((h) => h.name === "Date")?.value || null;
+  const to = headers.find((h) => h.name === "To")?.value || "";
+  const cc = headers.find((h) => h.name === "Cc")?.value || "";
 
   let bodyText = "";
   try {
@@ -893,9 +907,28 @@ async function getEmailContent(token, messageId) {
     snippet: contentForAI || "",
     subject,
     from,
+    to,
+    cc,
     date, // 요약 리포트가 메일 날짜를 표시할 수 있도록 함께 반환 (예전에는 누락돼 항상 null이었음)
     labelIds: data.labelIds || [],
   };
+}
+
+// "나와 관련된 메일" 판별에는 내 메일 주소가 있어야 한다.
+// users/me/profile은 자주 바뀌지 않으므로 한 번 받아 storage에 캐시해두고 재사용한다.
+async function getMyEmailAddress() {
+  const cached = await new Promise((resolve) => chrome.storage.local.get(["myEmailAddress"], resolve));
+  if (cached.myEmailAddress) return cached.myEmailAddress;
+  try {
+    const response = await gmailFetch("https://gmail.googleapis.com/gmail/v1/users/me/profile");
+    if (!response.ok) return "";
+    const data = await response.json();
+    const address = data.emailAddress || "";
+    if (address) await chrome.storage.local.set({ myEmailAddress: address });
+    return address;
+  } catch (e) {
+    return "";
+  }
 }
 
 async function fetchLabelCache(token) {
@@ -2267,6 +2300,81 @@ async function processAnalyzeMultipleLabelsCriteria(labelNames) {
 }
 
 // 선택한 라벨의 메일 목록을 수집하여 Gemini AI로 요약 및 중요 메일 선별 리포트를 생성한다(출력 언어는 현재 UI 언어).
+// 요약 판단 기준(선별 조건 + 중요도 상/중/하 기준)을 실제 받은 메일을 근거로 AI가 초안 작성해준다.
+// 사용자가 빈 칸을 보고 직접 문장을 짜내야 하는 부담을 없애기 위한 기능이라, 결과는 그대로 저장하지 않고
+// 화면에 채워주기만 한다(사용자가 고친 뒤 저장).
+async function generateSummaryCriteriaWithAI(labelName, sampleCount) {
+  const { token } = await initGeminiAndGmailContext();
+  const limit = Math.max(5, Math.min(50, parseInt(sampleCount, 10) || 25));
+  const target = (labelName || "").trim();
+
+  const messages = target
+    ? await getMessagesByLabelName(token, target, limit)
+    : await listMessagesPaged({}, limit, "errMessageListFailed");
+
+  if (!messages || !messages.length) {
+    throw new Error(target ? `'${target}' 라벨에서 참고할 메일을 찾지 못했습니다.` : "참고할 메일을 찾지 못했습니다.");
+  }
+
+  const details = (
+    await mapWithConcurrency(messages, GMAIL_FETCH_CONCURRENCY, async (msg) => {
+      try {
+        return await getEmailContent(token, msg.id);
+      } catch (e) {
+        return null;
+      }
+    })
+  ).filter(Boolean);
+
+  if (!details.length) throw new Error("메일 본문을 읽어오지 못했습니다.");
+
+  const langName = LANGUAGE_NAME_BY_LOCALE[i18nCurrentLocale()] || "한국어";
+  const sampleText = details
+    .map((d, i) => `[${i + 1}] 발신자: ${d.from} / 제목: ${d.subject} / 내용: ${(d.snippet || "").slice(0, 300)}`)
+    .join("\n");
+
+  const prompt =
+    `아래는 사용자가 실제로 받은 이메일 표본이다${target ? ` ('${target}' 라벨)` : ""}. ` +
+    `이 표본을 근거로, 앞으로 이 사용자의 메일을 요약할 때 쓸 판단 기준을 ${langName}로 작성해라.\n\n` +
+    `[작성 규칙]\n` +
+    `1. 'filterCriteria': 요약 대상으로 선별할 메일의 조건을 한두 문장으로. 표본에 실제로 등장한 발신자/업무/서비스 성격을 반영해라.\n` +
+    `2. 'importanceHigh' / 'importanceMedium' / 'importanceLow': 중요도 상/중/하 판단 기준을 각각 한 문장으로. 서로 겹치지 않게 구분되게 써라.\n` +
+    `3. 표본에 없는 상황을 지어내지 말고, 실제로 보이는 메일 유형을 근거로 구체적으로 써라.\n` +
+    `4. 각 항목은 200자를 넘기지 마라.\n\n` +
+    `[메일 표본]\n` +
+    sampleText;
+
+  const requestBody = {
+    contents: [{ parts: [{ text: prompt }] }],
+    generationConfig: {
+      responseMimeType: "application/json",
+      responseSchema: {
+        type: "OBJECT",
+        properties: {
+          filterCriteria: { type: "STRING" },
+          importanceHigh: { type: "STRING" },
+          importanceMedium: { type: "STRING" },
+          importanceLow: { type: "STRING" },
+        },
+        required: ["filterCriteria", "importanceHigh", "importanceMedium", "importanceLow"],
+      },
+    },
+  };
+
+  const parsed = await callGeminiForJson(requestBody);
+  await addLog(`[기준 생성] 메일 ${details.length}건을 근거로 요약 판단 기준 초안을 만들었습니다.`);
+
+  return {
+    sampleSize: details.length,
+    filterCriteria: parsed.filterCriteria || "",
+    importanceCriteria: {
+      high: parsed.importanceHigh || "",
+      medium: parsed.importanceMedium || "",
+      low: parsed.importanceLow || "",
+    },
+  };
+}
+
 async function processSummarizeLabelEmails(labelName, maxEmails, filterCriteria) {
   const { categoryDefs, categories, token } = await initGeminiAndGmailContext();
   const emailLimit = Math.max(1, Math.min(100, parseInt(maxEmails, 10) || 20));
@@ -2308,9 +2416,12 @@ async function processSummarizeLabelEmails(labelName, maxEmails, filterCriteria)
         threadId: detail.threadId,
         idx: i + 1,
         from: detail.from,
+        to: detail.to,
+        cc: detail.cc,
         subject: detail.subject,
         date: detail.date,
         snippet: detail.snippet,
+        labelIds: detail.labelIds || [],
       };
     } catch (e) {
       if (isCancellationError(e)) return null;
@@ -2334,7 +2445,10 @@ async function processSummarizeLabelEmails(labelName, maxEmails, filterCriteria)
   await addLog(`[요약] Gemini AI로 메일 요약 및 선별 수행 중 (${emailDetails.length}개, 출력 언어: ${LANGUAGE_NAME_BY_LOCALE[i18nCurrentLocale()] || "한국어"})...`);
 
   const emailListText = emailDetails
-    .map((item) => `[idx=${item.idx}] 발신자: ${item.from} / 제목: ${item.subject} / 내용: ${item.snippet}`)
+    .map(
+      (item) =>
+        `[idx=${item.idx}] 발신자: ${item.from} / 수신: ${item.to || "(정보없음)"} / 참조: ${item.cc || "(없음)"} / 제목: ${item.subject} / 내용: ${item.snippet}`
+    )
     .join("\n");
 
   const filterInstruction = filterCriteria && filterCriteria.trim()
@@ -2354,6 +2468,19 @@ async function processSummarizeLabelEmails(labelName, maxEmails, filterCriteria)
     `- "중" (공지/일정/업무): ${criteria.medium}\n` +
     `- "하" (정보/참고): ${criteria.low}\n\n`;
 
+  // "나와 관련된 메일만" 웹훅이 쓸 개인 관련성(personallyRelevant) 판단 기준.
+  // 내 주소는 Gmail 프로필에서, 이름/별칭 같은 추가 단서는 사용자가 설정에서 직접 적어둔 값을 쓴다.
+  const myEmailAddress = await getMyEmailAddress();
+  const storedIdentity = await new Promise((resolve) => chrome.storage.local.get(["personalIdentityHints"], resolve));
+  const identityHints = (storedIdentity.personalIdentityHints || "").trim();
+  const personalRelevanceInstruction =
+    `[개인 관련성(personallyRelevant) 판단 기준]\n` +
+    `- 사용자 본인의 메일 주소: ${myEmailAddress || "(확인 불가 - 수신/참조 정보와 본문 맥락으로 추정해라)"}\n` +
+    (identityHints ? `- 사용자 본인을 가리키는 이름/별칭/소속: ${identityHints}\n` : "") +
+    `- true 조건: 본인에게 직접 보낸 메일, 본인이 회신/승인/제출/참석 등 조치를 해야 하는 메일, 본문에서 본인을 직접 지목하거나 언급한 메일, 본인이 보낸 메일에 대한 답장.\n` +
+    `- false 조건: 대량 발송 뉴스레터/마케팅, 자동 알림/영수증, 단순 참조(Cc)로만 들어간 전체 공지, 본인 조치가 전혀 필요 없는 정보성 메일.\n` +
+    `- 애매하면 false로 판단해라(관련 없는 메일이 개인 채널로 새는 것보다 낫다).\n\n`;
+
   // 요약 결과가 보일 화면의 언어와 맞춰야 하므로, 출력 언어는 현재 UI 언어를 따른다.
   // (예전에는 프롬프트에 "반드시 한국어로"가 박혀 있어서 영어/일본어/중국어 UI에서도 본문만 한국어로 나왔다)
   const summaryLangName = LANGUAGE_NAME_BY_LOCALE[i18nCurrentLocale()] || "한국어";
@@ -2362,13 +2489,15 @@ async function processSummarizeLabelEmails(labelName, maxEmails, filterCriteria)
     `아래는 '${labelName}' 라벨에 정리된 이메일 목록이다. 이 이메일들 중 중요하거나 사용자에게 필요한 메일만 선별하여 반드시 ${summaryLangName}로 깔끔하게 요약해라.\n\n` +
     filterInstruction +
     importanceCriteriaInstruction +
+    personalRelevanceInstruction +
     `[지침]\n` +
     `1. 스팸, 단순 반복 알림, 불필요한 홍보성 메일은 선별 대상에서 제외해라.\n` +
     `2. 중요하거나 선별된 메일에 대해 핵심 내용 요약, 중요도(상/중/하 - 위 정밀 기준 준수), 그리고 발신자가 요구하거나 사용자가 해야 할 조치 사항(Action Item)을 ${summaryLangName}로 작성해라.\n` +
     `3. 각 메일별로 디스코드(Discord) 채널 알림 전송 필요 여부('discordNotificationNeeded': true/false - 단순 뉴스레터는 false, 중요/긴급/조치 필요 메일은 true)와 디스코드 카테고리('discordCategory': "긴급/조치필요" | "공지/일정" | "일반/리포트"), 및 디스코드 채널 전용 한 줄 핵심 브리핑('discordSummaryText', ${summaryLangName})을 AI 판단으로 자동 분류해라.\n` +
     `4. 전체 메일을 종합한 'overallSummary'(전체 요약 브리핑, ${summaryLangName} 2~4문장)를 작성해라.\n` +
     `5. 선별된 메일 목록 'selectedEmails' 배열에 정보를 담아 반환해라.\n` +
-    `6. 조치할 것이 없는 메일은 'actionRequired'를 다른 표현 없이 정확히 "없음"으로만 적어라(화면에서 이 값을 기준으로 조치 항목을 숨긴다).\n\n` +
+    `6. 조치할 것이 없는 메일은 'actionRequired'를 다른 표현 없이 정확히 "없음"으로만 적어라(화면에서 이 값을 기준으로 조치 항목을 숨긴다).\n` +
+    `7. 각 메일별로 위 [개인 관련성 판단 기준]에 따라 'personallyRelevant'(true/false)와 그렇게 판단한 짧은 이유 'personalRelevanceReason'(${summaryLangName} 한 문장)을 반드시 채워라.\n\n` +
     `[이메일 목록]\n` +
     emailListText;
 
@@ -2397,6 +2526,8 @@ async function processSummarizeLabelEmails(labelName, maxEmails, filterCriteria)
                 discordNotificationNeeded: { type: "BOOLEAN" },
                 discordCategory: { type: "STRING", enum: ["긴급/조치필요", "공지/일정", "일반/리포트"] },
                 discordSummaryText: { type: "STRING" },
+                personallyRelevant: { type: "BOOLEAN" },
+                personalRelevanceReason: { type: "STRING" },
               },
               required: [
                 "idx",
@@ -2407,7 +2538,9 @@ async function processSummarizeLabelEmails(labelName, maxEmails, filterCriteria)
                 "actionRequired",
                 "discordNotificationNeeded",
                 "discordCategory",
-                "discordSummaryText"
+                "discordSummaryText",
+                "personallyRelevant",
+                "personalRelevanceReason"
               ],
             },
           },
@@ -2419,6 +2552,18 @@ async function processSummarizeLabelEmails(labelName, maxEmails, filterCriteria)
 
   const parsedResult = await callGeminiForJson(requestBody);
 
+  // 커스텀 웹훅의 '분류(라벨) 조건'이 쓸 수 있도록, 각 메일이 실제로 달고 있는 라벨 이름을 함께 담는다.
+  // (라벨 ID는 그대로 두면 사람이 읽을 수 없으므로 목록을 한 번 받아 이름으로 바꾼다)
+  let labelNameById = new Map();
+  try {
+    const labelCache = await fetchLabelCache(token);
+    labelCache.exact.forEach((id, name) => {
+      if (!labelCache.systemNames || !labelCache.systemNames.has(name)) labelNameById.set(id, name);
+    });
+  } catch (e) {
+    await addLog(`[요약] 라벨 이름 조회 실패(분류 조건 라우팅은 라벨명 기준으로만 동작): ${e.message || e}`, "warn");
+  }
+
   const enrichedSelectedEmails = (parsedResult.selectedEmails || []).map((item) => {
     const orig = emailDetails.find((e) => e.idx === item.idx);
     return {
@@ -2426,6 +2571,7 @@ async function processSummarizeLabelEmails(labelName, maxEmails, filterCriteria)
       id: orig ? orig.id : null,
       threadId: orig ? orig.threadId : null,
       date: orig ? orig.date : null,
+      labelNames: orig ? (orig.labelIds || []).map((id) => labelNameById.get(id)).filter(Boolean) : [],
     };
   });
 
@@ -2537,7 +2683,124 @@ function resolveDiscordTargetUrl(webhooks, tier) {
   return null;
 }
 
-// 요약 리포트를 지정한 Discord Webhook URL(또는 중요도별 분리 채널)로 전송한다.
+// ---- 사용자 정의(커스텀) 웹훅 라우팅 ----
+// 사용자가 원하는 만큼 웹훅을 추가하고, 각 웹훅이 받을 메일 조건을 규칙으로 직접 정할 수 있다.
+// 규칙은 AI를 추가로 호출하지 않고 요약 결과(중요도/카테고리/발신자/제목/개인 관련성)만으로 판정한다.
+
+function isValidWebhookUrl(url) {
+  return typeof url === "string" && url.startsWith("http");
+}
+
+function splitWebhookKeywords(text) {
+  return String(text || "")
+    .split(/[,\n]/)
+    .map((s) => s.trim().toLowerCase())
+    .filter(Boolean);
+}
+
+// 조건 종류끼리는 AND, 같은 종류 안의 값끼리는 OR로 판정한다. 비워둔 조건은 "제한 없음"이다.
+function matchesCustomWebhookRule(rule, item, reportLabelName) {
+  // 분류(라벨) 조건: 메일이 실제로 달고 있는 라벨 중 하나라도 지정 목록에 있으면 통과.
+  // 예전 버전이 만든 리포트에는 labelNames가 없으므로, 그때는 요약 대상 라벨명으로 판정한다.
+  const labels = (Array.isArray(rule.labels) ? rule.labels : []).filter(Boolean);
+  if (labels.length) {
+    const mailLabels = Array.isArray(item.labelNames) && item.labelNames.length ? item.labelNames : [reportLabelName];
+    if (!mailLabels.some((name) => labels.includes(name))) return false;
+  }
+
+  const importances = (Array.isArray(rule.importance) ? rule.importance : []).filter(Boolean);
+  if (importances.length && !importances.includes(item.importance)) return false;
+
+  const categories = (Array.isArray(rule.categories) ? rule.categories : []).filter(Boolean);
+  if (categories.length && !categories.includes(item.discordCategory)) return false;
+
+  if (rule.onlyPersonal && item.personallyRelevant !== true) return false;
+  if (rule.onlyActionRequired && (!item.actionRequired || item.actionRequired === "없음")) return false;
+
+  const senderKeys = splitWebhookKeywords(rule.senderKeywords);
+  if (senderKeys.length) {
+    const sender = String(item.sender || "").toLowerCase();
+    if (!senderKeys.some((k) => sender.includes(k))) return false;
+  }
+
+  const subjectKeys = splitWebhookKeywords(rule.subjectKeywords);
+  const contentHaystack = `${item.subject || ""} ${(item.summaryPoints || []).join(" ")} ${item.discordSummaryText || ""}`.toLowerCase();
+  if (subjectKeys.length && !subjectKeys.some((k) => contentHaystack.includes(k))) return false;
+
+  const excludeKeys = splitWebhookKeywords(rule.excludeKeywords);
+  if (excludeKeys.length) {
+    const full = `${String(item.sender || "").toLowerCase()} ${contentHaystack}`;
+    if (excludeKeys.some((k) => full.includes(k))) return false;
+  }
+
+  return true;
+}
+
+// 중요도별 채널 전송과 같은 형식의 embed 필드를 만든다.
+function buildDiscordEmailFields(list, options = {}) {
+  return list.map((item, idx) => {
+    const imp = item.importance || "중";
+    const impIcon = imp === "상" ? "🔴" : imp === "중" ? "🟡" : "🟢";
+    let value = "";
+    if (options.showPersonalReason && item.personalRelevanceReason) {
+      value += `🙋 **나와의 관련성**: ${item.personalRelevanceReason}\n`;
+    }
+    if (item.discordSummaryText) value += `💬 **AI 브리핑**: ${item.discordSummaryText}\n`;
+    value += `**발신자**: ${item.sender || "정보 없음"}\n`;
+    value += (item.summaryPoints || []).map((p) => `• ${p}`).join("\n");
+    if (item.actionRequired && item.actionRequired !== "없음") {
+      value += `\n⚡ **조치**: ${item.actionRequired}`;
+    }
+    if (item.id) {
+      value += `\n🔗 [Gmail에서 메일 보기](https://mail.google.com/mail/u/0/#inbox/${item.id})`;
+    }
+    return {
+      name: `${idx + 1}. ${impIcon} [${item.discordCategory || imp}] ${String(item.subject || "").slice(0, 200)}`,
+      value: value.slice(0, 1024),
+      inline: false,
+    };
+  });
+}
+
+// 커스텀 웹훅 + '나와 관련된 메일' 웹훅으로 전송한다. 중요도별/기본 채널 전송과는 별개로 추가 동작한다.
+async function sendExtraDiscordWebhooks(webhooks, summaryReport) {
+  const selected = summaryReport.selectedEmails || [];
+  let sentCount = 0;
+
+  if (isValidWebhookUrl(webhooks.personalUrl)) {
+    const mine = selected.filter((e) => e.personallyRelevant === true);
+    if (mine.length) {
+      await sendSingleDiscordEmbed(
+        webhooks.personalUrl,
+        `🙋 [${summaryReport.labelName}] 나와 관련된 메일 (${mine.length}건)`,
+        summaryReport.overallSummary || "",
+        0x6366f1,
+        buildDiscordEmailFields(mine, { showPersonalReason: true })
+      );
+      sentCount += 1;
+    }
+  }
+
+  const customs = (Array.isArray(webhooks.custom) ? webhooks.custom : []).filter(
+    (w) => w && w.enabled !== false && isValidWebhookUrl(w.url)
+  );
+  for (const rule of customs) {
+    const matched = selected.filter((item) => matchesCustomWebhookRule(rule, item, summaryReport.labelName));
+    if (!matched.length) continue;
+    await sendSingleDiscordEmbed(
+      rule.url,
+      `${rule.name ? `📨 ${rule.name}` : "📨 사용자 지정 웹훅"} · [${summaryReport.labelName}] (${matched.length}건)`,
+      summaryReport.overallSummary || "",
+      0x2563eb,
+      buildDiscordEmailFields(matched, { showPersonalReason: !!rule.onlyPersonal })
+    );
+    sentCount += 1;
+  }
+
+  return sentCount;
+}
+
+// 요약 리포트를 지정한 Discord Webhook URL(또는 중요도별 분리 채널 / 사용자 정의 웹훅)로 전송한다.
 async function sendSummaryToDiscord(webhookInput, summaryReport) {
   if (!summaryReport) throw new Error("전송할 요약 리포트 데이터가 없습니다.");
 
@@ -2549,10 +2812,16 @@ async function sendSummaryToDiscord(webhookInput, summaryReport) {
   }
 
   const hasSpecificChannel = webhooks.highUrl || webhooks.mediumUrl || webhooks.lowUrl;
+  const hasExtraChannel =
+    isValidWebhookUrl(webhooks.personalUrl) ||
+    (Array.isArray(webhooks.custom) && webhooks.custom.some((w) => w && w.enabled !== false && isValidWebhookUrl(w.url)));
 
-  if (!hasSpecificChannel && (!webhooks.defaultUrl || !webhooks.defaultUrl.startsWith("http"))) {
+  if (!hasSpecificChannel && !hasExtraChannel && !isValidWebhookUrl(webhooks.defaultUrl)) {
     throw new Error(t("errDiscordWebhookMissing"));
   }
+
+  // 커스텀/개인 관련 웹훅은 기본·중요도 채널과 독립적으로 항상 먼저 처리한다.
+  const extraSent = await sendExtraDiscordWebhooks(webhooks, summaryReport);
 
   // 중요도별/AI카테고리별 웹훅이 설정되어 있으면 해당 디스코드 채널로 자동 분기 전송!
   if (hasSpecificChannel) {
@@ -2592,11 +2861,18 @@ async function sendSummaryToDiscord(webhookInput, summaryReport) {
       sentCount += 1;
     }
 
-    if (sentCount === 0 && webhooks.defaultUrl) {
+    // 중요도 채널로 아무것도 못 보냈을 때만 기본 채널로 흘려보낸다.
+    // (문자열을 넘기므로 커스텀/개인 웹훅이 두 번 전송되지 않는다)
+    if (sentCount === 0 && isValidWebhookUrl(webhooks.defaultUrl)) {
       return await sendSummaryToDiscord(webhooks.defaultUrl, summaryReport);
     }
 
-    return { ok: true };
+    return { ok: true, sent: sentCount + extraSent };
+  }
+
+  // 커스텀/개인 웹훅만 설정한 경우엔 기본 채널 전송 없이 끝낸다.
+  if (!isValidWebhookUrl(webhooks.defaultUrl)) {
+    return { ok: true, sent: extraSent };
   }
 
   // 기본 단일 채널 전송
@@ -2649,7 +2925,7 @@ async function sendSummaryToDiscord(webhookInput, summaryReport) {
     fields
   );
 
-  return { ok: true };
+  return { ok: true, sent: 1 + extraSent };
 }
 
 
@@ -3421,11 +3697,112 @@ async function checkAutoClassifyTrigger() {
   }
 }
 
+// 저장된 Discord 웹훅 설정을 sendSummaryToDiscord()가 받는 형태로 모아준다.
+async function loadDiscordWebhookConfig() {
+  const stored = await new Promise((resolve) =>
+    chrome.storage.local.get(
+      [
+        "discordWebhookUrl",
+        "discordWebhookUrlHigh",
+        "discordWebhookUrlMedium",
+        "discordWebhookUrlLow",
+        "discordWebhookUrlPersonal",
+        "customDiscordWebhooks",
+      ],
+      resolve
+    )
+  );
+  return {
+    defaultUrl: stored.discordWebhookUrl || "",
+    highUrl: stored.discordWebhookUrlHigh || "",
+    mediumUrl: stored.discordWebhookUrlMedium || "",
+    lowUrl: stored.discordWebhookUrlLow || "",
+    personalUrl: stored.discordWebhookUrlPersonal || "",
+    custom: Array.isArray(stored.customDiscordWebhooks) ? stored.customDiscordWebhooks : [],
+  };
+}
+
+// 자동 요약: 지정한 라벨에 새 메일이 붙으면 그 새 메일들만 요약하고, 원하면 Discord로 바로 보낸다.
+//
+// "새 메일"은 라벨 메일 목록(최신순)의 맨 위 ID를 기억해두고 비교하는 방식으로 찾는다.
+// 목록 조회 1회면 되므로 주기적으로 돌려도 API 부담이 거의 없다.
+async function checkAutoSummaryTrigger() {
+  const settings = await new Promise((resolve) =>
+    chrome.storage.local.get(
+      [
+        "autoSummaryEnabled",
+        "autoSummaryLabel",
+        "autoSummaryMaxCount",
+        "autoSummaryCriteria",
+        "autoSummarySendDiscord",
+        "autoSummaryLastTopId",
+        "autoSummaryLastLabel",
+      ],
+      resolve
+    )
+  );
+
+  if (settings.autoSummaryEnabled !== true) return;
+  const labelName = (settings.autoSummaryLabel || "").trim();
+  if (!labelName) return;
+
+  const running = await isJobRunning();
+  if (running) return;
+
+  try {
+    const apiKeys = await getGeminiApiKeys();
+    if (!apiKeys.length) return;
+
+    const { token } = await initGmailOnlyContext();
+    const maxCount = Math.max(1, Math.min(100, parseInt(settings.autoSummaryMaxCount, 10) || 20));
+    const messages = await getMessagesByLabelName(token, labelName, maxCount);
+    if (!messages || !messages.length) return;
+
+    const topId = messages[0].id;
+    // 대상 라벨이 바뀌었거나 처음 켠 직후에는, 이미 쌓여 있던 메일을 통째로 요약하지 않고 기준점만 잡는다.
+    if (settings.autoSummaryLastLabel !== labelName || !settings.autoSummaryLastTopId) {
+      await chrome.storage.local.set({ autoSummaryLastTopId: topId, autoSummaryLastLabel: labelName });
+      return;
+    }
+    if (topId === settings.autoSummaryLastTopId) return;
+
+    // 기억해둔 ID가 목록에서 사라졌다면(그 사이에 maxCount보다 많이 들어옴) 목록 전체를 새 메일로 본다.
+    const seenIdx = messages.findIndex((m) => m.id === settings.autoSummaryLastTopId);
+    const newCount = seenIdx === -1 ? messages.length : seenIdx;
+    if (newCount <= 0) return;
+
+    // 같은 메일로 반복 실행되지 않도록 기준점을 먼저 갱신한다.
+    await chrome.storage.local.set({ autoSummaryLastTopId: topId, autoSummaryLastLabel: labelName });
+
+    const sendDiscord = settings.autoSummarySendDiscord !== false;
+    const filterCriteria = settings.autoSummaryCriteria || "";
+
+    await markJobRunning("labelSummary");
+    runJob(async () => {
+      const result = await processSummarizeLabelEmails(labelName, newCount, filterCriteria);
+      if (sendDiscord && result.summaryReport && result.summaryReport.selectedCount > 0) {
+        try {
+          await sendSummaryToDiscord(await loadDiscordWebhookConfig(), result.summaryReport);
+          await addLog(`[자동 요약] Discord 전송 완료 (${result.summaryReport.selectedCount}건).`);
+        } catch (e) {
+          // 요약 자체는 성공했으므로 전송 실패로 작업을 실패 처리하지는 않는다.
+          await addLog(`[자동 요약] Discord 전송 실패: ${e.message || e}`, "warn");
+        }
+      }
+      return result;
+    }, "notifyTitleSummary");
+  } catch (e) {
+    console.error("[GmailLabeler] 자동 요약 확인 실패:", e);
+  }
+}
+
 chrome.alarms.onAlarm.addListener((alarm) => {
   if (alarm.name === KEEP_ALIVE_ALARM) {
     // 서비스워커 활성 상태 유지 용도
   } else if (alarm.name === AUTO_CLASSIFY_CHECK_ALARM) {
-    checkAutoClassifyTrigger();
+    // 자동 분류가 먼저 끝나야 새로 붙은 라벨이 자동 요약 대상에 잡힌다.
+    // (분류 작업이 시작됐다면 checkAutoSummaryTrigger는 실행 중 확인에서 스스로 물러난다)
+    checkAutoClassifyTrigger().then(() => checkAutoSummaryTrigger());
   }
 });
 
@@ -3754,6 +4131,19 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       await markJobRunning("labelSummary");
       runJob(() => processSummarizeLabelEmails(labelName, request.count, request.filterCriteria), "notifyTitleSummary");
       sendResponse({ messageKey: "summaryRequesting", ok: true, started: true });
+    });
+    return true;
+  }
+
+  if (request.action === "generateSummaryCriteria") {
+    isJobRunning().then((running) => {
+      if (running) {
+        sendResponse({ ok: false, messageKey: "errorAlreadyRunning" });
+        return;
+      }
+      generateSummaryCriteriaWithAI(request.labelName, request.sampleCount)
+        .then((result) => sendResponse({ ok: true, ...result }))
+        .catch((err) => sendResponse({ ok: false, error: String(err.message || err) }));
     });
     return true;
   }

@@ -13,7 +13,7 @@
     <div class="dash-header-left">
       <img src="../icon128.png" alt="Logo" class="dash-logo">
       <div class="dash-title-wrap">
-        <h1>Gmail AI Labeler <span class="version-badge">v1.9</span></h1>
+        <h1>Gmail AI Labeler <span class="version-badge">v2.0</span></h1>
         <p class="dash-subtitle" data-i18n="dashSubtitle">Mail classification and summary dashboard</p>
       </div>
     </div>
@@ -77,6 +77,7 @@
           <input type="text" id="dashSummaryCriteriaInput" class="dash-input-text" data-i18n-placeholder="dashPlaceholderCriteria" placeholder="e.g. only key schedules and expenses">
         </div>
         <div class="subbar-right">
+          <button class="dash-btn dash-btn-secondary" id="dashGenerateCriteriaBtn" data-i18n-title="hintGenerateCriteria" data-i18n="btnGenerateCriteria">✨ Generate criteria with AI</button>
           <button class="dash-btn dash-btn-primary" id="dashStartSummaryBtn" data-i18n="dashBtnRunSummary">🚀 Generate summary</button>
         </div>
       </div>
@@ -257,6 +258,59 @@
 
           <hr class="dash-divider">
 
+          <h3 data-i18n="dashAutoSummaryHeading">🤖 Auto-summarize and auto-send</h3>
+          <p class="dash-desc" data-i18n="hintAutoSummary"></p>
+
+          <label class="dash-inline-check" style="margin-bottom:10px;">
+            <input type="checkbox" id="dashAutoSummaryEnabled">
+            <span data-i18n="checkboxAutoSummary">Summarize automatically when new mail lands on the label</span>
+          </label>
+
+          <div class="dash-form-group">
+            <label data-i18n="labelAutoSummaryLabel">Label to watch</label>
+            <select id="dashAutoSummaryLabelSelect" class="dash-select"></select>
+          </div>
+
+          <div class="dash-form-group">
+            <label data-i18n="labelAutoSummaryMaxCount">Max emails per run</label>
+            <input type="number" id="dashAutoSummaryMaxCount" class="dash-input-num" value="20" min="1" max="100">
+          </div>
+
+          <div class="dash-form-group">
+            <label data-i18n="labelAutoSummaryCriteria">Filter criteria used by auto-summary</label>
+            <input type="text" id="dashAutoSummaryCriteria" class="dash-input-text" data-i18n-placeholder="dashPlaceholderCriteria" placeholder="e.g. only key schedules and expenses">
+          </div>
+
+          <label class="dash-inline-check">
+            <input type="checkbox" id="dashAutoSummarySendDiscord" checked>
+            <span data-i18n="checkboxAutoSummarySendDiscord">Send the result to Discord automatically</span>
+          </label>
+          <p class="dash-desc" data-i18n="hintAutoSummaryDiscord"></p>
+
+          <hr class="dash-divider">
+
+          <h3 data-i18n="dashPersonalWebhookHeading">🙋 Webhook for mail related to me</h3>
+          <p class="dash-desc" data-i18n="dashPersonalWebhookDesc"></p>
+
+          <div class="dash-form-group">
+            <label data-i18n="dashLabelWebhookPersonal">🙋 Webhook URL (only mail related to me)</label>
+            <input type="text" id="dashDiscordWebhookPersonal" class="dash-input-text" data-i18n-placeholder="dashPlaceholderWebhookPersonal" placeholder="🙋 Personal channel webhook URL">
+          </div>
+
+          <div class="dash-form-group">
+            <label data-i18n="dashLabelIdentityHints">Names / aliases that mean me</label>
+            <input type="text" id="dashPersonalIdentityHints" class="dash-input-text" data-i18n-placeholder="dashPlaceholderIdentityHints" placeholder="e.g. 김태형, TH Kim, 개발팀장">
+          </div>
+
+          <hr class="dash-divider">
+
+          <h3 data-i18n="dashCustomWebhookHeading">📨 Custom webhooks</h3>
+          <p class="dash-desc" data-i18n="dashCustomWebhookDesc"></p>
+          <div id="dashCustomWebhookList"></div>
+          <button class="dash-btn dash-btn-secondary" id="dashAddCustomWebhookBtn" data-i18n="dashBtnAddCustomWebhook">+ Add webhook</button>
+
+          <hr class="dash-divider">
+
           <h3 data-i18n="dashCriteriaHeading">🎯 Importance criteria</h3>
           <div class="dash-form-group">
             <label data-i18n="dashLabelCriteriaHigh">High importance criteria</label>
@@ -271,7 +325,11 @@
             <input type="text" id="dashCriteriaLow" class="dash-input-text" data-i18n-placeholder="dashPlaceholderCriteriaLow" placeholder="e.g. marketing, newsletters, ads, events">
           </div>
 
-          <button class="dash-btn dash-btn-primary" id="dashSaveDiscordSettingsBtn" style="margin-top: 14px;" data-i18n="dashBtnSaveDiscordSettings">💾 Save Discord and importance settings</button>
+          <div style="display:flex; align-items:center; gap:10px; margin-top:14px;">
+            <button class="dash-btn dash-btn-primary" id="dashSaveDiscordSettingsBtn" data-i18n="dashBtnSaveDiscordSettings">💾 Save Discord and importance settings</button>
+            <span id="dashSettingsSavedMark" class="dash-desc" style="opacity:0; transition:opacity .2s ease; margin:0;"></span>
+          </div>
+          <p class="dash-desc" data-i18n="hintSettingsAutoSave"></p>
         </div>
 
         <div class="dash-card">

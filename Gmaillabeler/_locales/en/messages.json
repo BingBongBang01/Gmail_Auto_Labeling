@@ -2723,5 +2723,121 @@
   },
   "resultCardNothingYet": {
     "message": "No job has run yet."
+  },
+  "dashPersonalWebhookHeading": {
+    "message": "🙋 Webhook for mail related to me"
+  },
+  "dashPersonalWebhookDesc": {
+    "message": "The AI decides which mail is actually about you — sent directly to you, needs your reply or action, or mentions you by name. Only those are posted to this channel. Bulk newsletters and automated notices are skipped."
+  },
+  "dashLabelWebhookPersonal": {
+    "message": "🙋 Webhook URL (only mail related to me)"
+  },
+  "dashPlaceholderWebhookPersonal": {
+    "message": "🙋 Personal channel webhook URL"
+  },
+  "dashLabelIdentityHints": {
+    "message": "Names / aliases that mean me"
+  },
+  "dashPlaceholderIdentityHints": {
+    "message": "e.g. Taehyeong Kim, TH Kim, Dev Team Lead"
+  },
+  "dashCustomWebhookHeading": {
+    "message": "📨 Custom webhooks"
+  },
+  "dashCustomWebhookDesc": {
+    "message": "Add as many webhooks as you like and give each one its own rules. Conditions of different kinds are combined with AND; values within one condition are OR. Leave a condition empty to place no limit. No extra AI call is made."
+  },
+  "dashCustomWebhookEmpty": {
+    "message": "No custom webhook yet. Add one to route mail to your own channels."
+  },
+  "dashCustomWebhookEnabled": {
+    "message": "Enabled"
+  },
+  "dashBtnAddCustomWebhook": {
+    "message": "+ Add webhook"
+  },
+  "dashPlaceholderCustomWebhookName": {
+    "message": "Webhook name (e.g. Billing channel)"
+  },
+  "dashRuleImportance": {
+    "message": "Importance"
+  },
+  "dashRuleCategory": {
+    "message": "Category"
+  },
+  "dashRuleOnlyPersonal": {
+    "message": "Only mail related to me"
+  },
+  "dashRuleOnlyAction": {
+    "message": "Only mail needing action"
+  },
+  "dashPlaceholderRuleSender": {
+    "message": "Sender keywords (comma separated, any match)"
+  },
+  "dashPlaceholderRuleSubject": {
+    "message": "Subject/summary keywords (comma separated, any match)"
+  },
+  "dashPlaceholderRuleExclude": {
+    "message": "Exclude keywords (comma separated, any match excludes)"
+  },
+  "hintCustomWebhookInDashboard": {
+    "message": "To add your own webhooks with routing rules, open the dashboard and go to Settings & Discord."
+  },
+  "btnGenerateCriteria": {
+    "message": "✨ Generate criteria with AI"
+  },
+  "hintGenerateCriteria": {
+    "message": "Reads a sample of mail from the selected label and drafts the filter criteria plus the high/medium/low importance criteria for you. Review and edit before saving."
+  },
+  "msgGeneratingCriteria": {
+    "message": "Generating criteria..."
+  },
+  "msgCriteriaGenerated": {
+    "message": "Drafted criteria from $COUNT$ emails. Review and edit, then save.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "sectionAutoSummary": {
+    "message": "Auto-summarize & auto-send"
+  },
+  "hintAutoSummary": {
+    "message": "When new mail is labeled with the watched label, only those new emails are summarized automatically. Runs on the same 5-minute check as auto-classify, and is skipped while another job is running."
+  },
+  "checkboxAutoSummary": {
+    "message": "Summarize automatically when new mail lands on the label"
+  },
+  "labelAutoSummaryLabel": {
+    "message": "Label to watch"
+  },
+  "labelAutoSummaryMaxCount": {
+    "message": "Max emails per run"
+  },
+  "labelAutoSummaryCriteria": {
+    "message": "Filter criteria used by auto-summary"
+  },
+  "checkboxAutoSummarySendDiscord": {
+    "message": "Send the result to Discord automatically"
+  },
+  "hintAutoSummaryDiscord": {
+    "message": "Uses the webhooks configured above, including the personal and custom ones. If sending fails the summary itself is still kept."
+  },
+  "dashAutoSummaryHeading": {
+    "message": "🤖 Auto-summarize and auto-send"
+  },
+  "msgSettingsAutoSaved": {
+    "message": "Saved"
+  },
+  "hintSettingsAutoSave": {
+    "message": "Changes on this page are saved automatically a moment after you stop typing. API keys still need their own Save button."
+  },
+  "dashRuleLabels": {
+    "message": "Label"
+  },
+  "dashRuleNoLabels": {
+    "message": "No label registered yet. Add categories on the Label management tab."
   }
 }

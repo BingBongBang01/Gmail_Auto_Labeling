@@ -113,7 +113,7 @@ function getLocalizedDefaultCategoryDefs() {
 }
 
 function loadCategories() {
-  chrome.storage.local.get(["categoryDefinitions", "labelCategories"], (result) => {
+  chrome.storage.local.get(["categoryDefinitions", "labelCategories", "lastSummaryLabel", "lastSummaryCriteria"], (result) => {
     if (Array.isArray(result.categoryDefinitions) && result.categoryDefinitions.length) {
       currentCategoryDefs = result.categoryDefinitions.map((c) => ({
         name: c.name,
@@ -130,8 +130,17 @@ function loadCategories() {
     if (selectedLabelName && !currentCategoryDefs.some((c) => c.name === selectedLabelName)) {
       selectedLabelName = "";
     }
+    // 마지막으로 요약했던 라벨이 아직 살아 있으면 그것부터 다시 선택해준다.
+    if (!selectedLabelName && result.lastSummaryLabel && currentCategoryDefs.some((c) => c.name === result.lastSummaryLabel)) {
+      selectedLabelName = result.lastSummaryLabel;
+    }
     if (!selectedLabelName && currentCategoryDefs.length) {
       selectedLabelName = currentCategoryDefs[0].name;
+    }
+
+    const criteriaInput = $("dashSummaryCriteriaInput");
+    if (criteriaInput && !criteriaInput.value && result.lastSummaryCriteria) {
+      criteriaInput.value = result.lastSummaryCriteria;
     }
 
     renderSidebarLabels();
@@ -171,6 +180,8 @@ function renderSummaryLabelSelect() {
 
 function selectLabel(name) {
   selectedLabelName = name || "";
+  // 다음에 대시보드를 다시 열었을 때도 같은 라벨이 선택돼 있게 기억해둔다(팝업과 같은 값을 공유).
+  if (selectedLabelName) chrome.storage.local.set({ lastSummaryLabel: selectedLabelName });
   renderSidebarLabels();
   renderDashAnalysisChecklist();
   const select = $("dashSummaryLabelSelect");
@@ -567,6 +578,133 @@ function loadDashboardRelabelOptions() {
 // ---------------- 설정 탭 ----------------
 let dashApiKeys = []; // [{label, key}] - background.js가 기대하는 형식과 동일하게 유지
 
+// 사용자가 원하는 만큼 추가하는 커스텀 Discord 웹훅.
+// background.js의 matchesCustomWebhookRule()이 읽는 필드 이름과 반드시 같아야 한다.
+let dashCustomWebhooks = [];
+
+const CUSTOM_WEBHOOK_IMPORTANCES = ["상", "중", "하"];
+const CUSTOM_WEBHOOK_CATEGORIES = ["긴급/조치필요", "공지/일정", "일반/리포트"];
+
+function emptyCustomWebhook() {
+  return {
+    name: "",
+    url: "",
+    enabled: true,
+    labels: [],
+    importance: [],
+    categories: [],
+    onlyPersonal: false,
+    onlyActionRequired: false,
+    senderKeywords: "",
+    subjectKeywords: "",
+    excludeKeywords: "",
+  };
+}
+
+function renderCustomWebhooks() {
+  const wrap = $("dashCustomWebhookList");
+  if (!wrap) return;
+
+  if (!dashCustomWebhooks.length) {
+    wrap.innerHTML = `<p class="dash-desc">${escapeHtml(t("dashCustomWebhookEmpty"))}</p>`;
+    return;
+  }
+
+  wrap.innerHTML = dashCustomWebhooks
+    .map((hook, idx) => {
+      const imps = Array.isArray(hook.importance) ? hook.importance : [];
+      const cats = Array.isArray(hook.categories) ? hook.categories : [];
+      const labels = Array.isArray(hook.labels) ? hook.labels : [];
+      // 분류(라벨) 조건은 현재 등록된 카테고리 목록에서 고른다.
+      // 이미 지워진 라벨이 규칙에 남아 있을 수 있으므로 그것도 함께 보여준다(모르는 사이에 조건이 사라지지 않게).
+      const labelChoices = currentCategoryDefs
+        .map((c) => c.name)
+        .concat(labels.filter((name) => !currentCategoryDefs.some((c) => c.name === name)));
+      const labelBoxes = labelChoices.length
+        ? labelChoices
+            .map(
+              (name) =>
+                `<label class="dash-inline-check"><input type="checkbox" data-field="labels" value="${escapeHtml(name)}"${labels.includes(name) ? " checked" : ""}> ${escapeHtml(name)}</label>`
+            )
+            .join("")
+        : `<span class="dash-desc" style="margin:0;">${escapeHtml(t("dashRuleNoLabels"))}</span>`;
+      const impBoxes = CUSTOM_WEBHOOK_IMPORTANCES.map(
+        (v) =>
+          `<label class="dash-inline-check"><input type="checkbox" data-field="importance" value="${escapeHtml(v)}"${imps.includes(v) ? " checked" : ""}> ${escapeHtml(v)}</label>`
+      ).join("");
+      const catBoxes = CUSTOM_WEBHOOK_CATEGORIES.map(
+        (v) =>
+          `<label class="dash-inline-check"><input type="checkbox" data-field="categories" value="${escapeHtml(v)}"${cats.includes(v) ? " checked" : ""}> ${escapeHtml(v)}</label>`
+      ).join("");
+
+      return `
+      <div class="dash-custom-webhook" data-idx="${idx}">
+        <div class="dash-custom-webhook-head">
+          <input type="text" class="dash-input-text" data-field="name" value="${escapeHtml(hook.name || "")}" placeholder="${escapeHtml(t("dashPlaceholderCustomWebhookName"))}">
+          <label class="dash-inline-check"><input type="checkbox" data-field="enabled"${hook.enabled === false ? "" : " checked"}> ${escapeHtml(t("dashCustomWebhookEnabled"))}</label>
+          <button class="dash-btn dash-btn-secondary dash-del-webhook-btn" data-idx="${idx}">✕</button>
+        </div>
+        <input type="text" class="dash-input-text" data-field="url" value="${escapeHtml(hook.url || "")}" placeholder="https://discord.com/api/webhooks/...">
+        <div class="dash-custom-webhook-rules">
+          <div class="dash-rule-line"><span class="dash-rule-label">${escapeHtml(t("dashRuleLabels"))}</span>${labelBoxes}</div>
+          <div class="dash-rule-line"><span class="dash-rule-label">${escapeHtml(t("dashRuleImportance"))}</span>${impBoxes}</div>
+          <div class="dash-rule-line"><span class="dash-rule-label">${escapeHtml(t("dashRuleCategory"))}</span>${catBoxes}</div>
+          <div class="dash-rule-line">
+            <label class="dash-inline-check"><input type="checkbox" data-field="onlyPersonal"${hook.onlyPersonal ? " checked" : ""}> ${escapeHtml(t("dashRuleOnlyPersonal"))}</label>
+            <label class="dash-inline-check"><input type="checkbox" data-field="onlyActionRequired"${hook.onlyActionRequired ? " checked" : ""}> ${escapeHtml(t("dashRuleOnlyAction"))}</label>
+          </div>
+          <input type="text" class="dash-input-text" data-field="senderKeywords" value="${escapeHtml(hook.senderKeywords || "")}" placeholder="${escapeHtml(t("dashPlaceholderRuleSender"))}">
+          <input type="text" class="dash-input-text" data-field="subjectKeywords" value="${escapeHtml(hook.subjectKeywords || "")}" placeholder="${escapeHtml(t("dashPlaceholderRuleSubject"))}">
+          <input type="text" class="dash-input-text" data-field="excludeKeywords" value="${escapeHtml(hook.excludeKeywords || "")}" placeholder="${escapeHtml(t("dashPlaceholderRuleExclude"))}">
+        </div>
+      </div>`;
+    })
+    .join("");
+
+  wrap.querySelectorAll(".dash-del-webhook-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      collectCustomWebhooksFromDom();
+      dashCustomWebhooks.splice(parseInt(btn.getAttribute("data-idx"), 10), 1);
+      renderCustomWebhooks();
+    });
+  });
+}
+
+// 화면에 입력된 값을 dashCustomWebhooks에 다시 담는다(행 추가/삭제/저장 직전에 호출).
+function collectCustomWebhooksFromDom() {
+  const wrap = $("dashCustomWebhookList");
+  if (!wrap) return;
+  const rows = wrap.querySelectorAll(".dash-custom-webhook");
+  if (!rows.length) return;
+
+  dashCustomWebhooks = Array.from(rows).map((row) => {
+    const text = (field) => {
+      const el = row.querySelector(`[data-field="${field}"]`);
+      return el ? el.value.trim() : "";
+    };
+    const checked = (field) => {
+      const el = row.querySelector(`input[type="checkbox"][data-field="${field}"]`);
+      return !!(el && el.checked);
+    };
+    const checkedValues = (field) =>
+      Array.from(row.querySelectorAll(`input[type="checkbox"][data-field="${field}"]:checked`)).map((el) => el.value);
+
+    return {
+      name: text("name"),
+      url: text("url"),
+      enabled: checked("enabled"),
+      labels: checkedValues("labels"),
+      importance: checkedValues("importance"),
+      categories: checkedValues("categories"),
+      onlyPersonal: checked("onlyPersonal"),
+      onlyActionRequired: checked("onlyActionRequired"),
+      senderKeywords: text("senderKeywords"),
+      subjectKeywords: text("subjectKeywords"),
+      excludeKeywords: text("excludeKeywords"),
+    };
+  });
+}
+
 function loadDashboardSettingsData() {
   chrome.storage.local.get(
     [
@@ -576,7 +714,15 @@ function loadDashboardSettingsData() {
       "discordWebhookUrlHigh",
       "discordWebhookUrlMedium",
       "discordWebhookUrlLow",
+      "discordWebhookUrlPersonal",
+      "customDiscordWebhooks",
+      "personalIdentityHints",
       "importanceCriteria",
+      "autoSummaryEnabled",
+      "autoSummaryLabel",
+      "autoSummaryMaxCount",
+      "autoSummaryCriteria",
+      "autoSummarySendDiscord",
     ],
     (stored) => {
       if (Array.isArray(stored.geminiApiKeys) && stored.geminiApiKeys.length) {
@@ -596,11 +742,35 @@ function loadDashboardSettingsData() {
         dashDiscordWebhookHigh: stored.discordWebhookUrlHigh,
         dashDiscordWebhookMedium: stored.discordWebhookUrlMedium,
         dashDiscordWebhookLow: stored.discordWebhookUrlLow,
+        dashDiscordWebhookPersonal: stored.discordWebhookUrlPersonal,
+        dashPersonalIdentityHints: stored.personalIdentityHints,
       };
       Object.keys(webhookFields).forEach((id) => {
         const el = $(id);
         if (el) el.value = webhookFields[id] || "";
       });
+
+      dashCustomWebhooks = Array.isArray(stored.customDiscordWebhooks) ? stored.customDiscordWebhooks : [];
+      renderCustomWebhooks();
+
+      // 자동 요약 설정
+      const autoLabelSelect = $("dashAutoSummaryLabelSelect");
+      if (autoLabelSelect) {
+        autoLabelSelect.innerHTML =
+          `<option value=""></option>` +
+          currentCategoryDefs.map((c) => `<option value="${escapeHtml(c.name)}">${escapeHtml(c.name)}</option>`).join("");
+        autoLabelSelect.value = stored.autoSummaryLabel || "";
+      }
+      const autoEnabled = $("dashAutoSummaryEnabled");
+      if (autoEnabled) autoEnabled.checked = stored.autoSummaryEnabled === true;
+      const autoMaxCount = $("dashAutoSummaryMaxCount");
+      if (autoMaxCount) autoMaxCount.value = stored.autoSummaryMaxCount || 20;
+      const autoCriteria = $("dashAutoSummaryCriteria");
+      if (autoCriteria) autoCriteria.value = stored.autoSummaryCriteria || "";
+      const autoSendDiscord = $("dashAutoSummarySendDiscord");
+      if (autoSendDiscord) autoSendDiscord.checked = stored.autoSummarySendDiscord !== false;
+
+      setupSettingsAutoSave();
 
       const criteria = stored.importanceCriteria || {};
       const criteriaFields = {
@@ -614,6 +784,76 @@ function loadDashboardSettingsData() {
       });
     }
   );
+}
+
+// 설정 탭의 Discord/자동요약/중요도 기준 값을 한 번에 저장한다.
+// 자동 저장과 '저장' 버튼이 같은 경로를 쓰도록 함수로 뽑아 두었다.
+// (API 키는 잘못 입력된 중간 상태가 저장되면 곤란하므로 여기서 건드리지 않고 전용 저장 버튼만 쓴다)
+function collectDashboardSettings() {
+  const val = (id) => {
+    const el = $(id);
+    return el ? el.value.trim() : "";
+  };
+  const checked = (id) => {
+    const el = $(id);
+    return !!(el && el.checked);
+  };
+
+  collectCustomWebhooksFromDom();
+
+  return {
+    discordWebhookUrl: val("dashDiscordWebhookUrl"),
+    discordWebhookUrlHigh: val("dashDiscordWebhookHigh"),
+    discordWebhookUrlMedium: val("dashDiscordWebhookMedium"),
+    discordWebhookUrlLow: val("dashDiscordWebhookLow"),
+    discordWebhookUrlPersonal: val("dashDiscordWebhookPersonal"),
+    personalIdentityHints: val("dashPersonalIdentityHints"),
+    customDiscordWebhooks: dashCustomWebhooks,
+    autoSummaryEnabled: checked("dashAutoSummaryEnabled"),
+    autoSummaryLabel: val("dashAutoSummaryLabelSelect"),
+    autoSummaryMaxCount: Math.max(1, Math.min(100, parseInt(val("dashAutoSummaryMaxCount"), 10) || 20)),
+    autoSummaryCriteria: val("dashAutoSummaryCriteria"),
+    autoSummarySendDiscord: checked("dashAutoSummarySendDiscord"),
+    importanceCriteria: {
+      high: val("dashCriteriaHigh"),
+      medium: val("dashCriteriaMedium"),
+      low: val("dashCriteriaLow"),
+    },
+  };
+}
+
+let settingsAutoSaveTimer = null;
+let settingsAutoSaveBound = false;
+
+function showSettingsAutoSaveMark() {
+  const mark = $("dashSettingsSavedMark");
+  if (!mark) return;
+  mark.textContent = t("msgSettingsAutoSaved");
+  mark.style.opacity = "1";
+  clearTimeout(showSettingsAutoSaveMark._timer);
+  showSettingsAutoSaveMark._timer = setTimeout(() => {
+    mark.style.opacity = "0";
+  }, 1600);
+}
+
+// 타이핑이 멈춘 뒤 저장한다. 매 글자마다 저장하면 반쯤 입력된 URL이 계속 기록된다.
+function setupSettingsAutoSave() {
+  if (settingsAutoSaveBound) return;
+  const panel = $("dashPanelSettings");
+  if (!panel) return;
+  settingsAutoSaveBound = true;
+
+  const scheduleSave = (event) => {
+    // API 키 입력은 전용 저장 버튼으로만 반영한다.
+    if (event.target && event.target.closest && event.target.closest(".apikey-row")) return;
+    clearTimeout(settingsAutoSaveTimer);
+    settingsAutoSaveTimer = setTimeout(() => {
+      chrome.storage.local.set(collectDashboardSettings(), showSettingsAutoSaveMark);
+    }, 700);
+  };
+
+  panel.addEventListener("input", scheduleSave);
+  panel.addEventListener("change", scheduleSave);
 }
 
 function renderApiKeyInputs() {
@@ -929,12 +1169,69 @@ function initEvents() {
       const countInput = $("dashSummaryCountInput");
       const criteriaInput = $("dashSummaryCriteriaInput");
       const count = parseInt(countInput ? countInput.value : "20", 10) || 20;
+      chrome.storage.local.set({
+        lastSummaryLabel: selectedLabelName,
+        lastSummaryCriteria: criteriaInput ? criteriaInput.value.trim() : "",
+      });
       startJob({
         action: "startLabelSummary",
         labelName: selectedLabelName,
         count,
         filterCriteria: criteriaInput ? criteriaInput.value : "",
       });
+    });
+  }
+
+  // --- 요약 판단 기준 AI 자동 생성 ---
+  const generateCriteriaBtn = $("dashGenerateCriteriaBtn");
+  if (generateCriteriaBtn) {
+    generateCriteriaBtn.addEventListener("click", () => {
+      const orig = generateCriteriaBtn.textContent;
+      generateCriteriaBtn.disabled = true;
+      generateCriteriaBtn.textContent = t("msgGeneratingCriteria");
+
+      chrome.runtime.sendMessage(
+        { action: "generateSummaryCriteria", labelName: selectedLabelName, sampleCount: 25 },
+        (res) => {
+          generateCriteriaBtn.disabled = false;
+          generateCriteriaBtn.textContent = orig;
+
+          if (chrome.runtime.lastError || !res || !res.ok) {
+            const detail =
+              (res && (res.error || (res.messageKey ? t(res.messageKey) : ""))) ||
+              (chrome.runtime.lastError && chrome.runtime.lastError.message) ||
+              "";
+            alert(t("errorGenericPrefix", [detail]));
+            return;
+          }
+
+          const criteriaInput = $("dashSummaryCriteriaInput");
+          if (criteriaInput) {
+            criteriaInput.value = res.filterCriteria || "";
+            chrome.storage.local.set({ lastSummaryCriteria: criteriaInput.value });
+          }
+          // 설정 탭의 중요도 기준까지 같이 채워둔다(자동 저장이 걸려 있으면 그대로 반영됨).
+          const criteria = res.importanceCriteria || {};
+          const fill = (id, value) => {
+            const el = $(id);
+            if (el && value) el.value = value;
+          };
+          fill("dashCriteriaHigh", criteria.high);
+          fill("dashCriteriaMedium", criteria.medium);
+          fill("dashCriteriaLow", criteria.low);
+          if ($("dashCriteriaHigh")) {
+            chrome.storage.local.set({
+              importanceCriteria: {
+                high: criteria.high || "",
+                medium: criteria.medium || "",
+                low: criteria.low || "",
+              },
+            });
+          }
+
+          alert(t("msgCriteriaGenerated", [String(res.sampleSize || 0)]));
+        }
+      );
     });
   }
 
@@ -960,15 +1257,33 @@ function initEvents() {
         return;
       }
       chrome.storage.local.get(
-        ["discordWebhookUrl", "discordWebhookUrlHigh", "discordWebhookUrlMedium", "discordWebhookUrlLow"],
+        [
+          "discordWebhookUrl",
+          "discordWebhookUrlHigh",
+          "discordWebhookUrlMedium",
+          "discordWebhookUrlLow",
+          "discordWebhookUrlPersonal",
+          "customDiscordWebhooks",
+        ],
         (stored) => {
+          const customs = Array.isArray(stored.customDiscordWebhooks) ? stored.customDiscordWebhooks : [];
           const webhookInput = {
             defaultUrl: stored.discordWebhookUrl || "",
             highUrl: stored.discordWebhookUrlHigh || "",
             mediumUrl: stored.discordWebhookUrlMedium || "",
             lowUrl: stored.discordWebhookUrlLow || "",
+            personalUrl: stored.discordWebhookUrlPersonal || "",
+            custom: customs,
           };
-          if (!webhookInput.defaultUrl && !webhookInput.highUrl && !webhookInput.mediumUrl && !webhookInput.lowUrl) {
+          const hasCustom = customs.some((w) => w && w.enabled !== false && w.url);
+          if (
+            !webhookInput.defaultUrl &&
+            !webhookInput.highUrl &&
+            !webhookInput.mediumUrl &&
+            !webhookInput.lowUrl &&
+            !webhookInput.personalUrl &&
+            !hasCustom
+          ) {
             alert(t("dashMsgNeedWebhook"));
             return;
           }
@@ -1089,27 +1404,20 @@ function initEvents() {
     });
   }
 
+  const addCustomWebhookBtn = $("dashAddCustomWebhookBtn");
+  if (addCustomWebhookBtn) {
+    addCustomWebhookBtn.addEventListener("click", () => {
+      collectCustomWebhooksFromDom();
+      dashCustomWebhooks.push(emptyCustomWebhook());
+      renderCustomWebhooks();
+    });
+  }
+
   const saveDiscordSettingsBtn = $("dashSaveDiscordSettingsBtn");
   if (saveDiscordSettingsBtn) {
+    // 자동 저장이 있어도 "지금 저장됐다"는 확인이 필요할 때가 있어 버튼은 남겨둔다.
     saveDiscordSettingsBtn.addEventListener("click", () => {
-      const val = (id) => {
-        const el = $(id);
-        return el ? el.value.trim() : "";
-      };
-      chrome.storage.local.set(
-        {
-          discordWebhookUrl: val("dashDiscordWebhookUrl"),
-          discordWebhookUrlHigh: val("dashDiscordWebhookHigh"),
-          discordWebhookUrlMedium: val("dashDiscordWebhookMedium"),
-          discordWebhookUrlLow: val("dashDiscordWebhookLow"),
-          importanceCriteria: {
-            high: val("dashCriteriaHigh"),
-            medium: val("dashCriteriaMedium"),
-            low: val("dashCriteriaLow"),
-          },
-        },
-        () => alert(t("dashMsgDiscordSettingsSaved"))
-      );
+      chrome.storage.local.set(collectDashboardSettings(), () => alert(t("dashMsgDiscordSettingsSaved")));
     });
   }
 

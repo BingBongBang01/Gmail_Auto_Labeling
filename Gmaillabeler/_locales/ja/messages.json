@@ -2723,5 +2723,121 @@
   },
   "resultCardNothingYet": {
     "message": "まだ実行した処理はありません。"
+  },
+  "dashPersonalWebhookHeading": {
+    "message": "🙋 自分に関係するメールのWebhook"
+  },
+  "dashPersonalWebhookDesc": {
+    "message": "自分宛に直接届いたメール、返信・承認・提出などの対応が必要なメール、本文で自分が名指しされたメールだけをAIが選んでこのチャンネルに送ります。一斉配信のニュースレターや自動通知は除外されます。"
+  },
+  "dashLabelWebhookPersonal": {
+    "message": "🙋 Webhook URL（自分に関係するメールのみ）"
+  },
+  "dashPlaceholderWebhookPersonal": {
+    "message": "🙋 個人チャンネルのWebhook URL"
+  },
+  "dashLabelIdentityHints": {
+    "message": "自分を指す名前・呼称"
+  },
+  "dashPlaceholderIdentityHints": {
+    "message": "例: 金泰亨、TH Kim、開発チームリーダー"
+  },
+  "dashCustomWebhookHeading": {
+    "message": "📨 カスタムWebhook"
+  },
+  "dashCustomWebhookDesc": {
+    "message": "好きなだけWebhookを追加し、それぞれに受け取る条件を設定できます。種類の異なる条件はAND、同じ条件内の値はORで判定し、空欄の条件は制限なしです。AIの追加呼び出しはありません。"
+  },
+  "dashCustomWebhookEmpty": {
+    "message": "追加されたWebhookはありません。任意のチャンネルに振り分けるには追加してください。"
+  },
+  "dashCustomWebhookEnabled": {
+    "message": "有効"
+  },
+  "dashBtnAddCustomWebhook": {
+    "message": "+ Webhookを追加"
+  },
+  "dashPlaceholderCustomWebhookName": {
+    "message": "Webhook名（例: 決済チャンネル）"
+  },
+  "dashRuleImportance": {
+    "message": "重要度"
+  },
+  "dashRuleCategory": {
+    "message": "カテゴリ"
+  },
+  "dashRuleOnlyPersonal": {
+    "message": "自分に関係するメールのみ"
+  },
+  "dashRuleOnlyAction": {
+    "message": "対応が必要なメールのみ"
+  },
+  "dashPlaceholderRuleSender": {
+    "message": "送信者キーワード（カンマ区切り・いずれか一致）"
+  },
+  "dashPlaceholderRuleSubject": {
+    "message": "件名・要約キーワード（カンマ区切り・いずれか一致）"
+  },
+  "dashPlaceholderRuleExclude": {
+    "message": "除外キーワード（カンマ区切り・一致すると除外）"
+  },
+  "hintCustomWebhookInDashboard": {
+    "message": "条件付きのWebhookを追加するには、ダッシュボードの「設定 & Discord」タブを開いてください。"
+  },
+  "btnGenerateCriteria": {
+    "message": "✨ AIで基準を自動生成"
+  },
+  "hintGenerateCriteria": {
+    "message": "選択したラベルのメールを標本として読み取り、抽出条件と重要度（高・中・低）の基準の下書きを作成します。内容を確認・修正してから保存してください。"
+  },
+  "msgGeneratingCriteria": {
+    "message": "基準を生成中..."
+  },
+  "msgCriteriaGenerated": {
+    "message": "メール$COUNT$件をもとに基準の下書きを作成しました。確認・修正のうえ保存してください。",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "sectionAutoSummary": {
+    "message": "自動要約・自動送信"
+  },
+  "hintAutoSummary": {
+    "message": "指定したラベルに新しいメールが付くと、その新着分だけを自動で要約します。自動分類と同じ5分間隔で確認し、他の処理が実行中の場合はスキップします。"
+  },
+  "checkboxAutoSummary": {
+    "message": "対象ラベルに新着メールが来たら自動で要約する"
+  },
+  "labelAutoSummaryLabel": {
+    "message": "監視するラベル"
+  },
+  "labelAutoSummaryMaxCount": {
+    "message": "1回に要約する最大件数"
+  },
+  "labelAutoSummaryCriteria": {
+    "message": "自動要約で使う抽出条件"
+  },
+  "checkboxAutoSummarySendDiscord": {
+    "message": "要約結果をDiscordへ自動送信する"
+  },
+  "hintAutoSummaryDiscord": {
+    "message": "上で設定したWebhook（自分に関係するメール用・カスタムを含む）をそのまま使います。送信に失敗しても要約結果は残ります。"
+  },
+  "dashAutoSummaryHeading": {
+    "message": "🤖 自動要約と自動送信"
+  },
+  "msgSettingsAutoSaved": {
+    "message": "保存しました"
+  },
+  "hintSettingsAutoSave": {
+    "message": "この画面の変更は入力を止めるとまもなく自動保存されます。APIキーのみ専用の保存ボタンが必要です。"
+  },
+  "dashRuleLabels": {
+    "message": "分類（ラベル）"
+  },
+  "dashRuleNoLabels": {
+    "message": "登録されたラベルがありません。「ラベル管理」タブでカテゴリを追加してください。"
   }
 }

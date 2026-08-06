@@ -2723,5 +2723,121 @@
   },
   "resultCardNothingYet": {
     "message": "尚未执行任何任务。"
+  },
+  "dashPersonalWebhookHeading": {
+    "message": "🙋 与我相关的邮件 Webhook"
+  },
+  "dashPersonalWebhookDesc": {
+    "message": "由 AI 判断哪些邮件真正与你有关——直接发给你、需要你回复或处理、或正文中点名提到你的邮件，只有这些会发送到该频道。群发邮件和自动通知会被排除。"
+  },
+  "dashLabelWebhookPersonal": {
+    "message": "🙋 Webhook URL（仅与我相关的邮件）"
+  },
+  "dashPlaceholderWebhookPersonal": {
+    "message": "🙋 个人频道 Webhook URL"
+  },
+  "dashLabelIdentityHints": {
+    "message": "代表我的姓名 / 别称"
+  },
+  "dashPlaceholderIdentityHints": {
+    "message": "例如：金泰亨、TH Kim、开发组长"
+  },
+  "dashCustomWebhookHeading": {
+    "message": "📨 自定义 Webhook"
+  },
+  "dashCustomWebhookDesc": {
+    "message": "可以添加任意数量的 Webhook，并为每个设置接收条件。不同类型的条件之间为 AND，同一条件内的取值为 OR，留空表示不限制。不会额外调用 AI。"
+  },
+  "dashCustomWebhookEmpty": {
+    "message": "尚未添加 Webhook。添加后即可把邮件分流到你自己的频道。"
+  },
+  "dashCustomWebhookEnabled": {
+    "message": "启用"
+  },
+  "dashBtnAddCustomWebhook": {
+    "message": "+ 添加 Webhook"
+  },
+  "dashPlaceholderCustomWebhookName": {
+    "message": "Webhook 名称（例如：付款频道）"
+  },
+  "dashRuleImportance": {
+    "message": "重要度"
+  },
+  "dashRuleCategory": {
+    "message": "类别"
+  },
+  "dashRuleOnlyPersonal": {
+    "message": "仅与我相关的邮件"
+  },
+  "dashRuleOnlyAction": {
+    "message": "仅需要处理的邮件"
+  },
+  "dashPlaceholderRuleSender": {
+    "message": "发件人关键词（逗号分隔，任一匹配即通过）"
+  },
+  "dashPlaceholderRuleSubject": {
+    "message": "主题/摘要关键词（逗号分隔，任一匹配即通过）"
+  },
+  "dashPlaceholderRuleExclude": {
+    "message": "排除关键词（逗号分隔，任一匹配即排除）"
+  },
+  "hintCustomWebhookInDashboard": {
+    "message": "如需按条件添加自己的 Webhook，请打开仪表板的“设置 & Discord”标签页。"
+  },
+  "btnGenerateCriteria": {
+    "message": "✨ 用 AI 自动生成标准"
+  },
+  "hintGenerateCriteria": {
+    "message": "读取所选标签下的邮件作为样本，自动起草筛选条件以及高/中/低重要度标准。请确认并修改后再保存。"
+  },
+  "msgGeneratingCriteria": {
+    "message": "正在生成标准…"
+  },
+  "msgCriteriaGenerated": {
+    "message": "已根据 $COUNT$ 封邮件起草标准。请确认修改后保存。",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "sectionAutoSummary": {
+    "message": "自动摘要与自动发送"
+  },
+  "hintAutoSummary": {
+    "message": "当指定标签收到新邮件时，仅对这些新邮件自动生成摘要。与自动分类共用 5 分钟检查周期，若有其他任务正在运行则跳过。"
+  },
+  "checkboxAutoSummary": {
+    "message": "该标签收到新邮件时自动生成摘要"
+  },
+  "labelAutoSummaryLabel": {
+    "message": "监视的标签"
+  },
+  "labelAutoSummaryMaxCount": {
+    "message": "每次最多摘要的邮件数"
+  },
+  "labelAutoSummaryCriteria": {
+    "message": "自动摘要使用的筛选条件"
+  },
+  "checkboxAutoSummarySendDiscord": {
+    "message": "自动将摘要结果发送到 Discord"
+  },
+  "hintAutoSummaryDiscord": {
+    "message": "直接使用上面配置的 Webhook（包含与我相关及自定义的）。即使发送失败，摘要结果仍会保留。"
+  },
+  "dashAutoSummaryHeading": {
+    "message": "🤖 自动摘要与自动发送"
+  },
+  "msgSettingsAutoSaved": {
+    "message": "已保存"
+  },
+  "hintSettingsAutoSave": {
+    "message": "本页的更改会在你停止输入后自动保存。只有 API 密钥仍需点击专用的保存按钮。"
+  },
+  "dashRuleLabels": {
+    "message": "分类（标签）"
+  },
+  "dashRuleNoLabels": {
+    "message": "尚未注册标签。请在“标签管理”标签页中添加类别。"
   }
 }

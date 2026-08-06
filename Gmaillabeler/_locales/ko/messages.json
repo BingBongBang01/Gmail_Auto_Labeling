@@ -2723,5 +2723,121 @@
   },
   "resultCardNothingYet": {
     "message": "아직 실행한 작업이 없습니다."
+  },
+  "dashPersonalWebhookHeading": {
+    "message": "🙋 나와 관련된 메일 웹훅"
+  },
+  "dashPersonalWebhookDesc": {
+    "message": "나에게 직접 온 메일, 내가 회신·승인·제출 등 조치를 해야 하는 메일, 본문에서 나를 직접 언급한 메일만 AI가 골라 이 채널로 보냅니다. 대량 발송 뉴스레터와 자동 알림은 제외됩니다."
+  },
+  "dashLabelWebhookPersonal": {
+    "message": "🙋 웹훅 URL (나와 관련된 메일만)"
+  },
+  "dashPlaceholderWebhookPersonal": {
+    "message": "🙋 개인 채널 웹훅 URL"
+  },
+  "dashLabelIdentityHints": {
+    "message": "나를 가리키는 이름/별칭"
+  },
+  "dashPlaceholderIdentityHints": {
+    "message": "예: 김태형, TH Kim, 개발팀장"
+  },
+  "dashCustomWebhookHeading": {
+    "message": "📨 사용자 지정 웹훅"
+  },
+  "dashCustomWebhookDesc": {
+    "message": "원하는 만큼 웹훅을 추가하고 각각 받을 메일 조건을 직접 정할 수 있습니다. 서로 다른 조건끼리는 AND, 같은 조건 안의 값끼리는 OR로 판정하며 비워둔 조건은 제한 없음입니다. AI를 추가로 호출하지 않습니다."
+  },
+  "dashCustomWebhookEmpty": {
+    "message": "추가된 웹훅이 없습니다. 원하는 채널로 메일을 나눠 보내려면 웹훅을 추가하세요."
+  },
+  "dashCustomWebhookEnabled": {
+    "message": "사용"
+  },
+  "dashBtnAddCustomWebhook": {
+    "message": "+ 웹훅 추가"
+  },
+  "dashPlaceholderCustomWebhookName": {
+    "message": "웹훅 이름 (예: 결제 채널)"
+  },
+  "dashRuleImportance": {
+    "message": "중요도"
+  },
+  "dashRuleCategory": {
+    "message": "카테고리"
+  },
+  "dashRuleOnlyPersonal": {
+    "message": "나와 관련된 메일만"
+  },
+  "dashRuleOnlyAction": {
+    "message": "조치가 필요한 메일만"
+  },
+  "dashPlaceholderRuleSender": {
+    "message": "발신자 키워드 (쉼표로 구분, 하나라도 맞으면 통과)"
+  },
+  "dashPlaceholderRuleSubject": {
+    "message": "제목/요약 키워드 (쉼표로 구분, 하나라도 맞으면 통과)"
+  },
+  "dashPlaceholderRuleExclude": {
+    "message": "제외 키워드 (쉼표로 구분, 하나라도 맞으면 제외)"
+  },
+  "hintCustomWebhookInDashboard": {
+    "message": "조건별 웹훅을 직접 추가하려면 대시보드의 '설정 & Discord' 탭을 여세요."
+  },
+  "btnGenerateCriteria": {
+    "message": "✨ AI로 기준 자동 생성"
+  },
+  "hintGenerateCriteria": {
+    "message": "선택한 라벨의 메일을 표본으로 읽어서 선별 조건과 중요도 상/중/하 기준 초안을 만들어 채워줍니다. 확인하고 고친 뒤 저장하세요."
+  },
+  "msgGeneratingCriteria": {
+    "message": "기준 생성 중..."
+  },
+  "msgCriteriaGenerated": {
+    "message": "메일 $COUNT$건을 근거로 기준 초안을 만들었습니다. 확인·수정 후 저장하세요.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "sectionAutoSummary": {
+    "message": "자동 요약 & 자동 전송"
+  },
+  "hintAutoSummary": {
+    "message": "지정한 라벨에 새 메일이 붙으면 그 새 메일들만 자동으로 요약합니다. 자동 분류와 같은 5분 주기로 확인하며, 다른 작업이 실행 중이면 건너뜁니다."
+  },
+  "checkboxAutoSummary": {
+    "message": "해당 라벨에 새 메일이 오면 자동으로 요약"
+  },
+  "labelAutoSummaryLabel": {
+    "message": "감시할 라벨"
+  },
+  "labelAutoSummaryMaxCount": {
+    "message": "한 번에 요약할 최대 개수"
+  },
+  "labelAutoSummaryCriteria": {
+    "message": "자동 요약에 쓸 선별 조건"
+  },
+  "checkboxAutoSummarySendDiscord": {
+    "message": "요약 결과를 Discord로 자동 전송"
+  },
+  "hintAutoSummaryDiscord": {
+    "message": "위에 설정한 웹훅(개인 관련·사용자 지정 포함)을 그대로 사용합니다. 전송에 실패해도 요약 결과는 그대로 남습니다."
+  },
+  "dashAutoSummaryHeading": {
+    "message": "🤖 자동 요약 및 자동 전송"
+  },
+  "msgSettingsAutoSaved": {
+    "message": "저장됨"
+  },
+  "hintSettingsAutoSave": {
+    "message": "이 화면의 변경 사항은 입력을 멈추면 잠시 뒤 자동 저장됩니다. API 키만 전용 저장 버튼을 눌러야 합니다."
+  },
+  "dashRuleLabels": {
+    "message": "분류(라벨)"
+  },
+  "dashRuleNoLabels": {
+    "message": "등록된 라벨이 없습니다. '라벨 관리' 탭에서 카테고리를 추가하세요."
   }
 }
