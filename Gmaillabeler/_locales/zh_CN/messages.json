@@ -1839,6 +1839,17 @@
       }
     }
   },
+  "logTranslateNameConflict": {
+    "message": "两个分类被翻译成了相同的名称，为避免 Gmail 标签冲突，将使用 \"$NEW$\" 而不是 \"$OLD$\"。",
+    "placeholders": {
+      "old": {
+        "content": "$1$"
+      },
+      "new": {
+        "content": "$2$"
+      }
+    }
+  },
   "logTranslateLabelRenameFailed": {
     "message": "重命名 Gmail 标签失败(“$OLD$” → “$NEW$”)：$ERR$",
     "placeholders": {

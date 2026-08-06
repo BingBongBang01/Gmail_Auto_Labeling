@@ -3,15 +3,10 @@ async function injectDetailCard(aiDataList) {
   const headerArea = document.querySelector(".hP");
   if (!headerArea || document.querySelector(".ai-detail-card")) return;
 
-  // Gmail 탭 제목 형식: "{제목} - {계정} - Gmail"
-  const titleParts = document.title.split(" - ");
-  const pageSubject = titleParts.length > 2 ? titleParts.slice(0, -2).join(" - ").trim() : titleParts[0].trim();
-
-  const match = aiDataList.find((item) => {
-    if (!item.subject || item.error) return false;
-    const stored = item.subject.trim();
-    return pageSubject.includes(stored) || stored.includes(pageSubject);
-  });
+  // 열려 있는 메일/스레드의 실제 ID로 매칭한다.
+  // (탭 제목의 부분일치로 찾으면 "Re:" 같은 짧은 제목이 엉뚱한 메일에 걸린다)
+  const threadContainer = headerArea.closest(".nH") || document.body;
+  const match = findAiDataByIds(aiDataList, collectLegacyIds(threadContainer));
 
   if (!match) return;
 

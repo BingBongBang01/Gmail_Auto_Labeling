@@ -800,165 +800,389 @@ select#dashEmailCount {
   }
 }
 
-/* Nav Menu Sidebar Buttons */
-.dash-nav-menu {
+
+/* ---------------- Application Shell (dashboard.html 구조에 대응) ---------------- */
+/* 아래 클래스들은 dashboard.html이 실제로 쓰는 이름인데 스타일 정의가 없어서
+   레이아웃이 무너져 보였다. 기존 디자인 토큰(--bg-card 등)을 그대로 사용한다. */
+
+.dash-layout {
+  display: flex;
+  flex: 1;
+  gap: 20px;
+  padding: 20px 28px;
+  align-items: flex-start;
+  min-height: 0;
+}
+
+.dash-layout > .dash-sidebar {
+  width: 240px;
+  flex: 0 0 240px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  position: sticky;
+  top: 20px;
+}
+
+.dash-nav-section {
   display: flex;
   flex-direction: column;
   gap: 6px;
 }
 
-.dash-nav-btn {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  width: 100%;
-  padding: 10px 14px;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text-sub);
-  background: transparent;
-  border: 1px solid transparent;
-  border-radius: var(--radius-md);
-  cursor: pointer;
-  transition: all 0.2s ease;
-  text-align: left;
-}
-
-.dash-nav-btn:hover {
-  background: var(--bg-card-hover);
-  color: var(--text-main);
-}
-
-.dash-nav-btn.active {
-  background: linear-gradient(135deg, rgba(56, 189, 248, 0.15), rgba(168, 85, 247, 0.15));
-  border: 1px solid var(--accent-blue);
-  color: var(--accent-blue);
+.dash-nav-title {
+  font-size: 11px;
   font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-sub);
+  margin-bottom: 4px;
 }
 
-/* View Panels */
-.dash-panel {
-  display: none;
+.nav-icon {
+  display: inline-block;
+  width: 18px;
+  text-align: center;
 }
 
-.dash-panel.active {
-  display: block;
+.dash-sidebar-labels {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 320px;
+  overflow-y: auto;
 }
 
-.panel-card {
+.dash-layout > .dash-content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Subcontrol bar */
+.dash-subbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
   background: var(--bg-card);
   border: 1px solid var(--border-color);
-  border-radius: var(--radius-lg);
-  padding: 20px;
-  box-shadow: var(--shadow-main);
+  border-radius: var(--radius-md);
+  padding: 12px 16px;
 }
 
-.panel-card h3 {
-  font-size: 15px;
-  font-weight: 700;
-  margin-bottom: 12px;
-}
-
-.form-row {
+.subbar-left,
+.subbar-right {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
+  gap: 8px;
 }
 
-.form-row label {
-  font-size: 13px;
-  font-weight: 600;
+.subbar-left {
+  flex: 1;
+  min-width: 0;
+}
+
+.subbar-label {
+  font-size: 12px;
   color: var(--text-sub);
+  white-space: nowrap;
 }
 
-.form-row input[type="number"] {
-  width: 90px;
-  padding: 6px 10px;
-  font-size: 13px;
-  border-radius: 6px;
-  border: 1px solid var(--border-color);
-  background: var(--bg-secondary);
-  color: var(--text-main);
-}
-
-.btn-row {
+/* Panels & cards */
+.panel-header {
   display: flex;
-  gap: 10px;
   flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
 }
 
-.checkbox-row {
+.panel-header h2 {
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.panel-header h3,
+.dash-card h3 {
+  font-size: 14px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.panel-actions {
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+.dash-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-main);
+  padding: 20px;
+}
+
+.dash-result-card {
+  min-height: 80px;
+}
+
+.dash-desc {
+  font-size: 13px;
+  color: var(--text-sub);
+  line-height: 1.6;
+  margin-bottom: 12px;
+}
+
+.placeholder-text {
+  font-size: 13px;
+  color: var(--text-sub);
+  line-height: 1.7;
+  text-align: center;
+  padding: 32px 12px;
+}
+
+.dash-divider {
+  border: none;
+  border-top: 1px solid var(--border-color);
+  margin: 20px 0;
+}
+
+/* Buttons */
+.dash-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-main);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 9px 14px;
+  cursor: pointer;
+  transition: background-color 0.15s ease, opacity 0.15s ease;
+  white-space: nowrap;
+}
+
+.dash-btn:hover:not(:disabled) {
+  background: var(--bg-card-hover);
+}
+
+.dash-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.dash-btn-primary {
+  background: linear-gradient(135deg, var(--accent-blue), var(--accent-blue-dark));
+  border-color: transparent;
+  color: #ffffff;
+}
+
+.dash-btn-primary:hover:not(:disabled) {
+  filter: brightness(1.08);
+  background: linear-gradient(135deg, var(--accent-blue), var(--accent-blue-dark));
+}
+
+.dash-btn-secondary {
+  background: var(--bg-secondary);
+}
+
+.dash-btn-danger {
+  background: var(--accent-red);
+  border-color: transparent;
+  color: #ffffff;
+}
+
+.dash-btn-danger:hover:not(:disabled) {
+  filter: brightness(1.08);
+  background: var(--accent-red);
+}
+
+.dash-btn-discord {
+  background: #5865f2;
+  border-color: transparent;
+  color: #ffffff;
+}
+
+.dash-btn-discord:hover:not(:disabled) {
+  filter: brightness(1.08);
+  background: #5865f2;
+}
+
+.dash-btn-icon {
+  padding: 8px 10px;
+  font-size: 14px;
+}
+
+.dash-btn-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* Form controls */
+.dash-select,
+.dash-input-num,
+.dash-input-text {
+  font-family: inherit;
   font-size: 13px;
   color: var(--text-main);
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+
+.dash-select:focus,
+.dash-input-num:focus,
+.dash-input-text:focus {
+  outline: none;
+  border-color: var(--accent-blue);
+}
+
+.dash-input-num {
+  width: 84px;
+}
+
+.dash-input-text {
+  flex: 1;
+  min-width: 200px;
+}
+
+.dash-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+
+.dash-form-group > label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-sub);
+}
+
+.dash-form-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.dash-checkbox-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--text-sub);
   cursor: pointer;
 }
 
-/* ---------------- Dynamic Responsive Layout Media Queries ---------------- */
-
-/* Screen <= 1024px (Tablets & Half Split Windows) */
-@media (max-width: 1024px) {
-  .dash-main-split {
-    flex-direction: column;
-  }
-
-  .dash-sidebar {
-    width: 100%;
-  }
-
-  .dash-nav-menu {
-    flex-direction: row;
-    overflow-x: auto;
-    padding-bottom: 6px;
-  }
-
-  .dash-nav-btn {
-    white-space: nowrap;
-    width: auto;
-    padding: 8px 14px;
-  }
-
-  .kpi-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
+/* Progress bar (dashboard.html 마크업 이름) */
+.dash-progress-bar-bg {
+  height: 8px;
+  width: 100%;
+  background: var(--bg-secondary);
+  border-radius: 999px;
+  overflow: hidden;
 }
 
-/* Screen <= 768px (Small Windows & Split Screens) */
-@media (max-width: 768px) {
-  .dash-header {
+.dash-progress-bar-fill {
+  height: 100%;
+  width: 0;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--accent-blue), var(--accent-purple));
+  transition: width 0.3s ease;
+}
+
+/* Category / API key editors (dashboard.js가 생성) */
+.dash-label-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.cat-row,
+.apikey-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.cat-name-input,
+.dash-api-label-input {
+  flex: 0 0 150px;
+  min-width: 120px;
+  font-family: inherit;
+  font-size: 13px;
+  color: var(--text-main);
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+
+.cat-desc-input,
+.dash-api-key-input {
+  flex: 1;
+  min-width: 200px;
+  font-family: inherit;
+  font-size: 13px;
+  color: var(--text-main);
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+
+/* Logs */
+.dash-log-box {
+  max-height: 60vh;
+  overflow-y: auto;
+  font-family: "Consolas", "Menlo", monospace;
+  font-size: 12px;
+  line-height: 1.7;
+}
+
+.log-item {
+  padding: 4px 0;
+  border-bottom: 1px solid var(--border-color);
+  color: var(--text-sub);
+  word-break: break-all;
+}
+
+.log-item.error {
+  color: var(--accent-red);
+}
+
+.log-item.warn {
+  color: var(--accent-amber);
+}
+
+@media (max-width: 1024px) {
+  .dash-layout {
     flex-direction: column;
-    align-items: flex-start;
-    gap: 12px;
+    padding: 16px;
   }
 
-  .dash-header-right {
+  .dash-layout > .dash-sidebar {
     width: 100%;
-    justify-content: space-between;
-  }
-
-  .kpi-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .content-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 12px;
-  }
-
-  .content-header-actions {
-    width: 100%;
-    justify-content: space-between;
-  }
-
-  .dash-action-bar {
-    flex-direction: column;
-  }
-
-  .btn-action {
-    width: 100%;
+    flex: 1 1 auto;
+    position: static;
   }
 }

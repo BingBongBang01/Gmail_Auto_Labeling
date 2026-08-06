@@ -27,7 +27,19 @@ let allLogsCache = [];
 function openLogDb() {
   return new Promise((resolve, reject) => {
     const req = indexedDB.open(LOG_DB_NAME);
-    req.onsuccess = () => resolve(req.result);
+    req.onsuccess = () => {
+      const db = req.result;
+      // 백그라운드가 아직 한 번도 로그를 쓰지 않았으면 스토어가 없는 빈 DB일 수 있다.
+      // 이 창은 스토어를 만들지 않으므로, 이 경우엔 "읽을 게 없음"으로 처리한다(NotFoundError 방지).
+      if (!db.objectStoreNames.contains(LOG_STORE_NAME)) {
+        db.close();
+        const err = new Error("log store not created yet");
+        err.isStoreMissing = true;
+        reject(err);
+        return;
+      }
+      resolve(db);
+    };
     req.onerror = () => reject(req.error);
   });
 }
@@ -42,7 +54,7 @@ async function readAllLogs() {
       req.onerror = () => reject(req.error);
     });
   } catch (e) {
-    console.error("로그 읽기 실패:", e);
+    if (!e || !e.isStoreMissing) console.error("로그 읽기 실패:", e);
     return [];
   }
 }
@@ -217,7 +229,14 @@ async function main() {
   });
 
   clearBtn.addEventListener("click", () => {
-    logBox.innerHTML = "";
+    // DOM만 비우면 새로고침 시 로그가 다시 나타난다 - 실제 저장소(IndexedDB)까지 지운다.
+    clearBtn.disabled = true;
+    chrome.runtime.sendMessage({ action: "clearLogs" }, () => {
+      allLogsCache = [];
+      logBox.innerHTML = "";
+      clearBtn.disabled = false;
+      renderLogs();
+    });
   });
 }
 

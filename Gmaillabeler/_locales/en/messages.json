@@ -1857,6 +1857,17 @@
       }
     }
   },
+  "logTranslateNameConflict": {
+    "message": "Two categories translated to the same name; using \"$NEW$\" instead of \"$OLD$\" to avoid a Gmail label conflict.",
+    "placeholders": {
+      "old": {
+        "content": "$1$"
+      },
+      "new": {
+        "content": "$2$"
+      }
+    }
+  },
   "logTranslateLabelRenameFailed": {
     "message": "Failed to rename Gmail label (\"$OLD$\" → \"$NEW$\"): $ERR$",
     "placeholders": {

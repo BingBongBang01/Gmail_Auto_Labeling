@@ -1839,6 +1839,17 @@
       }
     }
   },
+  "logTranslateNameConflict": {
+    "message": "2つのカテゴリが同じ名前に翻訳されたため、Gmail ラベルの重複を避けるために \"$OLD$\" ではなく \"$NEW$\" を使用します。",
+    "placeholders": {
+      "old": {
+        "content": "$1$"
+      },
+      "new": {
+        "content": "$2$"
+      }
+    }
+  },
   "logTranslateLabelRenameFailed": {
     "message": "Gmailラベル名変更失敗 (「$OLD$」→「$NEW$」): $ERR$",
     "placeholders": {

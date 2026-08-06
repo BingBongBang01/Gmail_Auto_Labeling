@@ -1857,6 +1857,17 @@
       }
     }
   },
+  "logTranslateNameConflict": {
+    "message": "두 카테고리가 같은 이름으로 번역되어, Gmail 라벨 충돌을 피하려고 \"$OLD$\" 대신 \"$NEW$\"를 사용합니다.",
+    "placeholders": {
+      "old": {
+        "content": "$1$"
+      },
+      "new": {
+        "content": "$2$"
+      }
+    }
+  },
   "logTranslateLabelRenameFailed": {
     "message": "Gmail 라벨 이름 변경 실패 (\"$OLD$\" → \"$NEW$\"): $ERR$",
     "placeholders": {
