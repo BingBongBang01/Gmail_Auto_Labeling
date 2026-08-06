@@ -1203,6 +1203,17 @@
       }
     }
   },
+  "logBatchApplyFallback": {
+    "message": "$COUNT$건 묶음 라벨 적용이 실패해서 메일 단위로 다시 시도합니다. ($ERROR$)",
+    "placeholders": {
+      "count": {
+        "content": "$1$"
+      },
+      "error": {
+        "content": "$2$"
+      }
+    }
+  },
   "logApplyComplete": {
     "message": "라벨 적용 완료 ($DONE$/$TOTAL$)",
     "placeholders": {

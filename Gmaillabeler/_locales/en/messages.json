@@ -1203,6 +1203,17 @@
       }
     }
   },
+  "logBatchApplyFallback": {
+    "message": "Batch label apply failed for $COUNT$ mails; retrying them one by one. ($ERROR$)",
+    "placeholders": {
+      "count": {
+        "content": "$1$"
+      },
+      "error": {
+        "content": "$2$"
+      }
+    }
+  },
   "logApplyComplete": {
     "message": "Label application complete ($DONE$/$TOTAL$)",
     "placeholders": {

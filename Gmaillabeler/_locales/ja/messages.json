@@ -1185,6 +1185,17 @@
       }
     }
   },
+  "logBatchApplyFallback": {
+    "message": "$COUNT$件のまとめてのラベル適用が失敗したため、1件ずつ再試行します。($ERROR$)",
+    "placeholders": {
+      "count": {
+        "content": "$1$"
+      },
+      "error": {
+        "content": "$2$"
+      }
+    }
+  },
   "logApplyComplete": {
     "message": "ラベル適用完了 ($DONE$/$TOTAL$)",
     "placeholders": {

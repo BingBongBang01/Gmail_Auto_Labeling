@@ -1185,6 +1185,17 @@
       }
     }
   },
+  "logBatchApplyFallback": {
+    "message": "$COUNT$ 封邮件的批量标签应用失败，将逐封重试。($ERROR$)",
+    "placeholders": {
+      "count": {
+        "content": "$1$"
+      },
+      "error": {
+        "content": "$2$"
+      }
+    }
+  },
   "logApplyComplete": {
     "message": "标签应用完成 ($DONE$/$TOTAL$)",
     "placeholders": {
