@@ -1301,7 +1301,7 @@
     }
   },
   "errNoApiKey": {
-    "message": "No Gemini API key set. Enter one on the extension's options page."
+    "message": "No Gemini API key. Click the extension icon, then add a key under the [Settings] tab > [Gemini API Key]."
   },
   "errNoOAuthClientId": {
     "message": "No Google OAuth Client ID set. Enter one in the Settings tab - see the setup guide for how to get one."
@@ -2599,5 +2599,8 @@
         "content": "$3"
       }
     }
+  },
+  "hintForceStop": {
+    "message": "The stop request has not taken effect yet. [Force stop] ends the job immediately without waiting (labels already applied stay)."
   }
 }

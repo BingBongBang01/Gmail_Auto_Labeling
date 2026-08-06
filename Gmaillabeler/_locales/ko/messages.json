@@ -1301,7 +1301,7 @@
     }
   },
   "errNoApiKey": {
-    "message": "Gemini API 키가 설정되지 않음. 확장 프로그램 옵션 페이지에서 키를 입력하세요."
+    "message": "Gemini API 키가 없습니다. 확장 프로그램 아이콘을 눌러 [통합 설정] 탭 > [Gemini API 키]에서 키를 등록하세요."
   },
   "errNoOAuthClientId": {
     "message": "Google OAuth 클라이언트 ID가 설정되지 않았습니다. 설정 탭에서 입력하고, 안내서를 참고해 발급받으세요."
@@ -2599,5 +2599,8 @@
         "content": "$3"
       }
     }
+  },
+  "hintForceStop": {
+    "message": "중지 요청이 아직 반영되지 않았습니다. [강제 중지]는 진행 중인 작업을 기다리지 않고 즉시 중단 처리합니다(이미 붙은 라벨은 유지됩니다)."
   }
 }

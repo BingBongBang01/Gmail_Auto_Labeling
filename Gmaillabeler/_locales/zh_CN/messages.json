@@ -1301,7 +1301,7 @@
     }
   },
   "errNoApiKey": {
-    "message": "未设置 Gemini API 密钥。请在扩展程序的选项页面中输入密钥。"
+    "message": "没有 Gemini API 密钥。点击扩展图标，在[设置]标签 >[Gemini API 密钥]中添加密钥。"
   },
   "errNoOAuthClientId": {
     "message": "未设置 Google OAuth 客户端 ID。请在设置标签中输入，获取方法请参考设置指南。"
@@ -2599,5 +2599,8 @@
         "content": "$3"
       }
     }
+  },
+  "hintForceStop": {
+    "message": "停止请求尚未生效。[强制停止]会立即结束任务而不再等待（已添加的标签会保留）。"
   }
 }

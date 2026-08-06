@@ -368,6 +368,37 @@ async function main() {
   }
   initConfig();
 
+  // 중지 버튼이 세 개(중지 / 강제 중지 / 배너의 중지) 나란히 떠 있으면 무엇을 눌러야 하는지 알 수 없다.
+  // 평소에는 "중지" 하나만 두고, 중지를 눌렀는데도 작업이 계속될 때만 "강제 중지"를 보여준다.
+  const FORCE_STOP_REVEAL_MS = 6000;
+  let stopRequestedAt = 0;
+  let forceStopRevealTimer = null;
+
+  function markStopRequested() {
+    stopRequestedAt = Date.now();
+    if (forceStopRevealTimer) clearTimeout(forceStopRevealTimer);
+    // 유예 시간이 지난 뒤에도 작업이 살아있으면 강제 중지를 노출한다
+    forceStopRevealTimer = setTimeout(() => {
+      forceStopRevealTimer = null;
+      pollStatus();
+    }, FORCE_STOP_REVEAL_MS + 200);
+  }
+
+  function shouldRevealForceStop() {
+    return stopRequestedAt > 0 && Date.now() - stopRequestedAt >= FORCE_STOP_REVEAL_MS;
+  }
+
+  function updateForceStopVisibility(isRunningThis) {
+    const hint = document.getElementById("forceStopHint");
+    const reveal = isRunningThis && shouldRevealForceStop();
+    forceCancelBtn.classList.toggle("show", reveal);
+    if (reveal) {
+      forceCancelBtn.disabled = false;
+      forceCancelBtn.textContent = t("btnForceStop");
+    }
+    if (hint) hint.style.display = reveal ? "block" : "none";
+  }
+
   function setClassifyRunningUi(isRunningThis, isAnyRunning) {
     startBtn.disabled = isAnyRunning;
     emailCountInput.disabled = isAnyRunning;
@@ -375,16 +406,24 @@ async function main() {
       startBtn.classList.add("running");
       startBtn.textContent = t("btnStartRunning");
       cancelBtn.classList.add("show");
-      cancelBtn.disabled = false;
-      cancelBtn.textContent = t("btnStop");
-      forceCancelBtn.classList.add("show");
-      forceCancelBtn.disabled = false;
-      forceCancelBtn.textContent = t("btnForceStop");
+      if (!stopRequestedAt) {
+        cancelBtn.disabled = false;
+        cancelBtn.textContent = t("btnStop");
+      }
+      updateForceStopVisibility(true);
     } else {
       startBtn.classList.remove("running");
       startBtn.textContent = t("btnStart");
       cancelBtn.classList.remove("show");
-      forceCancelBtn.classList.remove("show");
+      cancelBtn.disabled = false;
+      cancelBtn.textContent = t("btnStop");
+      // 작업이 끝났으면 다음 실행을 위해 중지 상태를 초기화한다
+      stopRequestedAt = 0;
+      if (forceStopRevealTimer) {
+        clearTimeout(forceStopRevealTimer);
+        forceStopRevealTimer = null;
+      }
+      updateForceStopVisibility(false);
     }
   }
 
@@ -470,6 +509,9 @@ async function main() {
       if (cancelBtn) {
         cancelBtn.onclick = () => {
           chrome.runtime.sendMessage({ action: "cancelJob" });
+          // 배너에서 중지를 눌렀을 때도 같은 상태를 기록해서,
+          // 반응이 없으면 분류 탭의 "강제 중지"가 나타나도록 한다
+          markStopRequested();
         };
       }
     } else {
@@ -683,6 +725,7 @@ async function main() {
   cancelBtn.addEventListener("click", () => {
     cancelBtn.disabled = true;
     cancelBtn.textContent = t("btnStopRequesting");
+    markStopRequested();
     chrome.runtime.sendMessage({ action: "cancelJob" }, () => {
       // 상태는 다음 폴링에서 자동 반영됨
     });

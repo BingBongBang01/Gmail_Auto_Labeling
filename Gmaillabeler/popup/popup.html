@@ -357,8 +357,10 @@
     <div class="start-row">
       <button class="primary" id="startBtn" data-i18n="btnStart">Start classifying</button>
       <button class="stop-square" id="cancelBtn" data-i18n="btnStop">Stop</button>
+      <!-- 강제 중지는 평소에 숨겨둔다. 중지를 눌렀는데도 작업이 계속될 때만 나타난다. -->
       <button class="force-stop" id="forceCancelBtn" data-i18n="btnForceStop">Force stop</button>
     </div>
+    <div class="hint" id="forceStopHint" style="display:none;" data-i18n="hintForceStop"></div>
 
     <div class="progress-wrap" id="progressWrap"><div class="progress-bar" id="progressBar"></div></div>
     <div class="progress-text" id="progressText"></div>
