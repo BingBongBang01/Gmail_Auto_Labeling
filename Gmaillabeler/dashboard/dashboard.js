@@ -4,6 +4,7 @@
 let currentCategoryDefs = [];
 let selectedLabelName = "";
 let lastReportData = null;
+let dashBatchSize = 37; // getConfig로 실제 값을 받아 갱신한다(반복 분류 힌트 계산용)
 let selectedPriorityFilter = "all"; // 리포트를 다시 그려도 유지되도록 모듈 스코프에 둔다
 let pollTimer = null;
 let statusChangeListenerAdded = false;
@@ -171,6 +172,7 @@ function renderSummaryLabelSelect() {
 function selectLabel(name) {
   selectedLabelName = name || "";
   renderSidebarLabels();
+  renderDashAnalysisChecklist();
   const select = $("dashSummaryLabelSelect");
   if (select && selectedLabelName) select.value = selectedLabelName;
   updateSelectedLabelHeader();
@@ -309,6 +311,57 @@ function generateSummaryText(report) {
 }
 
 // ---------------- 상태 폴링 ----------------
+// ---------------- 결과 요약 카드 ----------------
+// 한 줄 텍스트로는 실패가 몇 건인지, AI 요청을 얼마나 썼는지 알기 어려웠다.
+function buildResultCardHtml(jobStatus, jobResult, jobError, finishedAt) {
+  const statusKey =
+    jobStatus === "done" ? "statusDone"
+    : jobStatus === "cancelled" ? "statusCancelled"
+    : jobStatus === "quota_exceeded" ? "statusQuotaExceeded"
+    : "statusError";
+  const icon =
+    jobStatus === "done" ? "✅" : jobStatus === "cancelled" ? "🛑" : jobStatus === "quota_exceeded" ? "⏳" : "⚠️";
+
+  const r = jobResult || {};
+  const total = Number(r.total || 0);
+  const success = Number(r.success || 0);
+  // 실패는 실제로 실패 메시지가 남은 건수만 센다.
+  // (중지/할당량 초과로 손대지 못한 나머지는 실패가 아니라 미처리이므로 total - success로 추정하지 않는다)
+  const failed = r.failMessages ? r.failMessages.length : 0;
+  const requests = r.requestsUsed;
+
+  let html = `<div class="result-card">`;
+  html += `<div class="result-card-head ${escapeHtml(jobStatus)}">${icon} ${escapeHtml(t(statusKey))}</div>`;
+
+  if (jobStatus !== "error") {
+    html += `<div class="result-card-stats">
+      <div class="result-stat ok"><div class="result-stat-label">${escapeHtml(t("resultCardSuccess"))}</div><div class="result-stat-value">${success}</div></div>
+      <div class="result-stat ${failed ? "fail" : ""}"><div class="result-stat-label">${escapeHtml(t("resultCardFailed"))}</div><div class="result-stat-value">${failed}</div></div>
+      <div class="result-stat"><div class="result-stat-label">${escapeHtml(t("resultCardTotal"))}</div><div class="result-stat-value">${total}</div></div>
+      <div class="result-stat"><div class="result-stat-label">${escapeHtml(t("resultCardRequests"))}</div><div class="result-stat-value">${requests === undefined ? "-" : requests}</div></div>
+    </div>`;
+  }
+
+  const reason = jobStatus === "error" ? jobError : (r.failMessages && r.failMessages[0]);
+  if (reason) {
+    html += `<div class="result-card-reason">${escapeHtml(t("resultCardFailReason"))}: ${escapeHtml(String(reason))}</div>`;
+  }
+  if (jobStatus === "quota_exceeded") {
+    html += `<div class="result-card-reason">${escapeHtml(t("dashResultQuota", [total, success]))}</div>`;
+  }
+  if (finishedAt) {
+    html += `<div class="result-card-time">${escapeHtml(t("resultCardFinishedAt"))}: ${escapeHtml(new Date(finishedAt).toLocaleString())}</div>`;
+  }
+  html += `</div>`;
+  return html;
+}
+
+function showResultCard(boxId, jobStatus, jobResult, jobError, finishedAt) {
+  const box = $(boxId);
+  if (!box) return;
+  box.innerHTML = buildResultCardHtml(jobStatus, jobResult, jobError, finishedAt);
+}
+
 function renderJobProgress(prefix, result, runningText) {
   const wrap = $(`${prefix}ProgressWrap`);
   const bar = $(`${prefix}ProgressBar`);
@@ -361,18 +414,16 @@ function pollStatus() {
 
     if (result.jobKind === "classify" || result.jobKind === "repeat" || result.jobKind === "relabel" || result.jobKind === "dedupe") {
       renderJobProgress("dashClassify", result, t("dashJobClassifying"));
-      const box = $("dashClassifyResultBox");
+      // 반복 분류는 전용 결과 칸이 있으면 거기에도 같은 카드를 그린다
+      const resultBoxId = result.jobKind === "repeat" && $("dashRepeatResultBox") ? "dashRepeatResultBox" : "dashClassifyResultBox";
+      const box = $(resultBoxId);
       if (box) {
         if (isRunning) {
           box.textContent = t("dashJobRunningGeneric");
-        } else if (result.jobStatus === "done" && result.jobResult) {
-          box.textContent = t("dashResultDone", [result.jobResult.total || 0, result.jobResult.success || 0]);
-        } else if (result.jobStatus === "cancelled" && result.jobResult) {
-          box.textContent = t("dashResultCancelled", [result.jobResult.total || 0, result.jobResult.success || 0]);
-        } else if (result.jobStatus === "quota_exceeded" && result.jobResult) {
-          box.textContent = t("dashResultQuota", [result.jobResult.total || 0, result.jobResult.success || 0]);
+        } else if (["done", "cancelled", "quota_exceeded"].includes(result.jobStatus) && result.jobResult) {
+          showResultCard(resultBoxId, result.jobStatus, result.jobResult, null, result.jobFinishedAt);
         } else if (result.jobStatus === "error") {
-          box.textContent = t("errorGenericPrefix", [result.jobError || ""]);
+          showResultCard(resultBoxId, "error", null, result.jobError, result.jobFinishedAt);
         }
       }
     }
@@ -417,7 +468,10 @@ function initDashTabSwitching() {
 
       if (subControls) subControls.style.display = tab === "summary" ? "flex" : "none";
 
-      if (tab === "labels") renderDashboardCategories();
+      if (tab === "labels") {
+        renderDashboardCategories();
+        renderDashAnalysisChecklist();
+      }
       if (tab === "relabel") loadDashboardRelabelOptions();
       if (tab === "settings") loadDashboardSettingsData();
       if (tab === "logs") loadDashboardLogs();
@@ -614,6 +668,221 @@ function loadDashboardLogs() {
       .join("");
     box.scrollTop = box.scrollHeight;
   });
+}
+
+// ---------------- 개인 필터 규칙 (예전에는 팝업에만 있어서 대시보드에서 볼 수 없었다) ----------------
+let dashFilterRules = [];
+
+function renderDashFilterRules() {
+  const list = $("dashFilterRulesList");
+  if (!list) return;
+  list.innerHTML = dashFilterRules
+    .map(
+      (rule, idx) => `
+      <div class="dash-rule-row" data-idx="${idx}">
+        <select class="dash-select dash-rule-type">
+          <option value="from"${rule.matchType !== "subject" ? " selected" : ""}>${escapeHtml(t("matchTypeFrom"))}</option>
+          <option value="subject"${rule.matchType === "subject" ? " selected" : ""}>${escapeHtml(t("matchTypeSubject"))}</option>
+        </select>
+        <input type="text" class="dash-input-text dash-rule-value" value="${escapeHtml(rule.matchValue || "")}" placeholder="${escapeHtml(t("dashPlaceholderMatchValue"))}">
+        <input type="text" class="dash-input-text dash-rule-target" value="${escapeHtml(rule.targetLabel || "")}" placeholder="${escapeHtml(t("dashPlaceholderTargetLabel"))}">
+        <button class="dash-btn dash-btn-secondary dash-del-rule-btn">${escapeHtml(t("dashBtnDeleteRule"))}</button>
+      </div>`
+    )
+    .join("");
+
+  list.querySelectorAll(".dash-del-rule-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      collectDashFilterRules();
+      const idx = parseInt(btn.closest(".dash-rule-row").getAttribute("data-idx"), 10);
+      dashFilterRules.splice(idx, 1);
+      renderDashFilterRules();
+    });
+  });
+}
+
+function collectDashFilterRules() {
+  const list = $("dashFilterRulesList");
+  if (!list) return;
+  dashFilterRules = [...list.querySelectorAll(".dash-rule-row")].map((row) => ({
+    matchType: row.querySelector(".dash-rule-type").value,
+    matchValue: row.querySelector(".dash-rule-value").value.trim(),
+    targetLabel: row.querySelector(".dash-rule-target").value.trim(),
+  }));
+}
+
+function loadDashFilterRules() {
+  chrome.storage.local.get(["filterRules"], (result) => {
+    // 백그라운드가 기대하는 스키마({matchType, matchValue, targetLabel})를 그대로 읽고 쓴다
+    dashFilterRules = Array.isArray(result.filterRules) ? result.filterRules.map((r) => ({ ...r })) : [];
+    renderDashFilterRules();
+  });
+}
+
+// ---------------- 라벨 분석 + 분류 기준 임시저장 ----------------
+function renderDashAnalysisChecklist() {
+  const box = $("dashLabelAnalysisChecklist");
+  if (!box) return;
+  const checked = new Set([...box.querySelectorAll("input:checked")].map((el) => el.value));
+  box.innerHTML = currentCategoryDefs
+    .map(
+      (c) => `
+      <label class="dash-check-row">
+        <input type="checkbox" value="${escapeHtml(c.name)}"${checked.has(c.name) ? " checked" : ""}>
+        <span>${escapeHtml(c.name)}</span>
+      </label>`
+    )
+    .join("");
+}
+
+function loadDashScratchpad() {
+  const pad = $("dashCriteriaScratchpad");
+  if (!pad) return;
+  chrome.storage.local.get(["criteriaScratchpad"], (result) => {
+    pad.value = result.criteriaScratchpad || "";
+  });
+}
+
+// 팝업과 같은 형식을 읽는다: 빈 줄로 구분된 블록에서 첫 줄이 카테고리명, 나머지가 기준 문장
+function parseDashScratchpad(text) {
+  return String(text || "")
+    .split(/\n\s*\n/)
+    .map((block) => block.trim())
+    .filter(Boolean)
+    .map((block) => {
+      const lines = block.split("\n");
+      return { labelName: (lines[0] || "").trim(), suggestion: lines.slice(1).join("\n").trim() };
+    })
+    .filter((e) => e.labelName && e.suggestion);
+}
+
+function initDashboardExtraFeatureEvents() {
+  // --- 반복 분류 ---
+  const repeatBatches = $("dashRepeatBatchesInput");
+  const repeatRounds = $("dashRepeatRoundsInput");
+
+  function updateDashRepeatHint() {
+    const hint = $("dashRepeatHint");
+    if (!hint || !repeatBatches || !repeatRounds) return;
+    const batches = Math.max(1, Math.min(5, parseInt(repeatBatches.value, 10) || 1));
+    const rounds = Math.max(1, parseInt(repeatRounds.value, 10) || 1);
+    const perRound = batches * dashBatchSize;
+    hint.textContent = t("hintRepeatRounds", [perRound, rounds, perRound * rounds]);
+  }
+
+  if (repeatBatches) repeatBatches.addEventListener("input", updateDashRepeatHint);
+  if (repeatRounds) repeatRounds.addEventListener("input", updateDashRepeatHint);
+  updateDashRepeatHint();
+
+  const startRepeatBtn = $("dashStartRepeatBtn");
+  if (startRepeatBtn) {
+    startRepeatBtn.addEventListener("click", () => {
+      const batchesPerRound = Math.max(1, Math.min(5, parseInt(repeatBatches.value, 10) || 1));
+      const repeatCount = Math.max(1, parseInt(repeatRounds.value, 10) || 1);
+      startJob({ action: "startRepeatClassification", batchesPerRound, repeatCount });
+    });
+  }
+
+  // --- 개인 필터 규칙 ---
+  const addRuleBtn = $("dashAddFilterRuleBtn");
+  if (addRuleBtn) {
+    addRuleBtn.addEventListener("click", () => {
+      collectDashFilterRules();
+      dashFilterRules.push({ matchType: "from", matchValue: "", targetLabel: "" });
+      renderDashFilterRules();
+    });
+  }
+
+  const saveRulesBtn = $("dashSaveFilterRulesBtn");
+  if (saveRulesBtn) {
+    saveRulesBtn.addEventListener("click", () => {
+      collectDashFilterRules();
+      const valid = dashFilterRules.filter((r) => r.matchValue && r.targetLabel);
+      chrome.storage.local.set({ filterRules: valid }, () => {
+        dashFilterRules = valid;
+        renderDashFilterRules();
+        setText("dashFilterRulesResultBox", t("dashMsgFilterRulesSaved", [valid.length]));
+      });
+    });
+  }
+
+  // --- 라벨 분석 ---
+  const selectAllBtn = $("dashAnalysisSelectAllBtn");
+  if (selectAllBtn) {
+    selectAllBtn.addEventListener("click", () => {
+      document.querySelectorAll("#dashLabelAnalysisChecklist input").forEach((el) => (el.checked = true));
+    });
+  }
+  const selectNoneBtn = $("dashAnalysisSelectNoneBtn");
+  if (selectNoneBtn) {
+    selectNoneBtn.addEventListener("click", () => {
+      document.querySelectorAll("#dashLabelAnalysisChecklist input").forEach((el) => (el.checked = false));
+    });
+  }
+
+  const startAnalysisBtn = $("dashStartAnalysisBtn");
+  if (startAnalysisBtn) {
+    startAnalysisBtn.addEventListener("click", () => {
+      const labelNames = [...document.querySelectorAll("#dashLabelAnalysisChecklist input:checked")].map((el) => el.value);
+      if (!labelNames.length) {
+        setText("dashAnalysisResultBox", t("dashMsgNeedAnalysisLabel"));
+        return;
+      }
+      startJob({ action: "startAnalyzeMultipleLabels", labelNames });
+    });
+  }
+
+  // --- 임시저장 칸 ---
+  const pad = $("dashCriteriaScratchpad");
+  if (pad) {
+    // 실수로 창을 닫아도 내용이 남도록 입력할 때마다 저장(팝업과 같은 키를 쓴다)
+    pad.addEventListener("input", () => chrome.storage.local.set({ criteriaScratchpad: pad.value }));
+
+    // 백그라운드가 분석 결과를 적재하면 바로 화면에 반영한다
+    chrome.storage.onChanged.addListener((changes, areaName) => {
+      if (areaName !== "local" || !changes.criteriaScratchpad) return;
+      if (document.activeElement === pad) return; // 입력 중이면 덮어쓰지 않는다
+      pad.value = changes.criteriaScratchpad.newValue || "";
+    });
+  }
+
+  const applyPadBtn = $("dashApplyScratchpadBtn");
+  if (applyPadBtn) {
+    applyPadBtn.addEventListener("click", () => {
+      if (!pad || !pad.value.trim()) {
+        setText("dashAnalysisResultBox", t("dashMsgScratchpadEmpty"));
+        return;
+      }
+      const entries = parseDashScratchpad(pad.value);
+      if (!entries.length) {
+        setText("dashAnalysisResultBox", t("dashMsgScratchpadNotFound"));
+        return;
+      }
+      let applied = 0;
+      for (const entry of entries) {
+        const idx = currentCategoryDefs.findIndex((c) => c.name === entry.labelName);
+        if (idx < 0) continue;
+        currentCategoryDefs[idx] = { ...currentCategoryDefs[idx], description: entry.suggestion, autoLearned: false };
+        applied += 1;
+      }
+      if (!applied) {
+        setText("dashAnalysisResultBox", t("dashMsgScratchpadNotFound"));
+        return;
+      }
+      chrome.storage.local.set({ categoryDefinitions: currentCategoryDefs }, () => {
+        renderDashboardCategories();
+        setText("dashAnalysisResultBox", t("dashMsgScratchpadApplied", [applied]));
+      });
+    });
+  }
+
+  const clearPadBtn = $("dashClearScratchpadBtn");
+  if (clearPadBtn) {
+    clearPadBtn.addEventListener("click", () => {
+      if (pad) pad.value = "";
+      chrome.storage.local.set({ criteriaScratchpad: "" });
+    });
+  }
 }
 
 // ---------------- 작업 시작 공용 처리 ----------------
@@ -879,6 +1148,22 @@ async function main() {
   loadCategories();
   initEvents();
   initDashTabSwitching();
+  initDashboardExtraFeatureEvents();
+  loadDashFilterRules();
+  loadDashScratchpad();
+
+  // 반복 분류 힌트에 쓸 실제 배치 크기를 받아온다
+  chrome.runtime.sendMessage({ action: "getConfig" }, (config) => {
+    if (chrome.runtime.lastError || !config || !config.batchSize) return;
+    dashBatchSize = config.batchSize;
+    const hintEl = $("dashRepeatHint");
+    const batchesEl = $("dashRepeatBatchesInput");
+    const roundsEl = $("dashRepeatRoundsInput");
+    if (!hintEl || !batchesEl || !roundsEl) return;
+    const perRound = Math.max(1, Math.min(5, parseInt(batchesEl.value, 10) || 1)) * dashBatchSize;
+    const rounds = Math.max(1, parseInt(roundsEl.value, 10) || 1);
+    hintEl.textContent = t("hintRepeatRounds", [perRound, rounds, perRound * rounds]);
+  });
 
   chrome.storage.local.get(["lastLabelSummary"], (stored) => {
     if (stored.lastLabelSummary) renderReport(stored.lastLabelSummary);
@@ -895,6 +1180,8 @@ async function main() {
     updateSelectedLabelHeader();
     renderSidebarLabels();
     renderDashboardCategories();
+    renderDashFilterRules();
+    renderDashAnalysisChecklist();
     if (lastReportData) renderReport(lastReportData);
   });
 }

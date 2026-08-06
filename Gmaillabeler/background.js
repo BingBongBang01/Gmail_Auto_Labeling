@@ -2180,12 +2180,29 @@ async function analyzeOneLabelCriteria(token, categoryDefs, labelName) {
   return { labelName, suggestion, sampleCount: details.length, totalCount: messages.length };
 }
 
+
+// 분석 결과(분류 기준 제안)를 임시저장 칸에 직접 적재한다.
+// 예전에는 팝업이 열려 있을 때만 팝업 쪽 코드가 이 작업을 해서, 대시보드에서 분석을 돌리거나
+// 팝업을 닫아두면 결과가 어디에도 남지 않았다. 이제 백그라운드가 저장하고 화면들은 읽기만 한다.
+async function appendCriteriaSuggestionsToScratchpad(suggestions) {
+  const usable = (suggestions || []).filter((s) => s && s.labelName && s.suggestion);
+  if (!usable.length) return;
+  const stored = await chrome.storage.local.get(["criteriaScratchpad"]);
+  let text = stored.criteriaScratchpad || "";
+  for (const s of usable) {
+    if (text.trim()) text += "\n\n";
+    text += `${s.labelName}\n${s.suggestion}`;
+  }
+  await chrome.storage.local.set({ criteriaScratchpad: text });
+}
+
 async function processAnalyzeLabelCriteria(labelName) {
   const { categoryDefs, categories, token } = await initGeminiAndGmailContext();
   if (!categories.includes(labelName)) {
     throw new Error(t("errLabelNotInCategories", [labelName]));
   }
   const oneResult = await analyzeOneLabelCriteria(token, categoryDefs, labelName);
+  await appendCriteriaSuggestionsToScratchpad([{ labelName: oneResult.labelName, suggestion: oneResult.suggestion }]);
   return {
     total: 1,
     success: 1,
@@ -2235,6 +2252,7 @@ async function processAnalyzeMultipleLabelsCriteria(labelNames) {
   }
 
   await addLog(t("logMultiAnalysisDone", [successCount, targets.length]));
+  await appendCriteriaSuggestionsToScratchpad(suggestions);
 
   return {
     total: targets.length,

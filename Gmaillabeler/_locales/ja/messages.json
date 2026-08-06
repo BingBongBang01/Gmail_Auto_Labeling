@@ -36,7 +36,7 @@
     "message": "要約"
   },
   "sectionLabelSummary": {
-    "message": "選択ラベルメールの要約"
+    "message": "メール要約"
   },
   "labelSelectSummaryLabel": {
     "message": "要約するラベル"
@@ -2614,5 +2614,114 @@
   },
   "settingsGroupApp": {
     "message": "通知とアプリ設定"
+  },
+  "dashRepeatHeading": {
+    "message": "繰り返し分類"
+  },
+  "dashRepeatDesc": {
+    "message": "一度にまとめて処理すると API の1日上限を超えて途中で止まることがあります。小さな単位で繰り返す方が、溜まったメールが多いときは安全です。"
+  },
+  "dashLabelRepeatBatches": {
+    "message": "1ラウンドの単位数 (1-5)"
+  },
+  "dashLabelRepeatRounds": {
+    "message": "ラウンド数"
+  },
+  "dashBtnStartRepeat": {
+    "message": "🔁 繰り返し分類を実行"
+  },
+  "dashFilterRulesHeading": {
+    "message": "個人フィルタルール"
+  },
+  "dashFilterRulesDesc": {
+    "message": "AI 分析より先に確認するルールです。条件に合えば AI を呼ばずにそのままラベルが付きます。"
+  },
+  "dashBtnAddFilterRule": {
+    "message": "➕ ルールを追加"
+  },
+  "dashBtnSaveFilterRules": {
+    "message": "💾 ルールを保存"
+  },
+  "dashMsgFilterRulesSaved": {
+    "message": "フィルタルール $COUNT$件を保存しました。",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "dashPlaceholderMatchValue": {
+    "message": "含む文字列 (例: @shop.com)"
+  },
+  "dashPlaceholderTargetLabel": {
+    "message": "付けるラベル名"
+  },
+  "dashBtnDeleteRule": {
+    "message": "削除"
+  },
+  "dashLabelAnalysisHeading": {
+    "message": "ラベルを分析して分類基準を作る"
+  },
+  "dashLabelAnalysisDesc": {
+    "message": "ラベルを選ぶと、AI がそのラベルに実際に分類されたメールを見て使える分類基準の文を提案します。"
+  },
+  "dashBtnSelectAll": {
+    "message": "すべて選択"
+  },
+  "dashBtnSelectNone": {
+    "message": "選択解除"
+  },
+  "dashBtnAnalyze": {
+    "message": "🔍 分析を実行"
+  },
+  "dashScratchpadDesc": {
+    "message": "一時保存欄です。作成された提案はページを閉じても残ります。[カテゴリに適用]を押すと各カテゴリの説明欄に入ります。"
+  },
+  "dashBtnApplyScratchpad": {
+    "message": "カテゴリに適用"
+  },
+  "dashBtnClearScratchpad": {
+    "message": "クリア"
+  },
+  "dashMsgNeedAnalysisLabel": {
+    "message": "分析するラベルを1つ以上選んでください。"
+  },
+  "dashMsgScratchpadApplied": {
+    "message": "$COUNT$件のカテゴリの分類基準を設定しました。",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "dashMsgScratchpadNotFound": {
+    "message": "適用できる内容が見つかりません。「カテゴリ名: 基準」の形式か確認してください。"
+  },
+  "dashMsgScratchpadEmpty": {
+    "message": "一時保存欄が空です。"
+  },
+  "dashRoleHintPopup": {
+    "message": "このポップアップでも設定できますが、項目が多いときは全画面のダッシュボードが便利です。"
+  },
+  "resultCardSuccess": {
+    "message": "成功"
+  },
+  "resultCardFailed": {
+    "message": "失敗"
+  },
+  "resultCardTotal": {
+    "message": "全体"
+  },
+  "resultCardRequests": {
+    "message": "AI リクエスト"
+  },
+  "resultCardFailReason": {
+    "message": "失敗の理由"
+  },
+  "resultCardFinishedAt": {
+    "message": "完了"
+  },
+  "resultCardNothingYet": {
+    "message": "まだ実行した処理はありません。"
   }
 }

@@ -36,7 +36,7 @@
     "message": "摘要"
   },
   "sectionLabelSummary": {
-    "message": "所选标签邮件摘要"
+    "message": "邮件摘要"
   },
   "labelSelectSummaryLabel": {
     "message": "要摘要的标签"
@@ -2614,5 +2614,114 @@
   },
   "settingsGroupApp": {
     "message": "通知与应用设置"
+  },
+  "dashRepeatHeading": {
+    "message": "重复分类"
+  },
+  "dashRepeatDesc": {
+    "message": "一次性全部处理可能超出每日 API 上限而中断。积压较多时，分成小批多次执行更安全。"
+  },
+  "dashLabelRepeatBatches": {
+    "message": "每轮批数 (1-5)"
+  },
+  "dashLabelRepeatRounds": {
+    "message": "轮数"
+  },
+  "dashBtnStartRepeat": {
+    "message": "🔁 开始重复分类"
+  },
+  "dashFilterRulesHeading": {
+    "message": "个人筛选规则"
+  },
+  "dashFilterRulesDesc": {
+    "message": "在 AI 分析之前先检查。匹配时直接添加指定标签，不调用 AI。"
+  },
+  "dashBtnAddFilterRule": {
+    "message": "➕ 添加规则"
+  },
+  "dashBtnSaveFilterRules": {
+    "message": "💾 保存规则"
+  },
+  "dashMsgFilterRulesSaved": {
+    "message": "已保存 $COUNT$ 条筛选规则。",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "dashPlaceholderMatchValue": {
+    "message": "要匹配的文本（例：@shop.com）"
+  },
+  "dashPlaceholderTargetLabel": {
+    "message": "要添加的标签名"
+  },
+  "dashBtnDeleteRule": {
+    "message": "删除"
+  },
+  "dashLabelAnalysisHeading": {
+    "message": "分析标签生成分类标准"
+  },
+  "dashLabelAnalysisDesc": {
+    "message": "选择标签后，AI 会查看实际归入该标签的邮件，并提出可用的分类标准文本。"
+  },
+  "dashBtnSelectAll": {
+    "message": "全选"
+  },
+  "dashBtnSelectNone": {
+    "message": "取消全选"
+  },
+  "dashBtnAnalyze": {
+    "message": "🔍 开始分析"
+  },
+  "dashScratchpadDesc": {
+    "message": "草稿区。生成的建议会保留，即使关闭页面也不会丢失。点击[应用到分类]会填入各分类的说明栏。"
+  },
+  "dashBtnApplyScratchpad": {
+    "message": "应用到分类"
+  },
+  "dashBtnClearScratchpad": {
+    "message": "清空"
+  },
+  "dashMsgNeedAnalysisLabel": {
+    "message": "请至少选择一个要分析的标签。"
+  },
+  "dashMsgScratchpadApplied": {
+    "message": "已填入 $COUNT$ 个分类的标准。",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "dashMsgScratchpadNotFound": {
+    "message": "未找到可应用的内容。请检查是否为“分类名: 标准”格式。"
+  },
+  "dashMsgScratchpadEmpty": {
+    "message": "草稿区为空。"
+  },
+  "dashRoleHintPopup": {
+    "message": "在此弹窗中也可完成设置，但项目较多时全屏控制面板更方便。"
+  },
+  "resultCardSuccess": {
+    "message": "成功"
+  },
+  "resultCardFailed": {
+    "message": "失败"
+  },
+  "resultCardTotal": {
+    "message": "总计"
+  },
+  "resultCardRequests": {
+    "message": "AI 请求"
+  },
+  "resultCardFailReason": {
+    "message": "失败原因"
+  },
+  "resultCardFinishedAt": {
+    "message": "完成"
+  },
+  "resultCardNothingYet": {
+    "message": "尚未执行任何任务。"
   }
 }

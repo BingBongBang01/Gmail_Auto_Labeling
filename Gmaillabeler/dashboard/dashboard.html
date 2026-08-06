@@ -122,6 +122,24 @@
           </div>
           <div class="dash-result-card" id="dashClassifyResultBox" style="margin-top: 16px;"></div>
         </div>
+
+        <div class="dash-card" style="margin-top: 20px;">
+          <h3 data-i18n="dashRepeatHeading">Repeat classification</h3>
+          <p class="dash-desc" data-i18n="dashRepeatDesc"></p>
+          <div class="dash-form-row">
+            <label class="dash-form-inline">
+              <span data-i18n="dashLabelRepeatBatches">Batches per round (1-5)</span>
+              <input type="number" id="dashRepeatBatchesInput" class="dash-input-num" value="2" min="1" max="5">
+            </label>
+            <label class="dash-form-inline">
+              <span data-i18n="dashLabelRepeatRounds">Rounds</span>
+              <input type="number" id="dashRepeatRoundsInput" class="dash-input-num" value="5" min="1">
+            </label>
+            <button class="dash-btn dash-btn-primary" id="dashStartRepeatBtn" data-i18n="dashBtnStartRepeat">Start repeat classification</button>
+          </div>
+          <div class="dash-desc" id="dashRepeatHint" style="margin-top:8px;"></div>
+          <div class="dash-result-card" id="dashRepeatResultBox" style="margin-top: 12px;"></div>
+        </div>
       </section>
 
       <!-- Tab Panel 3: Labels -->
@@ -136,6 +154,36 @@
           </div>
           <div class="dash-label-grid" id="dashCategoriesList">
             <!-- Label items rendered dynamically -->
+          </div>
+        </div>
+
+        <div class="dash-card" style="margin-top: 20px;">
+          <h3 data-i18n="dashFilterRulesHeading">Personal filter rules</h3>
+          <p class="dash-desc" data-i18n="dashFilterRulesDesc"></p>
+          <div id="dashFilterRulesList"></div>
+          <div class="dash-btn-row" style="margin-top: 10px;">
+            <button class="dash-btn dash-btn-secondary" id="dashAddFilterRuleBtn" data-i18n="dashBtnAddFilterRule">➕ Add rule</button>
+            <button class="dash-btn dash-btn-primary" id="dashSaveFilterRulesBtn" data-i18n="dashBtnSaveFilterRules">💾 Save rules</button>
+          </div>
+          <div class="dash-result-card" id="dashFilterRulesResultBox" style="margin-top: 12px;"></div>
+        </div>
+
+        <div class="dash-card" style="margin-top: 20px;">
+          <h3 data-i18n="dashLabelAnalysisHeading">Build criteria from a label</h3>
+          <p class="dash-desc" data-i18n="dashLabelAnalysisDesc"></p>
+          <div class="dash-check-grid" id="dashLabelAnalysisChecklist"></div>
+          <div class="dash-btn-row" style="margin-top: 10px;">
+            <button class="dash-btn dash-btn-secondary" id="dashAnalysisSelectAllBtn" data-i18n="dashBtnSelectAll">Select all</button>
+            <button class="dash-btn dash-btn-secondary" id="dashAnalysisSelectNoneBtn" data-i18n="dashBtnSelectNone">Select none</button>
+            <button class="dash-btn dash-btn-primary" id="dashStartAnalysisBtn" data-i18n="dashBtnAnalyze">🔍 Analyze</button>
+          </div>
+          <div class="dash-result-card" id="dashAnalysisResultBox" style="margin-top: 12px;"></div>
+
+          <p class="dash-desc" style="margin-top: 14px;" data-i18n="dashScratchpadDesc"></p>
+          <textarea id="dashCriteriaScratchpad" class="dash-textarea" rows="7"></textarea>
+          <div class="dash-btn-row" style="margin-top: 8px;">
+            <button class="dash-btn dash-btn-primary" id="dashApplyScratchpadBtn" data-i18n="dashBtnApplyScratchpad">Apply to categories</button>
+            <button class="dash-btn dash-btn-secondary" id="dashClearScratchpadBtn" data-i18n="dashBtnClearScratchpad">Clear</button>
           </div>
         </div>
       </section>

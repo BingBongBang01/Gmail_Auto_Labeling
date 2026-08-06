@@ -78,6 +78,28 @@
   html[data-theme="dark"] .api-error-banner { background: #3a2a28; color: #ffb4ab; }
   @keyframes blink { 0%,100%{opacity:1;} 50%{opacity:0.35;} }
 
+  /* ---- 결과 요약 카드 ---- */
+  .result-card { display: flex; flex-direction: column; gap: 8px; }
+  .result-card-head { display: flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 700; }
+  .result-card-head.done { color: var(--green); }
+  .result-card-head.cancelled { color: var(--amber); }
+  .result-card-head.quota_exceeded { color: var(--amber); }
+  .result-card-head.error { color: var(--red); }
+  .result-card-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+  .result-stat {
+    background: var(--surface-2); border: 1px solid var(--border); border-radius: 6px;
+    padding: 6px 4px; text-align: center;
+  }
+  .result-stat-label { font-size: 9.5px; color: var(--text-secondary); }
+  .result-stat-value { font-size: 14px; font-weight: 700; margin-top: 1px; }
+  .result-stat.fail .result-stat-value { color: var(--red); }
+  .result-stat.ok .result-stat-value { color: var(--green); }
+  .result-card-reason {
+    font-size: 11px; color: var(--red); line-height: 1.45;
+    background: var(--surface-2); border-radius: 6px; padding: 6px 8px; word-break: break-word;
+  }
+  .result-card-time { font-size: 10px; color: var(--text-secondary); }
+
   /* ---- 설정 탭 그룹 (섹션 14개를 성격별로 묶어서 훑기 쉽게 함) ---- */
   .settings-cluster { margin: 0 0 18px; }
   .settings-cluster:last-child { margin-bottom: 4px; }
@@ -440,6 +462,7 @@
 
   <!-- 통합 설정 탭 -->
   <div class="tab-panel" id="panel-settings">
+    <div class="hint" id="settingsRoleHint" style="margin-bottom:10px;" data-i18n="dashRoleHintPopup"></div>
 
     <div class="settings-cluster">
       <div class="settings-cluster-title" data-i18n="settingsGroupEssential">Required connections</div>

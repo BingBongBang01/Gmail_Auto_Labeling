@@ -36,7 +36,7 @@
     "message": "Summary"
   },
   "sectionLabelSummary": {
-    "message": "Summarize label emails"
+    "message": "Mail summary"
   },
   "labelSelectSummaryLabel": {
     "message": "Label to summarize"
@@ -2614,5 +2614,114 @@
   },
   "settingsGroupApp": {
     "message": "Notifications and app settings"
+  },
+  "dashRepeatHeading": {
+    "message": "Repeat classification"
+  },
+  "dashRepeatDesc": {
+    "message": "Processing everything at once can exceed the daily API limit and stop midway. Running smaller rounds repeatedly is much safer when you have a big backlog."
+  },
+  "dashLabelRepeatBatches": {
+    "message": "Batches per round (1-5)"
+  },
+  "dashLabelRepeatRounds": {
+    "message": "Rounds"
+  },
+  "dashBtnStartRepeat": {
+    "message": "🔁 Start repeat classification"
+  },
+  "dashFilterRulesHeading": {
+    "message": "Personal filter rules"
+  },
+  "dashFilterRulesDesc": {
+    "message": "Checked before the AI runs. When a mail matches, the label is applied immediately with no AI request."
+  },
+  "dashBtnAddFilterRule": {
+    "message": "➕ Add rule"
+  },
+  "dashBtnSaveFilterRules": {
+    "message": "💾 Save rules"
+  },
+  "dashMsgFilterRulesSaved": {
+    "message": "Saved $COUNT$ filter rule(s).",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "dashPlaceholderMatchValue": {
+    "message": "Text to match (e.g. @shop.com)"
+  },
+  "dashPlaceholderTargetLabel": {
+    "message": "Label to apply"
+  },
+  "dashBtnDeleteRule": {
+    "message": "Delete"
+  },
+  "dashLabelAnalysisHeading": {
+    "message": "Build criteria from a label"
+  },
+  "dashLabelAnalysisDesc": {
+    "message": "Pick labels and AI reads the mail actually filed under them, then proposes usable criteria text."
+  },
+  "dashBtnSelectAll": {
+    "message": "Select all"
+  },
+  "dashBtnSelectNone": {
+    "message": "Select none"
+  },
+  "dashBtnAnalyze": {
+    "message": "🔍 Analyze"
+  },
+  "dashScratchpadDesc": {
+    "message": "A scratchpad. Suggestions stay here even if you close the page. [Apply to categories] fills each category's description."
+  },
+  "dashBtnApplyScratchpad": {
+    "message": "Apply to categories"
+  },
+  "dashBtnClearScratchpad": {
+    "message": "Clear"
+  },
+  "dashMsgNeedAnalysisLabel": {
+    "message": "Select at least one label to analyze."
+  },
+  "dashMsgScratchpadApplied": {
+    "message": "Filled criteria for $COUNT$ categories.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "dashMsgScratchpadNotFound": {
+    "message": "Could not find anything to apply. Check that lines look like \"Category: criteria\"."
+  },
+  "dashMsgScratchpadEmpty": {
+    "message": "The scratchpad is empty."
+  },
+  "dashRoleHintPopup": {
+    "message": "You can set everything here, but the full-screen dashboard is easier when there is a lot to manage."
+  },
+  "resultCardSuccess": {
+    "message": "Succeeded"
+  },
+  "resultCardFailed": {
+    "message": "Failed"
+  },
+  "resultCardTotal": {
+    "message": "Total"
+  },
+  "resultCardRequests": {
+    "message": "AI requests"
+  },
+  "resultCardFailReason": {
+    "message": "Failure reason"
+  },
+  "resultCardFinishedAt": {
+    "message": "Finished"
+  },
+  "resultCardNothingYet": {
+    "message": "No job has run yet."
   }
 }

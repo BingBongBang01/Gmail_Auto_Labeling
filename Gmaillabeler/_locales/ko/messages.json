@@ -36,7 +36,7 @@
     "message": "요약"
   },
   "sectionLabelSummary": {
-    "message": "선택 라벨 메일 요약"
+    "message": "메일 요약 만들기"
   },
   "labelSelectSummaryLabel": {
     "message": "요약할 라벨"
@@ -2614,5 +2614,114 @@
   },
   "settingsGroupApp": {
     "message": "알림 및 앱 설정"
+  },
+  "dashRepeatHeading": {
+    "message": "반복 분류"
+  },
+  "dashRepeatDesc": {
+    "message": "한 번에 몰아서 처리하면 API 하루 한도를 넘겨 중간에 멈출 수 있습니다. 작은 묶음을 여러 번 나눠 실행하면 밀린 메일이 많을 때 훨씬 안전합니다."
+  },
+  "dashLabelRepeatBatches": {
+    "message": "라운드당 묶음 수 (1-5)"
+  },
+  "dashLabelRepeatRounds": {
+    "message": "라운드 수"
+  },
+  "dashBtnStartRepeat": {
+    "message": "🔁 반복 분류 실행"
+  },
+  "dashFilterRulesHeading": {
+    "message": "개인 필터 규칙"
+  },
+  "dashFilterRulesDesc": {
+    "message": "AI 분석보다 먼저 확인하는 규칙입니다. 조건에 맞으면 AI 호출 없이 바로 지정한 라벨이 붙습니다."
+  },
+  "dashBtnAddFilterRule": {
+    "message": "➕ 규칙 추가"
+  },
+  "dashBtnSaveFilterRules": {
+    "message": "💾 규칙 저장"
+  },
+  "dashMsgFilterRulesSaved": {
+    "message": "필터 규칙 $COUNT$개를 저장했습니다.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "dashPlaceholderMatchValue": {
+    "message": "포함할 문자열 (예: @shop.com)"
+  },
+  "dashPlaceholderTargetLabel": {
+    "message": "붙일 라벨 이름"
+  },
+  "dashBtnDeleteRule": {
+    "message": "삭제"
+  },
+  "dashLabelAnalysisHeading": {
+    "message": "라벨 분석해서 분류 기준 만들기"
+  },
+  "dashLabelAnalysisDesc": {
+    "message": "라벨을 고르면 AI가 그 라벨에 실제로 분류된 메일들을 보고 쓸 만한 분류 기준 문장을 제안합니다."
+  },
+  "dashBtnSelectAll": {
+    "message": "전체 선택"
+  },
+  "dashBtnSelectNone": {
+    "message": "선택 해제"
+  },
+  "dashBtnAnalyze": {
+    "message": "🔍 분석 실행"
+  },
+  "dashScratchpadDesc": {
+    "message": "임시저장 칸입니다. 위에서 만든 제안이 여기 남아 있어서 창을 닫아도 사라지지 않습니다. [카테고리에 적용]을 누르면 해당 카테고리의 설명 칸에 채워집니다."
+  },
+  "dashBtnApplyScratchpad": {
+    "message": "카테고리에 적용"
+  },
+  "dashBtnClearScratchpad": {
+    "message": "비우기"
+  },
+  "dashMsgNeedAnalysisLabel": {
+    "message": "분석할 라벨을 1개 이상 선택해 주세요."
+  },
+  "dashMsgScratchpadApplied": {
+    "message": "$COUNT$개 카테고리의 분류 기준을 채웠습니다.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "dashMsgScratchpadNotFound": {
+    "message": "적용할 내용을 찾지 못했습니다. \"카테고리명: 기준\" 형식인지 확인해 주세요."
+  },
+  "dashMsgScratchpadEmpty": {
+    "message": "임시저장 칸이 비어 있습니다."
+  },
+  "dashRoleHintPopup": {
+    "message": "이 팝업에서도 모두 설정할 수 있지만, 항목이 많을 때는 넓은 화면의 대시보드가 편합니다."
+  },
+  "resultCardSuccess": {
+    "message": "성공"
+  },
+  "resultCardFailed": {
+    "message": "실패"
+  },
+  "resultCardTotal": {
+    "message": "전체"
+  },
+  "resultCardRequests": {
+    "message": "AI 요청"
+  },
+  "resultCardFailReason": {
+    "message": "실패 사유"
+  },
+  "resultCardFinishedAt": {
+    "message": "완료"
+  },
+  "resultCardNothingYet": {
+    "message": "아직 실행한 작업이 없습니다."
   }
 }

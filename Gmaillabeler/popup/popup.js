@@ -462,6 +462,58 @@ async function main() {
     box.classList.add("show");
   }
 
+// ---------------- 결과 요약 카드 ----------------
+  // 예전에는 "마지막 결과: 120개 중 118개 성공" 같은 한 줄 텍스트만 보여줘서
+  // 실패가 몇 건인지, 요청을 얼마나 썼는지 한눈에 파악하기 어려웠다.
+  function buildResultCardHtml(jobStatus, jobResult, jobError, finishedAt) {
+    const statusKey =
+      jobStatus === "done" ? "statusDone"
+      : jobStatus === "cancelled" ? "statusCancelled"
+      : jobStatus === "quota_exceeded" ? "statusQuotaExceeded"
+      : "statusError";
+    const icon =
+      jobStatus === "done" ? "✅" : jobStatus === "cancelled" ? "🛑" : jobStatus === "quota_exceeded" ? "⏳" : "⚠️";
+
+    const r = jobResult || {};
+    const total = Number(r.total || 0);
+    const success = Number(r.success || 0);
+    // 실패는 실제로 실패 메시지가 남은 건수만 센다.
+  // (중지/할당량 초과로 손대지 못한 나머지는 실패가 아니라 미처리이므로 total - success로 추정하지 않는다)
+  const failed = r.failMessages ? r.failMessages.length : 0;
+    const requests = r.requestsUsed;
+
+    let html = `<div class="result-card">`;
+    html += `<div class="result-card-head ${escapeHtml(jobStatus)}">${icon} ${escapeHtml(t(statusKey))}</div>`;
+
+    if (jobStatus !== "error") {
+      html += `<div class="result-card-stats">
+        <div class="result-stat ok"><div class="result-stat-label">${escapeHtml(t("resultCardSuccess"))}</div><div class="result-stat-value">${success}</div></div>
+        <div class="result-stat ${failed ? "fail" : ""}"><div class="result-stat-label">${escapeHtml(t("resultCardFailed"))}</div><div class="result-stat-value">${failed}</div></div>
+        <div class="result-stat"><div class="result-stat-label">${escapeHtml(t("resultCardTotal"))}</div><div class="result-stat-value">${total}</div></div>
+        <div class="result-stat"><div class="result-stat-label">${escapeHtml(t("resultCardRequests"))}</div><div class="result-stat-value">${requests === undefined ? "-" : requests}</div></div>
+      </div>`;
+    }
+
+    const reason = jobStatus === "error" ? jobError : (r.failMessages && r.failMessages[0]);
+    if (reason) {
+      html += `<div class="result-card-reason">${escapeHtml(t("resultCardFailReason"))}: ${escapeHtml(String(reason))}</div>`;
+    }
+    if (jobStatus === "quota_exceeded") {
+      html += `<div class="result-card-reason">${escapeHtml(t("resultQuotaExceeded", [success, total]))}</div>`;
+    }
+    if (finishedAt) {
+      html += `<div class="result-card-time">${escapeHtml(t("resultCardFinishedAt"))}: ${escapeHtml(new Date(finishedAt).toLocaleString())}</div>`;
+    }
+    html += `</div>`;
+    return html;
+  }
+
+  function showResultCard(box, jobStatus, jobResult, jobError, finishedAt) {
+    if (!box) return;
+    box.innerHTML = buildResultCardHtml(jobStatus, jobResult, jobError, finishedAt);
+    box.classList.add("show");
+  }
+
   function translateResponse(response) {
     if (!response) return "";
     if (response.messageKey) return t(response.messageKey, response.messageParams);
@@ -535,19 +587,10 @@ async function main() {
       if (result.jobKind === "repeat") {
         if (result.jobStatus === "running") {
           showResult(repeatResultBox, t("statusRunning"));
-        } else if (result.jobStatus === "done" && result.jobResult) {
-          const r = result.jobResult;
-          let text = t("resultLastRun", [r.success, r.total]);
-          if (r.failMessages && r.failMessages.length) text += t("resultFailReasonSuffix", [r.failMessages[0]]);
-          showResult(repeatResultBox, text);
-        } else if (result.jobStatus === "cancelled" && result.jobResult) {
-          const r = result.jobResult;
-          showResult(repeatResultBox, t("resultCancelled", [r.success, r.total]));
-        } else if (result.jobStatus === "quota_exceeded" && result.jobResult) {
-          const r = result.jobResult;
-          showResult(repeatResultBox, t("resultQuotaExceeded", [r.success, r.total]));
+        } else if (["done", "cancelled", "quota_exceeded"].includes(result.jobStatus) && result.jobResult) {
+          showResultCard(repeatResultBox, result.jobStatus, result.jobResult, null, result.jobFinishedAt);
         } else if (result.jobStatus === "error") {
-          showResult(repeatResultBox, t("resultLastError", [result.jobError]));
+          showResultCard(repeatResultBox, "error", null, result.jobError, result.jobFinishedAt);
         }
       }
 
@@ -649,13 +692,13 @@ async function main() {
 
             // 단일 분석(jobResult.suggestion)과 다중 분석(jobResult.suggestions 배열) 둘 다 처리
             if (result.jobResult.suggestion) {
-              appendToScratchpad(result.jobResult.labelName, result.jobResult.suggestion);
+              reloadScratchpadFromStorage();
               showResult(
                 labelAnalysisResultBox,
                 t("msgLabelAnalysisDone", [result.jobResult.labelName, result.jobResult.sampleCount, result.jobResult.totalCount])
               );
             } else if (Array.isArray(result.jobResult.suggestions)) {
-              result.jobResult.suggestions.forEach((s) => appendToScratchpad(s.labelName, s.suggestion));
+              reloadScratchpadFromStorage();
               let text = t("msgLabelAnalysisMultiDone", [result.jobResult.success, result.jobResult.total]);
               if (result.jobResult.failMessages && result.jobResult.failMessages.length) {
                 text += t("resultFailReasonSuffix", [result.jobResult.failMessages[0]]);
@@ -694,20 +737,10 @@ async function main() {
       if (result.jobKind === "classify") {
         if (result.jobStatus === "running") {
           showResult(resultBox, t("statusRunning"));
-        } else if (result.jobStatus === "done" && result.jobResult) {
-          const r = result.jobResult;
-          let text = t("resultLastRun", [r.success, r.total]);
-          if (r.requestsUsed !== undefined) text += t("resultRequestsUsedSuffix", [r.requestsUsed]);
-          if (r.failMessages && r.failMessages.length) text += t("resultFailReasonSuffix", [r.failMessages[0]]);
-          showResult(resultBox, text);
-        } else if (result.jobStatus === "cancelled" && result.jobResult) {
-          const r = result.jobResult;
-          showResult(resultBox, t("resultCancelled", [r.success, r.total]));
-        } else if (result.jobStatus === "quota_exceeded" && result.jobResult) {
-          const r = result.jobResult;
-          showResult(resultBox, t("resultQuotaExceeded", [r.success, r.total]));
+        } else if (["done", "cancelled", "quota_exceeded"].includes(result.jobStatus) && result.jobResult) {
+          showResultCard(resultBox, result.jobStatus, result.jobResult, null, result.jobFinishedAt);
         } else if (result.jobStatus === "error") {
-          showResult(resultBox, t("resultLastError", [result.jobError]));
+          showResultCard(resultBox, "error", null, result.jobError, result.jobFinishedAt);
         }
       }
 
@@ -1182,13 +1215,21 @@ async function main() {
   });
 
   // "라벨이름 줄바꿈 분류기준" 형식으로 기존 내용 뒤에 이어붙임(여러 번 만들면 빈 줄로 구분)
-  function appendToScratchpad(labelName, suggestion) {
-    const entry = `${labelName}\n${suggestion}`;
-    const current = criteriaScratchpad.value.replace(/\s+$/, "");
-    const updated = current ? `${current}\n\n${entry}` : entry;
-    criteriaScratchpad.value = updated;
-    chrome.storage.local.set({ criteriaScratchpad: updated });
+  // 분석 결과는 백그라운드가 임시저장 칸에 직접 적재한다(팝업이 닫혀 있어도 남게 하기 위함).
+  // 팝업은 저장된 값을 다시 읽어서 화면에만 반영한다.
+  function reloadScratchpadFromStorage() {
+    chrome.storage.local.get(["criteriaScratchpad"], (result) => {
+      criteriaScratchpad.value = result.criteriaScratchpad || "";
+    });
   }
+
+  chrome.storage.onChanged.addListener((changes, areaName) => {
+    if (areaName !== "local" || !changes.criteriaScratchpad) return;
+    const incoming = changes.criteriaScratchpad.newValue || "";
+    // 사용자가 지금 입력 중인 내용을 덮어쓰지 않도록, 포커스가 있을 때는 건드리지 않는다
+    if (document.activeElement === criteriaScratchpad) return;
+    criteriaScratchpad.value = incoming;
+  });
 
   analyzeLabelBtn.addEventListener("click", () => {
     const labelNames = Array.from(labelAnalysisChecklist.querySelectorAll("input:checked")).map((el) => el.value);
