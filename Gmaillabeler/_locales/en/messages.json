@@ -2057,5 +2057,516 @@
         "content": "$1$"
       }
     }
+  },
+  "dashPageTitle": {
+    "message": "Gmail AI Labeler - Dashboard"
+  },
+  "dashSubtitle": {
+    "message": "Mail classification and summary dashboard"
+  },
+  "dashBtnTheme": {
+    "message": "🌙 Theme"
+  },
+  "dashBtnRefreshTitle": {
+    "message": "Refresh"
+  },
+  "dashNavTitleMain": {
+    "message": "Main menu"
+  },
+  "dashNavSummary": {
+    "message": "Mail summary"
+  },
+  "dashNavClassify": {
+    "message": "AI labeling"
+  },
+  "dashNavLabels": {
+    "message": "Label management"
+  },
+  "dashNavRelabel": {
+    "message": "Relabel & dedupe"
+  },
+  "dashNavSettings": {
+    "message": "Settings & Discord"
+  },
+  "dashNavLogs": {
+    "message": "System log"
+  },
+  "dashNavTitleLabels": {
+    "message": "Labels"
+  },
+  "dashLabelSelected": {
+    "message": "Label:"
+  },
+  "dashOptionLoadingLabels": {
+    "message": "Loading labels..."
+  },
+  "dashLabelAnalyzeCount": {
+    "message": "Emails:"
+  },
+  "dashLabelFilterCriteria": {
+    "message": "Filter:"
+  },
+  "dashPlaceholderCriteria": {
+    "message": "e.g. only key schedules and expenses"
+  },
+  "dashBtnRunSummary": {
+    "message": "🚀 Generate summary"
+  },
+  "dashPanelSummaryTitle": {
+    "message": "📋 Label mail summary"
+  },
+  "dashProgressSummary": {
+    "message": "Generating summary..."
+  },
+  "dashSummaryPlaceholder": {
+    "message": "Pick a label on the left, then press 'Generate summary' above to build a report for that label's mail."
+  },
+  "dashSummaryTitleForLabel": {
+    "message": "📋 [$LABEL$] mail summary",
+    "placeholders": {
+      "label": {
+        "content": "$1"
+      }
+    }
+  },
+  "dashSummaryNeedLabel": {
+    "message": "📋 Select a label"
+  },
+  "dashPanelClassifyTitle": {
+    "message": "🤖 AI automatic labeling"
+  },
+  "dashClassifyDesc": {
+    "message": "AI reads your inbox and files each mail under one of your category labels."
+  },
+  "dashBtnStartClassify": {
+    "message": "⚡ Start classifying"
+  },
+  "dashBtnStopClassify": {
+    "message": "🛑 Stop"
+  },
+  "dashProgressClassify": {
+    "message": "Classifying..."
+  },
+  "dashPanelLabelsTitle": {
+    "message": "🏷️ Categories and labels"
+  },
+  "dashBtnResetCategories": {
+    "message": "🔄 Reset to defaults"
+  },
+  "dashBtnDeleteAllLabels": {
+    "message": "🗑️ Delete all labels"
+  },
+  "dashPanelRelabelTitle": {
+    "message": "🔄 Relabel and dedupe"
+  },
+  "dashRelabelHeading": {
+    "message": "Reclassify existing mail"
+  },
+  "dashRelabelDesc": {
+    "message": "Re-runs classification on mail you already received, using your current categories."
+  },
+  "dashOptionAllLabels": {
+    "message": "All labels"
+  },
+  "dashCheckboxExcludeSelf": {
+    "message": "Exclude this label from candidates"
+  },
+  "dashBtnStartRelabel": {
+    "message": "🚀 Start relabeling"
+  },
+  "dashDedupeHeading": {
+    "message": "Clean up duplicate labels"
+  },
+  "dashDedupeDesc": {
+    "message": "When a mail carries several category labels, keeps only the most appropriate one."
+  },
+  "dashBtnStartDedupe": {
+    "message": "🧹 Clean up duplicates"
+  },
+  "dashPanelSettingsTitle": {
+    "message": "⚙️ Personalization and Discord"
+  },
+  "dashApiKeyHeading": {
+    "message": "🔑 Gemini API keys"
+  },
+  "dashBtnAddApiKey": {
+    "message": "➕ Add key"
+  },
+  "dashBtnSaveApiKey": {
+    "message": "💾 Save keys"
+  },
+  "dashPlaceholderKeyAlias": {
+    "message": "Key label (optional)"
+  },
+  "dashDiscordHeading": {
+    "message": "💬 Discord webhooks by importance"
+  },
+  "dashDiscordDesc": {
+    "message": "Sends summaries to different Discord channels depending on the importance AI assigns. Levels you leave blank fall back to the default webhook."
+  },
+  "dashLabelWebhookDefault": {
+    "message": "Default webhook URL (all mail)"
+  },
+  "dashLabelWebhookHigh": {
+    "message": "🔴 Webhook for high importance"
+  },
+  "dashLabelWebhookMedium": {
+    "message": "🟡 Webhook for medium importance"
+  },
+  "dashLabelWebhookLow": {
+    "message": "🟢 Webhook for low importance"
+  },
+  "dashPlaceholderWebhookHigh": {
+    "message": "🔴 Urgent channel webhook URL"
+  },
+  "dashPlaceholderWebhookMedium": {
+    "message": "🟡 General notices channel webhook URL"
+  },
+  "dashPlaceholderWebhookLow": {
+    "message": "🟢 Newsletter channel webhook URL"
+  },
+  "dashCriteriaHeading": {
+    "message": "🎯 Importance criteria"
+  },
+  "dashLabelCriteriaHigh": {
+    "message": "High importance criteria"
+  },
+  "dashLabelCriteriaMedium": {
+    "message": "Medium importance criteria"
+  },
+  "dashLabelCriteriaLow": {
+    "message": "Low importance criteria"
+  },
+  "dashPlaceholderCriteriaHigh": {
+    "message": "e.g. needs a reply now, payment, contract, outage"
+  },
+  "dashPlaceholderCriteriaMedium": {
+    "message": "e.g. routine work, schedule changes, notices"
+  },
+  "dashPlaceholderCriteriaLow": {
+    "message": "e.g. marketing, newsletters, ads, events"
+  },
+  "dashBtnSaveDiscordSettings": {
+    "message": "💾 Save Discord and importance settings"
+  },
+  "dashDriveHeading": {
+    "message": "☁️ Google Drive backup and restore"
+  },
+  "dashDriveDesc": {
+    "message": "Backs up your categories, criteria and settings to Google Drive, or restores them."
+  },
+  "dashBtnBackupDrive": {
+    "message": "☁️ Back up to Drive"
+  },
+  "dashBtnRestoreDrive": {
+    "message": "📥 Restore from Drive"
+  },
+  "dashPanelLogsTitle": {
+    "message": "📜 System log"
+  },
+  "dashBtnClearLogs": {
+    "message": "🧹 Clear log"
+  },
+  "dashLogsLoading": {
+    "message": "Loading log..."
+  },
+  "dashLogsEmpty": {
+    "message": "No log entries yet."
+  },
+  "dashFilterAll": {
+    "message": "All"
+  },
+  "dashFilterImportance": {
+    "message": "Importance $LEVEL$",
+    "placeholders": {
+      "level": {
+        "content": "$1"
+      }
+    }
+  },
+  "dashImportanceHigh": {
+    "message": "High"
+  },
+  "dashImportanceMedium": {
+    "message": "Medium"
+  },
+  "dashImportanceLow": {
+    "message": "Low"
+  },
+  "dashCardSender": {
+    "message": "From"
+  },
+  "dashCardAction": {
+    "message": "Action needed"
+  },
+  "dashCardActionNone": {
+    "message": "None"
+  },
+  "dashNoSelectedMail": {
+    "message": "No mail was selected as important."
+  },
+  "dashCopyHeader": {
+    "message": "[📋 AI summary report for $LABEL$]",
+    "placeholders": {
+      "label": {
+        "content": "$1"
+      }
+    }
+  },
+  "dashCopyOverall": {
+    "message": "Overall summary"
+  },
+  "dashCopySelectedList": {
+    "message": "Selected mail ($SELECTED$/$TOTAL$)",
+    "placeholders": {
+      "selected": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      }
+    }
+  },
+  "dashCopyImportanceLabel": {
+    "message": "Importance"
+  },
+  "dashJobSummarizing": {
+    "message": "Collecting and summarizing mail"
+  },
+  "dashJobClassifying": {
+    "message": "Classifying mail"
+  },
+  "dashJobRunningGeneric": {
+    "message": "A job is running..."
+  },
+  "dashResultDone": {
+    "message": "Done: $SUCCESS$ of $TOTAL$ processed",
+    "placeholders": {
+      "total": {
+        "content": "$1"
+      },
+      "success": {
+        "content": "$2"
+      }
+    }
+  },
+  "dashResultCancelled": {
+    "message": "Stopped: $SUCCESS$ of $TOTAL$ processed",
+    "placeholders": {
+      "total": {
+        "content": "$1"
+      },
+      "success": {
+        "content": "$2"
+      }
+    }
+  },
+  "dashResultQuota": {
+    "message": "Stopped (quota exceeded): $SUCCESS$ of $TOTAL$ processed",
+    "placeholders": {
+      "total": {
+        "content": "$1"
+      },
+      "success": {
+        "content": "$2"
+      }
+    }
+  },
+  "dashOptionSelectLabel": {
+    "message": "Select a label"
+  },
+  "dashMsgNeedSummaryLabel": {
+    "message": "Pick a label to summarize first."
+  },
+  "dashMsgNeedRelabelLabel": {
+    "message": "Pick a label to reclassify first."
+  },
+  "dashMsgCopied": {
+    "message": "✅ Copied."
+  },
+  "dashMsgNoReport": {
+    "message": "There is no summary report to send."
+  },
+  "dashMsgNeedWebhook": {
+    "message": "Enter a Discord webhook URL in the Settings tab first."
+  },
+  "dashMsgDiscordSent": {
+    "message": "✅ Sent to Discord."
+  },
+  "dashMsgDiscordFailed": {
+    "message": "Send failed: $ERROR$",
+    "placeholders": {
+      "error": {
+        "content": "$1"
+      }
+    }
+  },
+  "dashConfirmResetCategories": {
+    "message": "Reset to the default categories? Your current categories will be replaced."
+  },
+  "dashConfirmDeleteAllLabels": {
+    "message": "This deletes every Gmail label this extension created. It cannot be undone. Continue?"
+  },
+  "dashMsgDeleteLabelsStarted": {
+    "message": "Started deleting labels."
+  },
+  "dashMsgNeedApiKey": {
+    "message": "Enter at least one Gemini API key."
+  },
+  "dashMsgKeysSaved": {
+    "message": "Saved $COUNT$ Gemini API key(s).",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "dashMsgDiscordSettingsSaved": {
+    "message": "Discord and importance settings saved."
+  },
+  "dashMsgBackupStarted": {
+    "message": "Started backing up to Google Drive."
+  },
+  "dashConfirmRestoreDrive": {
+    "message": "This overwrites your current settings with the Drive backup. Continue?"
+  },
+  "dashMsgRestoreStarted": {
+    "message": "Started restoring from Google Drive."
+  },
+  "dashMsgCannotStart": {
+    "message": "Could not start the request."
+  },
+  "dashSelectedCountLine": {
+    "message": "$SELECTED$ of $TOTAL$ selected",
+    "placeholders": {
+      "total": {
+        "content": "$1"
+      },
+      "selected": {
+        "content": "$2"
+      }
+    }
+  },
+  "dashBriefTitle": {
+    "message": "💡 AI briefing for '$LABEL$'",
+    "placeholders": {
+      "label": {
+        "content": "$1"
+      }
+    }
+  },
+  "dashCardImportance": {
+    "message": "Importance: $LEVEL$",
+    "placeholders": {
+      "level": {
+        "content": "$1"
+      }
+    }
+  },
+  "dashSenderUnknown": {
+    "message": "Unknown"
+  },
+  "dashOpenInGmail": {
+    "message": "Open in Gmail ↗"
+  },
+  "dashBtnAddCategory": {
+    "message": "Add category"
+  },
+  "dashBtnSaveCategories": {
+    "message": "Save categories"
+  },
+  "popupGlobalProgressTitle": {
+    "message": "⚡ Working..."
+  },
+  "popupBtnGlobalStopTitle": {
+    "message": "Stop the job"
+  },
+  "popupBtnGlobalStop": {
+    "message": "🛑 Stop"
+  },
+  "popupBtnOpenDashboard": {
+    "message": "🖥️ Open full-screen dashboard"
+  },
+  "popupLinkOpenDashboard": {
+    "message": "🖥️ Open dashboard tab"
+  },
+  "hintDiscordPopup": {
+    "message": "With a webhook URL set, mail summaries and important notices go to your Discord channel."
+  },
+  "sectionCriteria": {
+    "message": "Importance criteria (high/medium/low)"
+  },
+  "hintCriteria": {
+    "message": "These guide how AI rates each mail's importance. Tailoring them to your work improves the summaries."
+  },
+  "btnSaveCriteria": {
+    "message": "Save criteria"
+  },
+  "btnResetCriteria": {
+    "message": "Reset to defaults"
+  },
+  "msgCriteriaSaved": {
+    "message": "Importance criteria saved."
+  },
+  "msgCriteriaReset": {
+    "message": "Reset to the default criteria."
+  },
+  "msgDiscordWebhookSaved": {
+    "message": "Discord webhook URL saved."
+  },
+  "popupJobClassify": {
+    "message": "⚡ Classifying mail..."
+  },
+  "popupJobRepeat": {
+    "message": "🔄 Repeat classification running..."
+  },
+  "popupJobLabelSummary": {
+    "message": "📋 Generating label summary..."
+  },
+  "popupJobRelabel": {
+    "message": "🏷️ Relabeling..."
+  },
+  "popupJobDedupe": {
+    "message": "🧹 Cleaning up duplicate labels..."
+  },
+  "popupJobAnalyze": {
+    "message": "🔍 Analyzing label..."
+  },
+  "popupJobDeleteLabels": {
+    "message": "🗑️ Deleting labels..."
+  },
+  "popupProgressGeneric": {
+    "message": "Working..."
+  },
+  "popupProgressMailCount": {
+    "message": "$PROCESSED$ / $TOTAL$ mails processed ($PCT$%)",
+    "placeholders": {
+      "processed": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      },
+      "pct": {
+        "content": "$3"
+      }
+    }
+  },
+  "popupProgressPct": {
+    "message": "$PCT$% done",
+    "placeholders": {
+      "pct": {
+        "content": "$1"
+      }
+    }
+  },
+  "defaultCriteriaHigh": {
+    "message": "Due or needs a reply within 24 hours, payment failures, outages, account security alerts, approval requests from your manager, legal or cost issues"
+  },
+  "defaultCriteriaMedium": {
+    "message": "Meetings or deadlines within a week, project updates, routine work requests, notable service notices"
+  },
+  "defaultCriteriaLow": {
+    "message": "Newsletters, periodic reports, marketing and promotions, informational notices needing no reply"
   }
 }

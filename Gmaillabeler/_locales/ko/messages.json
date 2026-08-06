@@ -2057,5 +2057,516 @@
         "content": "$1$"
       }
     }
+  },
+  "dashPageTitle": {
+    "message": "Gmail AI Labeler - 요약 관제 대시보드"
+  },
+  "dashSubtitle": {
+    "message": "메일 분류 및 요약 통합 대시보드"
+  },
+  "dashBtnTheme": {
+    "message": "🌙 테마 전환"
+  },
+  "dashBtnRefreshTitle": {
+    "message": "새로고침"
+  },
+  "dashNavTitleMain": {
+    "message": "주요 메뉴"
+  },
+  "dashNavSummary": {
+    "message": "메일 요약"
+  },
+  "dashNavClassify": {
+    "message": "AI 라벨 분류"
+  },
+  "dashNavLabels": {
+    "message": "라벨 관리"
+  },
+  "dashNavRelabel": {
+    "message": "재적용 & 중복 정리"
+  },
+  "dashNavSettings": {
+    "message": "설정 & 디스코드"
+  },
+  "dashNavLogs": {
+    "message": "시스템 로그"
+  },
+  "dashNavTitleLabels": {
+    "message": "라벨 목록"
+  },
+  "dashLabelSelected": {
+    "message": "선택 라벨:"
+  },
+  "dashOptionLoadingLabels": {
+    "message": "라벨 불러오는 중..."
+  },
+  "dashLabelAnalyzeCount": {
+    "message": "분석 개수:"
+  },
+  "dashLabelFilterCriteria": {
+    "message": "선별 조건:"
+  },
+  "dashPlaceholderCriteria": {
+    "message": "예: 주요 일정 및 지출 내역만 선별"
+  },
+  "dashBtnRunSummary": {
+    "message": "🚀 요약 실행"
+  },
+  "dashPanelSummaryTitle": {
+    "message": "📋 라벨 메일 요약"
+  },
+  "dashProgressSummary": {
+    "message": "요약 요청 처리 중..."
+  },
+  "dashSummaryPlaceholder": {
+    "message": "왼쪽에서 라벨을 고르고 위쪽 '요약 실행' 버튼을 누르면, 해당 라벨 메일의 요약 리포트를 만들어 줍니다."
+  },
+  "dashSummaryTitleForLabel": {
+    "message": "📋 [$LABEL$] 메일 요약",
+    "placeholders": {
+      "label": {
+        "content": "$1"
+      }
+    }
+  },
+  "dashSummaryNeedLabel": {
+    "message": "📋 라벨 선택 필요"
+  },
+  "dashPanelClassifyTitle": {
+    "message": "🤖 AI 자동 라벨 분류"
+  },
+  "dashClassifyDesc": {
+    "message": "받은편지함의 메일을 AI가 분석해서 설정된 카테고리 라벨로 자동 분류합니다."
+  },
+  "dashBtnStartClassify": {
+    "message": "⚡ 자동 분류 시작"
+  },
+  "dashBtnStopClassify": {
+    "message": "🛑 분류 중지"
+  },
+  "dashProgressClassify": {
+    "message": "분류 진행 중..."
+  },
+  "dashPanelLabelsTitle": {
+    "message": "🏷️ 카테고리 및 라벨 관리"
+  },
+  "dashBtnResetCategories": {
+    "message": "🔄 기본 라벨 세트 복원"
+  },
+  "dashBtnDeleteAllLabels": {
+    "message": "🗑️ 전체 라벨 삭제"
+  },
+  "dashPanelRelabelTitle": {
+    "message": "🔄 라벨 재적용 및 중복 정리"
+  },
+  "dashRelabelHeading": {
+    "message": "기존 메일 재분류"
+  },
+  "dashRelabelDesc": {
+    "message": "이미 받은 메일들을 지금의 카테고리 기준으로 다시 분류합니다."
+  },
+  "dashOptionAllLabels": {
+    "message": "전체 라벨 정리"
+  },
+  "dashCheckboxExcludeSelf": {
+    "message": "이 라벨은 후보에서 제외"
+  },
+  "dashBtnStartRelabel": {
+    "message": "🚀 재분류 실행"
+  },
+  "dashDedupeHeading": {
+    "message": "중복 라벨 정리"
+  },
+  "dashDedupeDesc": {
+    "message": "한 메일에 분류 라벨이 여러 개 붙어 있으면, 가장 알맞은 1개만 남깁니다."
+  },
+  "dashBtnStartDedupe": {
+    "message": "🧹 중복 라벨 정리"
+  },
+  "dashPanelSettingsTitle": {
+    "message": "⚙️ 개인화 및 디스코드 설정"
+  },
+  "dashApiKeyHeading": {
+    "message": "🔑 Gemini API 키"
+  },
+  "dashBtnAddApiKey": {
+    "message": "➕ 키 추가"
+  },
+  "dashBtnSaveApiKey": {
+    "message": "💾 키 저장"
+  },
+  "dashPlaceholderKeyAlias": {
+    "message": "키 별칭(선택)"
+  },
+  "dashDiscordHeading": {
+    "message": "💬 디스코드 중요도별 웹훅"
+  },
+  "dashDiscordDesc": {
+    "message": "AI가 판단한 중요도(상/중/하)에 따라 서로 다른 디스코드 채널로 요약을 보냅니다. 비워 둔 등급은 기본 웹훅으로 전송됩니다."
+  },
+  "dashLabelWebhookDefault": {
+    "message": "기본 웹훅 URL (전체 전송용)"
+  },
+  "dashLabelWebhookHigh": {
+    "message": "🔴 중요도 [상] 전용 웹훅 URL"
+  },
+  "dashLabelWebhookMedium": {
+    "message": "🟡 중요도 [중] 전용 웹훅 URL"
+  },
+  "dashLabelWebhookLow": {
+    "message": "🟢 중요도 [하] 전용 웹훅 URL"
+  },
+  "dashPlaceholderWebhookHigh": {
+    "message": "🔴 긴급/중요 업무 채널 웹훅 URL"
+  },
+  "dashPlaceholderWebhookMedium": {
+    "message": "🟡 일반 공지 채널 웹훅 URL"
+  },
+  "dashPlaceholderWebhookLow": {
+    "message": "🟢 참고/뉴스레터 채널 웹훅 URL"
+  },
+  "dashCriteriaHeading": {
+    "message": "🎯 중요도 판단 기준"
+  },
+  "dashLabelCriteriaHigh": {
+    "message": "중요도 [상] 기준"
+  },
+  "dashLabelCriteriaMedium": {
+    "message": "중요도 [중] 기준"
+  },
+  "dashLabelCriteriaLow": {
+    "message": "중요도 [하] 기준"
+  },
+  "dashPlaceholderCriteriaHigh": {
+    "message": "예: 즉시 답변/결제/계약/서버 장애"
+  },
+  "dashPlaceholderCriteriaMedium": {
+    "message": "예: 일반 업무 진행/일정 변경/안내"
+  },
+  "dashPlaceholderCriteriaLow": {
+    "message": "예: 마케팅/뉴스레터/광고/이벤트"
+  },
+  "dashBtnSaveDiscordSettings": {
+    "message": "💾 디스코드 및 중요도 설정 저장"
+  },
+  "dashDriveHeading": {
+    "message": "☁️ Google Drive 백업 및 복원"
+  },
+  "dashDriveDesc": {
+    "message": "카테고리와 분류 기준, 설정을 Google Drive에 백업하거나 되돌립니다."
+  },
+  "dashBtnBackupDrive": {
+    "message": "☁️ Drive에 백업"
+  },
+  "dashBtnRestoreDrive": {
+    "message": "📥 Drive에서 복원"
+  },
+  "dashPanelLogsTitle": {
+    "message": "📜 시스템 로그"
+  },
+  "dashBtnClearLogs": {
+    "message": "🧹 로그 초기화"
+  },
+  "dashLogsLoading": {
+    "message": "로그를 불러오는 중입니다..."
+  },
+  "dashLogsEmpty": {
+    "message": "기록된 로그가 없습니다."
+  },
+  "dashFilterAll": {
+    "message": "전체"
+  },
+  "dashFilterImportance": {
+    "message": "중요도 $LEVEL$",
+    "placeholders": {
+      "level": {
+        "content": "$1"
+      }
+    }
+  },
+  "dashImportanceHigh": {
+    "message": "상"
+  },
+  "dashImportanceMedium": {
+    "message": "중"
+  },
+  "dashImportanceLow": {
+    "message": "하"
+  },
+  "dashCardSender": {
+    "message": "발신자"
+  },
+  "dashCardAction": {
+    "message": "조치 사항"
+  },
+  "dashCardActionNone": {
+    "message": "없음"
+  },
+  "dashNoSelectedMail": {
+    "message": "선별된 중요 메일이 없습니다."
+  },
+  "dashCopyHeader": {
+    "message": "[📋 $LABEL$ 라벨 AI 요약 리포트]",
+    "placeholders": {
+      "label": {
+        "content": "$1"
+      }
+    }
+  },
+  "dashCopyOverall": {
+    "message": "종합 요약"
+  },
+  "dashCopySelectedList": {
+    "message": "주요 선별 메일 ($SELECTED$/$TOTAL$)",
+    "placeholders": {
+      "selected": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      }
+    }
+  },
+  "dashCopyImportanceLabel": {
+    "message": "중요도"
+  },
+  "dashJobSummarizing": {
+    "message": "메일 수집 및 요약 중"
+  },
+  "dashJobClassifying": {
+    "message": "메일 분류 중"
+  },
+  "dashJobRunningGeneric": {
+    "message": "작업이 진행 중입니다..."
+  },
+  "dashResultDone": {
+    "message": "완료: 전체 $TOTAL$개 중 $SUCCESS$개 처리",
+    "placeholders": {
+      "total": {
+        "content": "$1"
+      },
+      "success": {
+        "content": "$2"
+      }
+    }
+  },
+  "dashResultCancelled": {
+    "message": "중지됨: $TOTAL$개 중 $SUCCESS$개 처리",
+    "placeholders": {
+      "total": {
+        "content": "$1"
+      },
+      "success": {
+        "content": "$2"
+      }
+    }
+  },
+  "dashResultQuota": {
+    "message": "할당량 초과로 중단: $TOTAL$개 중 $SUCCESS$개 처리",
+    "placeholders": {
+      "total": {
+        "content": "$1"
+      },
+      "success": {
+        "content": "$2"
+      }
+    }
+  },
+  "dashOptionSelectLabel": {
+    "message": "라벨을 선택하세요"
+  },
+  "dashMsgNeedSummaryLabel": {
+    "message": "요약할 라벨을 먼저 선택해 주세요."
+  },
+  "dashMsgNeedRelabelLabel": {
+    "message": "재분류할 라벨을 먼저 선택해 주세요."
+  },
+  "dashMsgCopied": {
+    "message": "✅ 복사했습니다."
+  },
+  "dashMsgNoReport": {
+    "message": "전송할 요약 리포트가 없습니다."
+  },
+  "dashMsgNeedWebhook": {
+    "message": "디스코드 웹훅 URL을 설정 탭에서 먼저 입력해 주세요."
+  },
+  "dashMsgDiscordSent": {
+    "message": "✅ 디스코드로 전송했습니다."
+  },
+  "dashMsgDiscordFailed": {
+    "message": "전송 실패: $ERROR$",
+    "placeholders": {
+      "error": {
+        "content": "$1"
+      }
+    }
+  },
+  "dashConfirmResetCategories": {
+    "message": "기본 카테고리로 되돌릴까요? 지금 설정한 카테고리는 대체됩니다."
+  },
+  "dashConfirmDeleteAllLabels": {
+    "message": "이 확장이 만든 Gmail 라벨을 모두 삭제합니다. 되돌릴 수 없습니다. 계속할까요?"
+  },
+  "dashMsgDeleteLabelsStarted": {
+    "message": "라벨 삭제 작업을 시작했습니다."
+  },
+  "dashMsgNeedApiKey": {
+    "message": "Gemini API 키를 1개 이상 입력해 주세요."
+  },
+  "dashMsgKeysSaved": {
+    "message": "Gemini API 키 $COUNT$개를 저장했습니다.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "dashMsgDiscordSettingsSaved": {
+    "message": "디스코드 및 중요도 설정을 저장했습니다."
+  },
+  "dashMsgBackupStarted": {
+    "message": "Google Drive 백업을 시작했습니다."
+  },
+  "dashConfirmRestoreDrive": {
+    "message": "Drive 백업으로 현재 설정을 덮어씁니다. 계속할까요?"
+  },
+  "dashMsgRestoreStarted": {
+    "message": "Google Drive 복원을 시작했습니다."
+  },
+  "dashMsgCannotStart": {
+    "message": "요청을 시작할 수 없습니다."
+  },
+  "dashSelectedCountLine": {
+    "message": "총 $TOTAL$개 중 $SELECTED$개 선별됨",
+    "placeholders": {
+      "total": {
+        "content": "$1"
+      },
+      "selected": {
+        "content": "$2"
+      }
+    }
+  },
+  "dashBriefTitle": {
+    "message": "💡 '$LABEL$' AI 종합 브리핑",
+    "placeholders": {
+      "label": {
+        "content": "$1"
+      }
+    }
+  },
+  "dashCardImportance": {
+    "message": "중요도: $LEVEL$",
+    "placeholders": {
+      "level": {
+        "content": "$1"
+      }
+    }
+  },
+  "dashSenderUnknown": {
+    "message": "정보 없음"
+  },
+  "dashOpenInGmail": {
+    "message": "Gmail에서 열기 ↗"
+  },
+  "dashBtnAddCategory": {
+    "message": "카테고리 추가"
+  },
+  "dashBtnSaveCategories": {
+    "message": "카테고리 저장"
+  },
+  "popupGlobalProgressTitle": {
+    "message": "⚡ 작업 진행 중..."
+  },
+  "popupBtnGlobalStopTitle": {
+    "message": "작업 중지"
+  },
+  "popupBtnGlobalStop": {
+    "message": "🛑 중지"
+  },
+  "popupBtnOpenDashboard": {
+    "message": "🖥️ 전체 화면 대시보드 열기"
+  },
+  "popupLinkOpenDashboard": {
+    "message": "🖥️ 대시보드 탭 열기"
+  },
+  "hintDiscordPopup": {
+    "message": "웹훅 URL을 넣으면 메일 요약과 중요 공지를 디스코드 채널로 보냅니다."
+  },
+  "sectionCriteria": {
+    "message": "중요도(상/중/하) 판단 기준"
+  },
+  "hintCriteria": {
+    "message": "AI가 메일 중요도를 판단할 때 쓰는 기준입니다. 내 업무에 맞게 고쳐 두면 요약 품질이 올라갑니다."
+  },
+  "btnSaveCriteria": {
+    "message": "기준 저장"
+  },
+  "btnResetCriteria": {
+    "message": "기본값 복원"
+  },
+  "msgCriteriaSaved": {
+    "message": "중요도 판단 기준을 저장했습니다."
+  },
+  "msgCriteriaReset": {
+    "message": "기본 기준으로 되돌렸습니다."
+  },
+  "msgDiscordWebhookSaved": {
+    "message": "디스코드 웹훅 URL을 저장했습니다."
+  },
+  "popupJobClassify": {
+    "message": "⚡ 메일 자동 분류 진행 중..."
+  },
+  "popupJobRepeat": {
+    "message": "🔄 반복 분류 진행 중..."
+  },
+  "popupJobLabelSummary": {
+    "message": "📋 라벨 요약 생성 중..."
+  },
+  "popupJobRelabel": {
+    "message": "🏷️ 라벨 재분류 진행 중..."
+  },
+  "popupJobDedupe": {
+    "message": "🧹 중복 라벨 정리 중..."
+  },
+  "popupJobAnalyze": {
+    "message": "🔍 라벨 분석 진행 중..."
+  },
+  "popupJobDeleteLabels": {
+    "message": "🗑️ 라벨 삭제 진행 중..."
+  },
+  "popupProgressGeneric": {
+    "message": "진행 중..."
+  },
+  "popupProgressMailCount": {
+    "message": "$PROCESSED$ / $TOTAL$ 메일 처리 ($PCT$%)",
+    "placeholders": {
+      "processed": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      },
+      "pct": {
+        "content": "$3"
+      }
+    }
+  },
+  "popupProgressPct": {
+    "message": "$PCT$% 진행",
+    "placeholders": {
+      "pct": {
+        "content": "$1"
+      }
+    }
+  },
+  "defaultCriteriaHigh": {
+    "message": "24시간 내 마감/회신 요구, 결제 실패, 서버 오류, 계정 보안 경고, 상사의 승인 요청, 법적·비용 이슈"
+  },
+  "defaultCriteriaMedium": {
+    "message": "일주일 내 미팅/일정, 프로젝트 진행 공유, 일반 업무 요청, 주요 서비스 공지"
+  },
+  "defaultCriteriaLow": {
+    "message": "뉴스레터, 정기 보고서, 마케팅/프로모션, 회신이나 조치가 필요 없는 정보성 알림"
   }
 }

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Gmail AI Labeler - 스마트 요약 관제 대시보드</title>
+  <title data-i18n="dashPageTitle">Gmail AI Labeler - Dashboard</title>
   <link rel="stylesheet" href="dashboard.css">
 </head>
 <body>
@@ -14,15 +14,15 @@
       <img src="../icon128.png" alt="Logo" class="dash-logo">
       <div class="dash-title-wrap">
         <h1>Gmail AI Labeler <span class="version-badge">v1.9</span></h1>
-        <p class="dash-subtitle">스마트 메일 분류 및 한국어 요약 통합 관제 대시보드</p>
+        <p class="dash-subtitle" data-i18n="dashSubtitle">Mail classification and summary dashboard</p>
       </div>
     </div>
     <div class="dash-header-right">
       <div class="status-pill" id="statusPill">
-        <span class="status-dot"></span><span id="statusPillText">대기 중</span>
+        <span class="status-dot"></span><span id="statusPillText" data-i18n="statusIdle">Idle</span>
       </div>
-      <button class="dash-btn dash-btn-icon" id="dashRefreshBtn" title="새로고침">🔄</button>
-      <button class="dash-btn dash-btn-secondary" id="dashThemeToggleBtn">🌙 테마 전환</button>
+      <button class="dash-btn dash-btn-icon" id="dashRefreshBtn" data-i18n-title="dashBtnRefreshTitle" title="Refresh">🔄</button>
+      <button class="dash-btn dash-btn-secondary" id="dashThemeToggleBtn" data-i18n="dashBtnTheme">🌙 Theme</button>
     </div>
   </header>
 
@@ -30,29 +30,29 @@
     <!-- Left Navigation Sidebar -->
     <nav class="dash-sidebar">
       <div class="dash-nav-section">
-        <div class="dash-nav-title">주요 관제 메뉴</div>
+        <div class="dash-nav-title" data-i18n="dashNavTitleMain">Main menu</div>
         <button class="dash-nav-btn active" data-dash-tab="summary">
-          <span class="nav-icon">📋</span> 메일 요약 관제
+          <span class="nav-icon">📋</span> <span data-i18n="dashNavSummary">Mail summary</span>
         </button>
         <button class="dash-nav-btn" data-dash-tab="classify">
-          <span class="nav-icon">🤖</span> AI 라벨 분류
+          <span class="nav-icon">🤖</span> <span data-i18n="dashNavClassify">AI labeling</span>
         </button>
         <button class="dash-nav-btn" data-dash-tab="labels">
-          <span class="nav-icon">🏷️</span> 라벨 관리
+          <span class="nav-icon">🏷️</span> <span data-i18n="dashNavLabels">Label management</span>
         </button>
         <button class="dash-nav-btn" data-dash-tab="relabel">
-          <span class="nav-icon">🔄</span> 재적용 & 중복제거
+          <span class="nav-icon">🔄</span> <span data-i18n="dashNavRelabel">Relabel &amp; dedupe</span>
         </button>
         <button class="dash-nav-btn" data-dash-tab="settings">
-          <span class="nav-icon">⚙️</span> 설정 & 디스코드
+          <span class="nav-icon">⚙️</span> <span data-i18n="dashNavSettings">Settings &amp; Discord</span>
         </button>
         <button class="dash-nav-btn" data-dash-tab="logs">
-          <span class="nav-icon">📜</span> 시스템 로그
+          <span class="nav-icon">📜</span> <span data-i18n="dashNavLogs">System log</span>
         </button>
       </div>
 
       <div class="dash-nav-section">
-        <div class="dash-nav-title">라벨 목록</div>
+        <div class="dash-nav-title" data-i18n="dashNavTitleLabels">Labels</div>
         <div class="dash-sidebar-labels" id="sidebarLabelList">
           <!-- Dynamically populated label list -->
         </div>
@@ -65,29 +65,29 @@
       <!-- Subcontrols Bar for Summary -->
       <div class="dash-subbar" id="summarySubcontrols">
         <div class="subbar-left">
-          <span class="subbar-label">선택 라벨:</span>
+          <span class="subbar-label" data-i18n="dashLabelSelected">Label:</span>
           <select id="dashSummaryLabelSelect" class="dash-select">
-            <option value="">라벨 선택 중...</option>
+            <option value="" data-i18n="dashOptionLoadingLabels">Loading labels...</option>
           </select>
 
-          <span class="subbar-label">분석 개수:</span>
+          <span class="subbar-label" data-i18n="dashLabelAnalyzeCount">Emails:</span>
           <input type="number" id="dashSummaryCountInput" class="dash-input-num" value="20" min="5" max="100">
 
-          <span class="subbar-label">선별 필터 조건:</span>
-          <input type="text" id="dashSummaryCriteriaInput" class="dash-input-text" placeholder="예: 주요 일정 및 지출 내역만 선별">
+          <span class="subbar-label" data-i18n="dashLabelFilterCriteria">Filter:</span>
+          <input type="text" id="dashSummaryCriteriaInput" class="dash-input-text" data-i18n-placeholder="dashPlaceholderCriteria" placeholder="e.g. only key schedules and expenses">
         </div>
         <div class="subbar-right">
-          <button class="dash-btn dash-btn-primary" id="dashStartSummaryBtn">🚀 한국어 요약 실행</button>
+          <button class="dash-btn dash-btn-primary" id="dashStartSummaryBtn" data-i18n="dashBtnRunSummary">🚀 Generate summary</button>
         </div>
       </div>
 
       <!-- Tab Panel 1: Summary -->
       <section class="dash-panel active" id="dashPanelSummary">
         <div class="panel-header">
-          <h2 id="dashSelectedLabelTitle">📋 라벨 메일 요약 관제</h2>
+          <h2 id="dashSelectedLabelTitle" data-i18n="dashPanelSummaryTitle">📋 Label mail summary</h2>
           <div class="panel-actions" id="dashSummaryActionRow" style="display: none;">
-            <button class="dash-btn dash-btn-secondary" id="dashCopySummaryBtn">📋 요약 복사</button>
-            <button class="dash-btn dash-btn-discord" id="dashSendDiscordBtn">💬 디스코드 전송</button>
+            <button class="dash-btn dash-btn-secondary" id="dashCopySummaryBtn" data-i18n="btnCopySummary">Copy summary</button>
+            <button class="dash-btn dash-btn-discord" id="dashSendDiscordBtn" data-i18n="btnSendDiscord">Send to Discord</button>
           </div>
         </div>
 
@@ -95,32 +95,30 @@
           <div class="dash-progress-bar-bg">
             <div class="dash-progress-bar-fill" id="dashSummaryProgressBar" style="width: 0%;"></div>
           </div>
-          <div class="dash-progress-text" id="dashSummaryProgressText">요약 요청 처리 중...</div>
+          <div class="dash-progress-text" id="dashSummaryProgressText" data-i18n="dashProgressSummary">Generating summary...</div>
         </div>
 
         <div class="dash-card dash-result-card" id="dashSummaryResultBox">
-          <div class="placeholder-text">
-            👈 왼쪽 메뉴에서 라벨을 선택하거나 상단에서 <strong>'한국어 요약 실행'</strong> 버튼을 눌러 지정한 라벨 메일의 요약 리포트를 생성하세요.
-          </div>
+          <div class="placeholder-text" data-i18n="dashSummaryPlaceholder"></div>
         </div>
       </section>
 
       <!-- Tab Panel 2: Classify -->
       <section class="dash-panel" id="dashPanelClassify">
         <div class="panel-header">
-          <h2>🤖 AI 자동 라벨 분류 관제</h2>
+          <h2 data-i18n="dashPanelClassifyTitle">🤖 AI automatic labeling</h2>
         </div>
         <div class="dash-card">
-          <p class="dash-desc">받은편지함의 메일을 AI가 분석하여 설정된 카테고리 라벨로 자동 분류합니다.</p>
+          <p class="dash-desc" data-i18n="dashClassifyDesc"></p>
           <div class="dash-btn-row">
-            <button class="dash-btn dash-btn-primary" id="dashStartClassifyBtn">⚡ AI 자동 분류 시작</button>
-            <button class="dash-btn dash-btn-danger" id="dashStopClassifyBtn" style="display:none;">🛑 분류 작업 중지</button>
+            <button class="dash-btn dash-btn-primary" id="dashStartClassifyBtn" data-i18n="dashBtnStartClassify">⚡ Start classifying</button>
+            <button class="dash-btn dash-btn-danger" id="dashStopClassifyBtn" style="display:none;" data-i18n="dashBtnStopClassify">🛑 Stop</button>
           </div>
           <div class="dash-progress-wrap" id="dashClassifyProgressWrap" style="display: none; margin-top: 16px;">
             <div class="dash-progress-bar-bg">
               <div class="dash-progress-bar-fill" id="dashClassifyProgressBar" style="width: 0%;"></div>
             </div>
-            <div class="dash-progress-text" id="dashClassifyProgressText">분류 진행 중...</div>
+            <div class="dash-progress-text" id="dashClassifyProgressText" data-i18n="dashProgressClassify">Classifying...</div>
           </div>
           <div class="dash-result-card" id="dashClassifyResultBox" style="margin-top: 16px;"></div>
         </div>
@@ -129,12 +127,12 @@
       <!-- Tab Panel 3: Labels -->
       <section class="dash-panel" id="dashPanelLabels">
         <div class="panel-header">
-          <h2>🏷️ 카테고리 및 라벨 관리</h2>
+          <h2 data-i18n="dashPanelLabelsTitle">🏷️ Categories and labels</h2>
         </div>
         <div class="dash-card">
           <div class="dash-btn-row" style="margin-bottom: 16px;">
-            <button class="dash-btn dash-btn-secondary" id="dashResetCategoriesBtn">🔄 기본 라벨 세트 복원</button>
-            <button class="dash-btn dash-btn-danger" id="dashDeleteAllLabelsBtn">🗑️ 전체 라벨 삭제</button>
+            <button class="dash-btn dash-btn-secondary" id="dashResetCategoriesBtn" data-i18n="dashBtnResetCategories">🔄 Reset to defaults</button>
+            <button class="dash-btn dash-btn-danger" id="dashDeleteAllLabelsBtn" data-i18n="dashBtnDeleteAllLabels">🗑️ Delete all labels</button>
           </div>
           <div class="dash-label-grid" id="dashCategoriesList">
             <!-- Label items rendered dynamically -->
@@ -145,95 +143,95 @@
       <!-- Tab Panel 4: Relabel & Dedupe -->
       <section class="dash-panel" id="dashPanelRelabel">
         <div class="panel-header">
-          <h2>🔄 라벨 재적용 및 중복 정리</h2>
+          <h2 data-i18n="dashPanelRelabelTitle">🔄 Relabel and dedupe</h2>
         </div>
         <div class="dash-card">
-          <h3>기존 메일 재분류 적용</h3>
-          <p class="dash-desc">이미 수신된 메일들을 현재 라벨 규칙에 맞춰 일괄 재분류합니다.</p>
+          <h3 data-i18n="dashRelabelHeading">Reclassify existing mail</h3>
+          <p class="dash-desc" data-i18n="dashRelabelDesc"></p>
           <div class="dash-form-row">
             <select id="dashRelabelSelect" class="dash-select">
-              <option value="">전체 라벨 재정리</option>
+              <option value="" data-i18n="dashOptionAllLabels">All labels</option>
             </select>
             <label class="dash-checkbox-label">
-              <input type="checkbox" id="dashExcludeSelfCheckbox" checked> 기존 AI 라벨 메일 제외
+              <input type="checkbox" id="dashExcludeSelfCheckbox" checked> <span data-i18n="dashCheckboxExcludeSelf">Exclude this label from candidates</span>
             </label>
-            <button class="dash-btn dash-btn-primary" id="dashStartRelabelBtn">🚀 재분류 실행</button>
+            <button class="dash-btn dash-btn-primary" id="dashStartRelabelBtn" data-i18n="dashBtnStartRelabel">🚀 Start relabeling</button>
           </div>
 
           <hr class="dash-divider">
 
-          <h3>중복 라벨 정리</h3>
-          <p class="dash-desc">하나의 메일에 여러 개의 분류 라벨이 중복 적용된 경우 가장 적절한 라벨 1개만 남기고 정리합니다.</p>
-          <button class="dash-btn dash-btn-secondary" id="dashStartDedupeBtn">🧹 중복 라벨 정리 실행</button>
+          <h3 data-i18n="dashDedupeHeading">Clean up duplicate labels</h3>
+          <p class="dash-desc" data-i18n="dashDedupeDesc"></p>
+          <button class="dash-btn dash-btn-secondary" id="dashStartDedupeBtn" data-i18n="dashBtnStartDedupe">🧹 Clean up duplicates</button>
         </div>
       </section>
 
       <!-- Tab Panel 5: Settings -->
       <section class="dash-panel" id="dashPanelSettings">
         <div class="panel-header">
-          <h2>⚙️ 개인화 및 디스코드 웹훅 설정</h2>
+          <h2 data-i18n="dashPanelSettingsTitle">⚙️ Personalization and Discord</h2>
         </div>
         
         <div class="dash-card" style="margin-bottom: 20px;">
-          <h3>🔑 Gemini API 키 설정</h3>
+          <h3 data-i18n="dashApiKeyHeading">🔑 Gemini API keys</h3>
           <div id="dashApiKeyInputsWrap">
             <!-- Dynamically generated API key fields -->
           </div>
           <div class="dash-btn-row" style="margin-top: 12px;">
-            <button class="dash-btn dash-btn-secondary" id="dashAddApiKeyBtn">➕ API 키 추가</button>
-            <button class="dash-btn dash-btn-primary" id="dashSaveKeyBtn">💾 키 저장</button>
+            <button class="dash-btn dash-btn-secondary" id="dashAddApiKeyBtn" data-i18n="dashBtnAddApiKey">➕ Add key</button>
+            <button class="dash-btn dash-btn-primary" id="dashSaveKeyBtn" data-i18n="dashBtnSaveApiKey">💾 Save keys</button>
           </div>
         </div>
 
         <div class="dash-card" style="margin-bottom: 20px;">
-          <h3>💬 디스코드 중요도별 다중 웹훅 연동</h3>
-          <p class="dash-desc">AI가 분류한 메일 중요도(상/중/하)에 따라 서로 다른 디스코드 채널로 요약 리포트를 분기 전송합니다.</p>
+          <h3 data-i18n="dashDiscordHeading">💬 Discord webhooks by importance</h3>
+          <p class="dash-desc" data-i18n="dashDiscordDesc"></p>
           
           <div class="dash-form-group">
-            <label>기본 디스코드 웹훅 URL (전체 전송용):</label>
+            <label data-i18n="dashLabelWebhookDefault">Default webhook URL (all mail)</label>
             <input type="text" id="dashDiscordWebhookUrl" class="dash-input-text" placeholder="https://discord.com/api/webhooks/...">
           </div>
 
           <div class="dash-form-group">
-            <label>🔴 중요도 [상] 전용 디스코드 웹훅 URL:</label>
-            <input type="text" id="dashDiscordWebhookHigh" class="dash-input-text" placeholder="🔴 긴급/중요 업무 채널 웹훅 URL">
+            <label data-i18n="dashLabelWebhookHigh">🔴 Webhook for high importance</label>
+            <input type="text" id="dashDiscordWebhookHigh" class="dash-input-text" data-i18n-placeholder="dashPlaceholderWebhookHigh" placeholder="🔴 Urgent channel webhook URL">
           </div>
 
           <div class="dash-form-group">
-            <label>🟡 중요도 [중] 전용 디스코드 웹훅 URL:</label>
-            <input type="text" id="dashDiscordWebhookMedium" class="dash-input-text" placeholder="🟡 일반 일상/공지 채널 웹훅 URL">
+            <label data-i18n="dashLabelWebhookMedium">🟡 Webhook for medium importance</label>
+            <input type="text" id="dashDiscordWebhookMedium" class="dash-input-text" data-i18n-placeholder="dashPlaceholderWebhookMedium" placeholder="🟡 General notices channel webhook URL">
           </div>
 
           <div class="dash-form-group">
-            <label>🟢 중요도 [하] 전용 디스코드 웹훅 URL:</label>
-            <input type="text" id="dashDiscordWebhookLow" class="dash-input-text" placeholder="🟢 참고/뉴스레터 채널 웹훅 URL">
+            <label data-i18n="dashLabelWebhookLow">🟢 Webhook for low importance</label>
+            <input type="text" id="dashDiscordWebhookLow" class="dash-input-text" data-i18n-placeholder="dashPlaceholderWebhookLow" placeholder="🟢 Newsletter channel webhook URL">
           </div>
 
           <hr class="dash-divider">
 
-          <h3>🎯 개인화 중요도 분류 기준 설정 (AI 프롬프트 가이드)</h3>
+          <h3 data-i18n="dashCriteriaHeading">🎯 Importance criteria</h3>
           <div class="dash-form-group">
-            <label>중요도 [상] 분류 기준:</label>
-            <input type="text" id="dashCriteriaHigh" class="dash-input-text" placeholder="예: 즉시 답변/결제/계약/서명/서버 장애/긴급 요청">
+            <label data-i18n="dashLabelCriteriaHigh">High importance criteria</label>
+            <input type="text" id="dashCriteriaHigh" class="dash-input-text" data-i18n-placeholder="dashPlaceholderCriteriaHigh" placeholder="e.g. needs a reply now, payment, contract, outage">
           </div>
           <div class="dash-form-group">
-            <label>중요도 [중] 분류 기준:</label>
-            <input type="text" id="dashCriteriaMedium" class="dash-input-text" placeholder="예: 일반 업무 진행/일정 변경/회의록/안내 사항">
+            <label data-i18n="dashLabelCriteriaMedium">Medium importance criteria</label>
+            <input type="text" id="dashCriteriaMedium" class="dash-input-text" data-i18n-placeholder="dashPlaceholderCriteriaMedium" placeholder="e.g. routine work, schedule changes, notices">
           </div>
           <div class="dash-form-group">
-            <label>중요도 [하] 분류 기준:</label>
-            <input type="text" id="dashCriteriaLow" class="dash-input-text" placeholder="예: 단순 마케팅/뉴스레터/광고/세미나/이벤트">
+            <label data-i18n="dashLabelCriteriaLow">Low importance criteria</label>
+            <input type="text" id="dashCriteriaLow" class="dash-input-text" data-i18n-placeholder="dashPlaceholderCriteriaLow" placeholder="e.g. marketing, newsletters, ads, events">
           </div>
 
-          <button class="dash-btn dash-btn-primary" id="dashSaveDiscordSettingsBtn" style="margin-top: 14px;">💾 디스코드 및 중요도 설정 저장</button>
+          <button class="dash-btn dash-btn-primary" id="dashSaveDiscordSettingsBtn" style="margin-top: 14px;" data-i18n="dashBtnSaveDiscordSettings">💾 Save Discord and importance settings</button>
         </div>
 
         <div class="dash-card">
-          <h3>☁️ Google Drive 백업 및 복원</h3>
-          <p class="dash-desc">사용자 정의 라벨, 분류 기준 및 설정을 Google Drive에 안전하게 백업하거나 복원합니다.</p>
+          <h3 data-i18n="dashDriveHeading">☁️ Google Drive backup and restore</h3>
+          <p class="dash-desc" data-i18n="dashDriveDesc"></p>
           <div class="dash-btn-row">
-            <button class="dash-btn dash-btn-secondary" id="dashBackupDriveBtn">☁️ Drive에 백업</button>
-            <button class="dash-btn dash-btn-secondary" id="dashRestoreDriveBtn">📥 Drive에서 복원</button>
+            <button class="dash-btn dash-btn-secondary" id="dashBackupDriveBtn" data-i18n="dashBtnBackupDrive">☁️ Back up to Drive</button>
+            <button class="dash-btn dash-btn-secondary" id="dashRestoreDriveBtn" data-i18n="dashBtnRestoreDrive">📥 Restore from Drive</button>
           </div>
         </div>
       </section>
@@ -241,12 +239,12 @@
       <!-- Tab Panel 6: Logs -->
       <section class="dash-panel" id="dashPanelLogs">
         <div class="panel-header">
-          <h2>📜 실시간 시스템 관제 로그</h2>
-          <button class="dash-btn dash-btn-secondary" id="dashClearLogsBtn">🧹 로그 초기화</button>
+          <h2 data-i18n="dashPanelLogsTitle">📜 System log</h2>
+          <button class="dash-btn dash-btn-secondary" id="dashClearLogsBtn" data-i18n="dashBtnClearLogs">🧹 Clear log</button>
         </div>
         <div class="dash-card">
           <div class="dash-log-box" id="dashLogBox">
-            <div class="log-item">로그를 불러오는 중입니다...</div>
+            <div class="log-item" data-i18n="dashLogsLoading">Loading log...</div>
           </div>
         </div>
       </section>

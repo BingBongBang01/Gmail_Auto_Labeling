@@ -3,6 +3,15 @@
 // See LICENSE file at the extension root for terms. Unauthorized redistribution or resale is prohibited.
 const DEFAULT_CATEGORIES = ["보안", "광고", "쇼핑", "공지", "뉴스레터", "업무", "개인", "기타"]; // i18n 로딩 실패 시 최종 안전망
 
+// 중요도 값은 "상"/"중"/"하" 문자열로 저장된다(백그라운드 스키마·디스코드 라우팅이 이 값을 쓴다).
+// 데이터는 그대로 두고 화면 표시만 현재 언어로 바꾼다.
+function importanceLabel(value) {
+  if (value === "상") return t("dashImportanceHigh");
+  if (value === "중") return t("dashImportanceMedium");
+  if (value === "하") return t("dashImportanceLow");
+  return value || "";
+}
+
 function getLocalizedDefaultCategories() {
   const raw = t("defaultCategoriesList");
   if (!raw || raw === "defaultCategoriesList") return DEFAULT_CATEGORIES;
@@ -434,27 +443,27 @@ async function main() {
     if (result && result.jobStatus === "running") {
       banner.style.display = "block";
 
-      const kindNames = {
-        classify: "⚡ 이메일 자동 분류 진행 중...",
-        repeat: "🔄 반복 분류 진행 중...",
-        labelSummary: "📋 라벨 한국어 요약 생성 중...",
-        relabel: "🏷️ 라벨 재분류 진행 중...",
-        dedupe: "🧹 중복/오분류 라벨 정리 중...",
-        analyze: "🔍 라벨 분석 진행 중...",
-        deleteLabels: "🗑️ 모든 라벨 삭제 진행 중..."
+      const kindKeys = {
+        classify: "popupJobClassify",
+        repeat: "popupJobRepeat",
+        labelSummary: "popupJobLabelSummary",
+        relabel: "popupJobRelabel",
+        dedupe: "popupJobDedupe",
+        analyze: "popupJobAnalyze",
+        deleteLabels: "popupJobDeleteLabels",
       };
 
-      const titleText = kindNames[result.jobKind] || "⚡ 작업 진행 중...";
+      const titleText = t(kindKeys[result.jobKind] || "popupGlobalProgressTitle");
       if (titleEl) titleEl.textContent = titleText;
 
       let pct = 0;
-      let text = "진행 중...";
+      let text = t("popupProgressGeneric");
       if (result.jobProgress && result.jobProgress.total) {
         pct = Math.min(100, Math.round((result.jobProgress.processed / result.jobProgress.total) * 100));
-        text = `${result.jobProgress.processed} / ${result.jobProgress.total} 메일 처리 완료 (${pct}%)`;
+        text = t("popupProgressMailCount", [result.jobProgress.processed, result.jobProgress.total, pct]);
       } else if (result.jobProgress && typeof result.jobProgress.pct === "number") {
         pct = result.jobProgress.pct;
-        text = `${pct}% 진행됨`;
+        text = t("popupProgressPct", [pct]);
       }
 
       if (barEl) barEl.style.width = `${pct}%`;
@@ -1654,15 +1663,15 @@ async function main() {
   function renderSummaryReportHTML(report) {
     if (!report) return "";
     let html = `<div style="font-family: inherit; font-size: 12px; line-height: 1.5;">`;
-    html += `<div style="font-weight: 700; font-size: 13px; color: var(--blue); margin-bottom: 6px;">📋 '${escapeHtml(report.labelName)}' 라벨 요약 리포트</div>`;
+    html += `<div style="font-weight: 700; font-size: 13px; color: var(--blue); margin-bottom: 6px;">${escapeHtml(t("dashBriefTitle", [report.labelName || ""]))}</div>`;
 
     if (report.overallSummary) {
       html += `<div style="background: var(--surface-2); border-left: 3px solid var(--blue); padding: 8px 10px; border-radius: 4px; margin-bottom: 10px; font-size: 12px; white-space: pre-wrap;">${escapeHtml(report.overallSummary)}</div>`;
     }
 
-    html += `<div style="font-size: 11px; color: var(--text-secondary); margin-bottom: 8px;">전체 ${report.totalAnalyzed || 0}개 메일 중 ${report.selectedCount || 0}개 주요 메일 선별</div>`;
+    html += `<div style="font-size: 11px; color: var(--text-secondary); margin-bottom: 8px;">${escapeHtml(t("dashSelectedCountLine", [report.totalAnalyzed || 0, report.selectedCount || 0]))}</div>`;
 
-    let plainText = `[${report.labelName} 라벨 요약 리포트]\n\n● 전체 요약:\n${report.overallSummary || ""}\n\n● 주요 선별 메일 목록 (${report.selectedCount || 0}/${report.totalAnalyzed || 0}):\n`;
+    let plainText = `${t("dashCopyHeader", [report.labelName || ""])}\n\n● ${t("dashCopyOverall")}:\n${report.overallSummary || ""}\n\n● ${t("dashCopySelectedList", [report.selectedCount || 0, report.totalAnalyzed || 0])}:\n`;
 
     if (Array.isArray(report.selectedEmails) && report.selectedEmails.length) {
       report.selectedEmails.forEach((item, idx) => {
@@ -1673,10 +1682,10 @@ async function main() {
         html += `<div style="border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px; margin-bottom: 8px; background: var(--bg);">`;
         html += `<div style="display: flex; align-items: center; justify-content: space-between; gap: 6px; margin-bottom: 4px;">`;
         html += `<span style="font-weight: 600; font-size: 12.5px;">${idx + 1}. ${escapeHtml(item.subject)}</span>`;
-        html += `<span style="font-size: 10px; font-weight: 700; color: #fff; background: ${badgeColor}; padding: 1px 6px; border-radius: 10px; white-space: nowrap;">중요도: ${escapeHtml(imp)}</span>`;
+        html += `<span style="font-size: 10px; font-weight: 700; color: #fff; background: ${badgeColor}; padding: 1px 6px; border-radius: 10px; white-space: nowrap;">${escapeHtml(t("dashCardImportance", [importanceLabel(imp)]))}</span>`;
         html += `</div>`;
 
-        html += `<div style="font-size: 11px; color: var(--text-secondary); margin-bottom: 4px;">발신자: ${escapeHtml(item.sender || "")}</div>`;
+        html += `<div style="font-size: 11px; color: var(--text-secondary); margin-bottom: 4px;">${escapeHtml(t("dashCardSender"))}: ${escapeHtml(item.sender || "")}</div>`;
 
         if (Array.isArray(item.summaryPoints) && item.summaryPoints.length) {
           html += `<ul style="margin: 4px 0 6px 16px; padding: 0; font-size: 11.5px;">`;
@@ -1687,26 +1696,26 @@ async function main() {
         }
 
         if (item.actionRequired && item.actionRequired !== "없음") {
-          html += `<div style="font-size: 11px; color: var(--red); font-weight: 600; margin-top: 4px;">⚡ 조치 사항: ${escapeHtml(item.actionRequired)}</div>`;
+          html += `<div style="font-size: 11px; color: var(--red); font-weight: 600; margin-top: 4px;">⚡ ${escapeHtml(t("dashCardAction"))}: ${escapeHtml(item.actionRequired)}</div>`;
         }
 
         if (mailUrl) {
-          html += `<div style="margin-top: 6px; text-align: right;"><a href="${mailUrl}" target="_blank" style="font-size: 11px; color: var(--blue); text-decoration: none;">메일 보기 ↗</a></div>`;
+          html += `<div style="margin-top: 6px; text-align: right;"><a href="${mailUrl}" target="_blank" style="font-size: 11px; color: var(--blue); text-decoration: none;">${escapeHtml(t("dashOpenInGmail"))}</a></div>`;
         }
         html += `</div>`;
 
-        plainText += `\n${idx + 1}. [중요도: ${imp}] ${item.subject}\n   - 발신자: ${item.sender || ""}\n`;
+        plainText += `\n${idx + 1}. [${t("dashCopyImportanceLabel")}: ${importanceLabel(imp)}] ${item.subject}\n   - ${t("dashCardSender")}: ${item.sender || ""}\n`;
         if (Array.isArray(item.summaryPoints)) {
           item.summaryPoints.forEach((pt) => {
             plainText += `   - ${pt}\n`;
           });
         }
         if (item.actionRequired && item.actionRequired !== "없음") {
-          plainText += `   - 조치 사항: ${item.actionRequired}\n`;
+          plainText += `   - ${t("dashCardAction")}: ${item.actionRequired}\n`;
         }
       });
     } else {
-      html += `<div style="font-size: 12px; color: var(--text-secondary);">선별된 중요 메일이 없습니다.</div>`;
+      html += `<div style="font-size: 12px; color: var(--text-secondary);">${escapeHtml(t("dashNoSelectedMail"))}</div>`;
     }
 
     html += `</div>`;
@@ -1771,7 +1780,7 @@ async function main() {
     sendDiscordBtn.addEventListener("click", () => {
       chrome.storage.local.get(["lastLabelSummary", "discordWebhookUrl", "discordWebhookUrlHigh", "discordWebhookUrlMedium", "discordWebhookUrlLow"], (stored) => {
         if (!stored.lastLabelSummary) {
-          showResult(summaryResultBox, "전송할 요약 리포트가 없습니다.");
+          showResult(summaryResultBox, t("dashMsgNoReport"));
           return;
         }
         const webhookInput = {
@@ -1812,16 +1821,17 @@ async function main() {
     savePopupDiscordBtn.addEventListener("click", () => {
       const url = popupDiscordWebhookUrl.value.trim();
       chrome.storage.local.set({ discordWebhookUrl: url }, () => {
-        showResult(discordResultBox, "디스코드 웹훅 URL이 저장되었습니다.");
+        showResult(discordResultBox, t("msgDiscordWebhookSaved"));
       });
     });
   }
 
   // ---------------- 중요도 분류 기준 설정 ----------------
+  // 기본 기준도 현재 언어로 제공한다(AI 프롬프트에 그대로 들어가는 값이라 언어가 맞아야 판단이 정확하다)
   const DEFAULT_IMPORTANCE_CRITERIA = {
-    high: "24시간 이내 마감/회신 요구, 결제 실패/서버 오류/계정 보안 경고, 상사의 직접 승인 요청, 법적/비용적 이슈 메일",
-    medium: "일주일 이내 미팅/회의 일정, 프로젝트 진행상황 공유, 일반 업무 요청, 주요 회사/서비스 공지사항",
-    low: "뉴스레터, 정기 보고서, 마케팅/프로모션 참고용, 회신이나 조치가 필요 없는 순수 정보성 알림"
+    high: t("defaultCriteriaHigh"),
+    medium: t("defaultCriteriaMedium"),
+    low: t("defaultCriteriaLow"),
   };
 
   const criteriaHighInput = document.getElementById("criteriaHighInput");
@@ -1848,7 +1858,7 @@ async function main() {
         low: criteriaLowInput.value.trim()
       };
       chrome.storage.local.set({ importanceCriteria }, () => {
-        showResult(criteriaResultBox, "중요도 분류 기준이 저장되었습니다.");
+        showResult(criteriaResultBox, t("msgCriteriaSaved"));
       });
     });
   }
@@ -1857,7 +1867,7 @@ async function main() {
     resetCriteriaBtn.addEventListener("click", () => {
       chrome.storage.local.set({ importanceCriteria: DEFAULT_IMPORTANCE_CRITERIA }, () => {
         loadCriteriaFields();
-        showResult(criteriaResultBox, "기본 분류 기준으로 복원되었습니다.");
+        showResult(criteriaResultBox, t("msgCriteriaReset"));
       });
     });
   }

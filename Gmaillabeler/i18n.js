@@ -91,4 +91,8 @@ function i18nApplyToDom(root) {
   scope.querySelectorAll("[data-i18n-placeholder]").forEach((el) => {
     el.setAttribute("placeholder", t(el.getAttribute("data-i18n-placeholder")));
   });
+  // 아이콘 버튼처럼 툴팁만 있는 요소를 위한 처리
+  scope.querySelectorAll("[data-i18n-title]").forEach((el) => {
+    el.setAttribute("title", t(el.getAttribute("data-i18n-title")));
+  });
 }

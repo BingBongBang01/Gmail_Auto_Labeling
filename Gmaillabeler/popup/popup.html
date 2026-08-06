@@ -329,13 +329,13 @@
   <!-- Global Active Task Banner (Shown above tabs when any job is running) -->
   <div class="global-progress-banner" id="globalProgressBanner" style="display:none;">
     <div class="global-progress-header">
-      <span class="global-progress-title" id="globalProgressTitle">⚡ 작업 진행 중...</span>
-      <button class="global-progress-cancel" id="globalCancelBtn" title="작업 중지">🛑 중지</button>
+      <span class="global-progress-title" id="globalProgressTitle" data-i18n="popupGlobalProgressTitle">⚡ Working...</span>
+      <button class="global-progress-cancel" id="globalCancelBtn" data-i18n-title="popupBtnGlobalStopTitle" title="Stop the job" data-i18n="popupBtnGlobalStop">🛑 Stop</button>
     </div>
     <div class="global-progress-bar-wrap">
       <div class="global-progress-bar-inner" id="globalProgressBarInner"></div>
     </div>
-    <div class="global-progress-text" id="globalProgressText">0% 완료</div>
+    <div class="global-progress-text" id="globalProgressText"></div>
   </div>
 
   <div class="tabs">
@@ -423,10 +423,10 @@
 
     <div class="btn-row" id="summaryActionRow" style="display:none; margin-top:8px;">
       <button id="copySummaryBtn" data-i18n="btnCopySummary">Copy summary</button>
-      <button id="sendDiscordBtn" data-i18n="btnSendDiscord" style="background: linear-gradient(135deg, #5865F2, #4752C4); color: #fff; border:none;">💬 디스코드로 전송</button>
+      <button id="sendDiscordBtn" data-i18n="btnSendDiscord" style="background: linear-gradient(135deg, #5865F2, #4752C4); color: #fff; border:none;">Send to Discord</button>
     </div>
 
-    <button class="primary" id="openDashboardTabBtn" style="width:100%; margin-top:12px; background: linear-gradient(135deg, #2563eb, #7c3aed);">🖥️ 전체 화면 대시보드 열기</button>
+    <button class="primary" id="openDashboardTabBtn" style="width:100%; margin-top:12px; background: linear-gradient(135deg, #2563eb, #7c3aed);" data-i18n="popupBtnOpenDashboard">🖥️ Open full-screen dashboard</button>
   </div>
 
   <!-- 통합 설정 탭 -->
@@ -448,7 +448,7 @@
     <!-- 2. 디스코드 연동 -->
     <details class="settings-group">
       <summary data-i18n="sectionDiscordWebhook">Discord Integration (Discord Webhook)</summary>
-      <div class="hint">Discord Webhook URL을 설정하여 이메일 요약 및 중요한 공지를 디스코드 채널로 실시간 전송합니다.</div>
+      <div class="hint" data-i18n="hintDiscordPopup"></div>
       <input type="password" id="popupDiscordWebhookUrl" data-i18n-placeholder="placeholderDiscordWebhookUrl" placeholder="https://discord.com/api/webhooks/...">
       <div class="btn-row" style="margin-top:6px;">
         <button class="primary" id="savePopupDiscordBtn">Save Discord Webhook</button>
@@ -458,27 +458,27 @@
 
     <!-- 3. 중요도 분류 기준 -->
     <details class="settings-group">
-      <summary>⚙️ 중요도(상/중/하) 분류 기준 설정</summary>
-      <div class="hint">Gemini AI가 이메일 중요도를 판단할 때 사용하는 사용자 정의 기준을 설정합니다.</div>
+      <summary data-i18n="sectionCriteria">Importance criteria (high/medium/low)</summary>
+      <div class="hint" data-i18n="hintCriteria"></div>
       
       <div class="field-row" style="flex-direction:column; align-items:stretch; margin-bottom:6px;">
-        <label for="criteriaHighInput" style="font-weight:600; color:var(--red);">🔴 [상] 긴급/조치 필요 기준</label>
+        <label for="criteriaHighInput" style="font-weight:600; color:var(--red);">🔴 <span data-i18n="dashLabelCriteriaHigh">High importance criteria</span></label>
         <textarea id="criteriaHighInput" rows="2" style="font-size:11.5px;"></textarea>
       </div>
 
       <div class="field-row" style="flex-direction:column; align-items:stretch; margin-bottom:6px;">
-        <label for="criteriaMediumInput" style="font-weight:600; color:var(--amber);">🟡 [중] 공지/일정/업무 기준</label>
+        <label for="criteriaMediumInput" style="font-weight:600; color:var(--amber);">🟡 <span data-i18n="dashLabelCriteriaMedium">Medium importance criteria</span></label>
         <textarea id="criteriaMediumInput" rows="2" style="font-size:11.5px;"></textarea>
       </div>
 
       <div class="field-row" style="flex-direction:column; align-items:stretch; margin-bottom:6px;">
-        <label for="criteriaLowInput" style="font-weight:600; color:var(--green);">🟢 [하] 정보/참고 기준</label>
+        <label for="criteriaLowInput" style="font-weight:600; color:var(--green);">🟢 <span data-i18n="dashLabelCriteriaLow">Low importance criteria</span></label>
         <textarea id="criteriaLowInput" rows="2" style="font-size:11.5px;"></textarea>
       </div>
 
       <div class="btn-row">
-        <button class="primary" id="saveCriteriaBtn">기준 저장</button>
-        <button id="resetCriteriaBtn">기본값 복원</button>
+        <button class="primary" id="saveCriteriaBtn" data-i18n="btnSaveCriteria">Save criteria</button>
+        <button id="resetCriteriaBtn" data-i18n="btnResetCriteria">Reset to defaults</button>
       </div>
       <div class="result-box" id="criteriaResultBox"></div>
     </details>
@@ -709,7 +709,7 @@
   </div>
 
   <div class="footer-link" style="display:flex; justify-content:center; gap:16px;">
-    <a id="openDashboardLink" style="font-weight: 600;">🖥️ 대시보드 탭 열기</a>
+    <a id="openDashboardLink" style="font-weight: 600;" data-i18n="popupLinkOpenDashboard">🖥️ Open dashboard tab</a>
     <a id="advancedOptionsLink" data-i18n="footerOpenFull">Open full screen</a>
   </div>
 

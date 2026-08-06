@@ -79,13 +79,13 @@ function initTheme() {
 }
 
 // ---------------- 상태 표시 ----------------
-const STATUS_LABEL = {
-  idle: "대기",
-  running: "진행 중",
-  done: "완료",
-  error: "오류",
-  cancelled: "중지됨",
-  quota_exceeded: "할당량 초과",
+const STATUS_LABEL_KEYS = {
+  idle: "statusIdle",
+  running: "statusRunning",
+  done: "statusDone",
+  error: "statusError",
+  cancelled: "statusCancelled",
+  quota_exceeded: "statusQuotaExceeded",
 };
 
 function updateStatusPill(status) {
@@ -93,20 +93,23 @@ function updateStatusPill(status) {
   const pillText = $("statusPillText");
   if (!pill || !pillText) return;
   pill.className = "status-pill " + (status || "idle");
-  pillText.textContent = STATUS_LABEL[status] || STATUS_LABEL.idle;
+  pillText.textContent = t(STATUS_LABEL_KEYS[status] || STATUS_LABEL_KEYS.idle);
 }
 
 // ---------------- 카테고리 / 사이드바 ----------------
-const DEFAULT_CATEGORY_DEFS = [
-  { name: "보안", description: "계정 보안, 비밀번호 변경, 로그인 알림" },
-  { name: "광고", description: "마케팅, 프로모션, 할인 혜택 알림" },
-  { name: "쇼핑", description: "주문 내역, 배송 추적, 영수증" },
-  { name: "공지", description: "서비스 공지사항, 약관 변경 안내" },
-  { name: "뉴스레터", description: "정기 구독 뉴스, 아티클" },
-  { name: "업무", description: "업무 관련 미팅, 일정, 프로젝트 요청" },
-  { name: "개인", description: "개인적 친목, 지인 이메일" },
-  { name: "기타", description: "기타 알림" },
-];
+// 기본 카테고리는 로케일별 목록(defaultCategoriesList)에서 가져온다.
+// 예전에는 한국어 이름을 이 파일에 직접 박아둬서, 다른 언어 사용자가 "기본 라벨 세트 복원"을 누르면
+// 한국어 라벨이 설치되고 팝업/백그라운드의 기본값과도 어긋났다.
+const DEFAULT_CATEGORIES_FALLBACK = ["보안", "광고", "쇼핑", "공지", "뉴스레터", "업무", "개인", "기타"];
+
+function getLocalizedDefaultCategoryDefs() {
+  const raw = t("defaultCategoriesList");
+  const names =
+    !raw || raw === "defaultCategoriesList"
+      ? DEFAULT_CATEGORIES_FALLBACK
+      : raw.split(",").map((x) => x.trim()).filter(Boolean);
+  return names.map((name) => ({ name, description: "" }));
+}
 
 function loadCategories() {
   chrome.storage.local.get(["categoryDefinitions", "labelCategories"], (result) => {
@@ -119,7 +122,7 @@ function loadCategories() {
     } else if (Array.isArray(result.labelCategories) && result.labelCategories.length) {
       currentCategoryDefs = result.labelCategories.map((name) => ({ name, description: "" }));
     } else {
-      currentCategoryDefs = DEFAULT_CATEGORY_DEFS.map((c) => ({ ...c }));
+      currentCategoryDefs = getLocalizedDefaultCategoryDefs();
     }
 
     // 저장된 목록에서 사라진 라벨을 선택 중이었다면 선택을 초기화
@@ -176,8 +179,17 @@ function selectLabel(name) {
 function updateSelectedLabelHeader() {
   setText(
     "dashSelectedLabelTitle",
-    selectedLabelName ? `📋 [${selectedLabelName}] 메일 요약` : "📋 라벨 선택 필요"
+    selectedLabelName ? t("dashSummaryTitleForLabel", [selectedLabelName]) : t("dashSummaryNeedLabel")
   );
+}
+
+// 중요도 값은 AI 응답 스키마상 "상"/"중"/"하" 문자열로 저장된다(백그라운드/디스코드 라우팅도 이 값을 씀).
+// 데이터는 그대로 두고 화면에 보여줄 때만 현재 언어로 바꾼다.
+function importanceLabel(value) {
+  if (value === "상") return t("dashImportanceHigh");
+  if (value === "중") return t("dashImportanceMedium");
+  if (value === "하") return t("dashImportanceLow");
+  return value || "";
 }
 
 // ---------------- 요약 리포트 렌더링 ----------------
@@ -197,13 +209,13 @@ function renderReport(report) {
   let html = "";
 
   html += `<div class="dash-action-bar">
-    <span class="badge-sub">총 ${report.totalAnalyzed || 0}개 중 ${report.selectedCount || 0}개 메일 선별됨</span>
+    <span class="badge-sub">${escapeHtml(t("dashSelectedCountLine", [report.totalAnalyzed || 0, report.selectedCount || 0]))}</span>
     <span class="quick-chip-wrap">
       ${["all", "상", "중", "하"]
         .map(
           (imp) =>
             `<button class="priority-chip${selectedPriorityFilter === imp ? " active" : ""}" data-imp="${escapeHtml(imp)}">${
-              imp === "all" ? "전체" : `중요도 ${escapeHtml(imp)}`
+              imp === "all" ? escapeHtml(t("dashFilterAll")) : escapeHtml(t("dashFilterImportance", [importanceLabel(imp)]))
             }</button>`
         )
         .join("")}
@@ -212,7 +224,7 @@ function renderReport(report) {
 
   if (report.overallSummary) {
     html += `<div class="summary-brief-card">
-      <div class="brief-title">💡 '${escapeHtml(report.labelName)}' AI 종합 브리핑</div>
+      <div class="brief-title">${escapeHtml(t("dashBriefTitle", [report.labelName || ""]))}</div>
       <div class="brief-text">${escapeHtml(report.overallSummary)}</div>
     </div>`;
   }
@@ -231,10 +243,10 @@ function renderReport(report) {
             <span class="email-card-title">${idx + 1}. ${escapeHtml(item.subject)}</span>
             <span class="accordion-icon">▼</span>
           </div>
-          <span class="imp-tag ${impClass}">중요도: ${escapeHtml(imp)}</span>
+          <span class="imp-tag ${impClass}">${escapeHtml(t("dashCardImportance", [importanceLabel(imp)]))}</span>
         </div>
         <div class="email-card-body">
-          <div class="email-card-sender">발신자: ${escapeHtml(item.sender || "정보 없음")}</div>`;
+          <div class="email-card-sender">${escapeHtml(t("dashCardSender"))}: ${escapeHtml(item.sender || t("dashSenderUnknown"))}</div>`;
 
       if (Array.isArray(item.summaryPoints) && item.summaryPoints.length) {
         html += `<ul class="email-card-bullets">`;
@@ -245,19 +257,19 @@ function renderReport(report) {
       }
 
       if (item.actionRequired && item.actionRequired !== "없음") {
-        html += `<div class="email-card-action">⚡ 조치 사항: ${escapeHtml(item.actionRequired)}</div>`;
+        html += `<div class="email-card-action">⚡ ${escapeHtml(t("dashCardAction"))}: ${escapeHtml(item.actionRequired)}</div>`;
       }
 
       if (mailUrl) {
         html += `<div class="email-card-footer">
-          <a href="${escapeHtml(mailUrl)}" target="_blank" rel="noreferrer" class="email-card-link">Gmail에서 이메일 열기 ↗</a>
+          <a href="${escapeHtml(mailUrl)}" target="_blank" rel="noreferrer" class="email-card-link">${escapeHtml(t("dashOpenInGmail"))}</a>
         </div>`;
       }
 
       html += `</div></div>`;
     });
   } else {
-    html += `<div class="dash-empty-state">선별된 중요 이메일이 없습니다.</div>`;
+    html += `<div class="dash-empty-state">${escapeHtml(t("dashNoSelectedMail"))}</div>`;
   }
 
   html += `</div>`;
@@ -281,16 +293,16 @@ function renderReport(report) {
 
 function generateSummaryText(report) {
   if (!report) return "";
-  let text = `[📋 ${report.labelName} 라벨 AI 요약 리포트]\n\n● 종합 요약:\n${report.overallSummary || ""}\n\n● 주요 선별 메일 목록 (${report.selectedCount || 0}/${report.totalAnalyzed || 0}):\n`;
+  let text = `${t("dashCopyHeader", [report.labelName || ""])}\n\n● ${t("dashCopyOverall")}:\n${report.overallSummary || ""}\n\n● ${t("dashCopySelectedList", [report.selectedCount || 0, report.totalAnalyzed || 0])}:\n`;
   (report.selectedEmails || []).forEach((e, idx) => {
-    text += `\n${idx + 1}. [중요도: ${e.importance || "중"}] ${e.subject}\n   - 발신자: ${e.sender || ""}\n`;
+    text += `\n${idx + 1}. [${t("dashCopyImportanceLabel")}: ${importanceLabel(e.importance || "중")}] ${e.subject}\n   - ${t("dashCardSender")}: ${e.sender || ""}\n`;
     if (Array.isArray(e.summaryPoints)) {
       e.summaryPoints.forEach((pt) => {
         text += `   - ${pt}\n`;
       });
     }
     if (e.actionRequired && e.actionRequired !== "없음") {
-      text += `   - ⚡ 조치 사항: ${e.actionRequired}\n`;
+      text += `   - ⚡ ${t("dashCardAction")}: ${e.actionRequired}\n`;
     }
   });
   return text;
@@ -336,31 +348,31 @@ function pollStatus() {
     show("dashStopClassifyBtn", isRunning, "inline-block");
 
     if (result.jobKind === "labelSummary") {
-      renderJobProgress("dashSummary", result, "이메일 수집 및 요약 중");
+      renderJobProgress("dashSummary", result, t("dashJobSummarizing"));
       if (result.jobStatus === "done") {
         chrome.storage.local.get(["lastLabelSummary"], (stored) => {
           if (stored.lastLabelSummary) renderReport(stored.lastLabelSummary);
         });
       } else if (result.jobStatus === "error") {
         const box = $("dashSummaryResultBox");
-        if (box) box.textContent = `오류: ${result.jobError || ""}`;
+        if (box) box.textContent = t("errorGenericPrefix", [result.jobError || ""]);
       }
     }
 
     if (result.jobKind === "classify" || result.jobKind === "repeat" || result.jobKind === "relabel" || result.jobKind === "dedupe") {
-      renderJobProgress("dashClassify", result, "메일 분류 중");
+      renderJobProgress("dashClassify", result, t("dashJobClassifying"));
       const box = $("dashClassifyResultBox");
       if (box) {
         if (isRunning) {
-          box.textContent = "작업이 진행 중입니다...";
+          box.textContent = t("dashJobRunningGeneric");
         } else if (result.jobStatus === "done" && result.jobResult) {
-          box.textContent = `완료: 전체 ${result.jobResult.total || 0}개 중 ${result.jobResult.success || 0}개 처리`;
+          box.textContent = t("dashResultDone", [result.jobResult.total || 0, result.jobResult.success || 0]);
         } else if (result.jobStatus === "cancelled" && result.jobResult) {
-          box.textContent = `중지됨: ${result.jobResult.success || 0}/${result.jobResult.total || 0}개 처리`;
+          box.textContent = t("dashResultCancelled", [result.jobResult.total || 0, result.jobResult.success || 0]);
         } else if (result.jobStatus === "quota_exceeded" && result.jobResult) {
-          box.textContent = `할당량 초과로 중단: ${result.jobResult.success || 0}/${result.jobResult.total || 0}개 처리`;
+          box.textContent = t("dashResultQuota", [result.jobResult.total || 0, result.jobResult.success || 0]);
         } else if (result.jobStatus === "error") {
-          box.textContent = `오류: ${result.jobError || ""}`;
+          box.textContent = t("errorGenericPrefix", [result.jobError || ""]);
         }
       }
     }
@@ -422,15 +434,15 @@ function renderDashboardCategories() {
     .map(
       (cat, idx) => `
       <div class="form-row cat-row" data-idx="${idx}">
-        <input type="text" class="cat-name-input" value="${escapeHtml(cat.name)}" placeholder="카테고리명">
-        <input type="text" class="cat-desc-input" value="${escapeHtml(cat.description || "")}" placeholder="분류 기준 설명">
+        <input type="text" class="cat-name-input" value="${escapeHtml(cat.name)}" placeholder=t("placeholderCategoryName")>
+        <input type="text" class="cat-desc-input" value="${escapeHtml(cat.description || "")}" placeholder=t("placeholderCategoryDesc")>
         <button class="dash-btn dash-btn-secondary del-cat-btn" data-idx="${idx}">✕</button>
       </div>`
     )
     .join("") +
     `<div class="btn-row" style="margin-top:12px;">
-      <button class="dash-btn dash-btn-secondary" id="dashAddCategoryBtn">➕ 카테고리 추가</button>
-      <button class="dash-btn dash-btn-primary" id="dashSaveCategoriesBtn">💾 카테고리 저장</button>
+      <button class="dash-btn dash-btn-secondary" id="dashAddCategoryBtn">➕ ${escapeHtml(t("dashBtnAddCategory"))}</button>
+      <button class="dash-btn dash-btn-primary" id="dashSaveCategoriesBtn">💾 ${escapeHtml(t("dashBtnSaveCategories"))}</button>
     </div>`;
 
   list.querySelectorAll(".del-cat-btn").forEach((btn) => {
@@ -456,7 +468,7 @@ function renderDashboardCategories() {
       collectCategoriesFromDom();
       const validDefs = currentCategoryDefs.filter((c) => c.name);
       if (!validDefs.length) {
-        alert("카테고리를 최소 1개 이상 입력해 주세요.");
+        alert(t("msgCategoriesMin"));
         return;
       }
       chrome.storage.local.set({ categoryDefinitions: validDefs }, () => {
@@ -464,7 +476,7 @@ function renderDashboardCategories() {
         renderDashboardCategories();
         renderSidebarLabels();
         renderSummaryLabelSelect();
-        alert("카테고리가 저장되었습니다!");
+        alert(t("msgCategoriesSaved", [validDefs.length]));
       });
     });
   }
@@ -491,7 +503,7 @@ function loadDashboardRelabelOptions() {
   if (!select) return;
   const prev = select.value;
   select.innerHTML =
-    `<option value="">라벨을 선택하세요</option>` +
+    `<option value="">${escapeHtml(t("dashOptionSelectLabel"))}</option>` +
     currentCategoryDefs
       .map((c) => `<option value="${escapeHtml(c.name)}">${escapeHtml(c.name)}</option>`)
       .join("");
@@ -558,7 +570,7 @@ function renderApiKeyInputs() {
     .map(
       (entry, idx) => `
       <div class="form-row apikey-row" data-idx="${idx}">
-        <input type="text" class="dash-api-label-input" value="${escapeHtml(entry.label || "")}" placeholder="키 별칭(선택)">
+        <input type="text" class="dash-api-label-input" value="${escapeHtml(entry.label || "")}" placeholder=t("dashPlaceholderKeyAlias")>
         <input type="password" class="dash-api-key-input" value="${escapeHtml(entry.key || "")}" placeholder="Gemini API Key (AIza...)">
         <button class="dash-btn dash-btn-secondary del-key-btn" data-idx="${idx}">✕</button>
       </div>`
@@ -591,7 +603,7 @@ function loadDashboardLogs() {
   chrome.runtime.sendMessage({ action: "getLogs", limit: 200 }, (logs) => {
     if (chrome.runtime.lastError || !logs) return;
     if (!logs.length) {
-      box.innerHTML = `<div class="log-item">기록된 로그가 없습니다.</div>`;
+      box.innerHTML = `<div class="log-item">${escapeHtml(t("dashLogsEmpty"))}</div>`;
       return;
     }
     box.innerHTML = logs
@@ -608,11 +620,11 @@ function loadDashboardLogs() {
 function startJob(message, okMessage) {
   chrome.runtime.sendMessage(message, (res) => {
     if (chrome.runtime.lastError) {
-      alert(`오류: ${chrome.runtime.lastError.message}`);
+      alert(t("errorGenericPrefix", [chrome.runtime.lastError.message]));
       return;
     }
     if (res && res.ok === false) {
-      alert(res.messageKey === "errorAlreadyRunning" ? "다른 작업이 이미 진행 중입니다." : "요청을 시작할 수 없습니다.");
+      alert(res.messageKey === "errorAlreadyRunning" ? t("errorAlreadyRunning") : t("dashMsgCannotStart"));
       return;
     }
     if (okMessage) alert(okMessage);
@@ -642,7 +654,7 @@ function initEvents() {
   if (startSummaryBtn) {
     startSummaryBtn.addEventListener("click", () => {
       if (!selectedLabelName) {
-        alert("요약할 라벨을 선택해주세요.");
+        alert(t("dashMsgNeedSummaryLabel"));
         return;
       }
       const countInput = $("dashSummaryCountInput");
@@ -663,7 +675,7 @@ function initEvents() {
       if (!lastReportData) return;
       navigator.clipboard.writeText(generateSummaryText(lastReportData)).then(() => {
         const orig = copySummaryBtn.textContent;
-        copySummaryBtn.textContent = "✅ 복사되었습니다!";
+        copySummaryBtn.textContent = t("dashMsgCopied");
         setTimeout(() => {
           copySummaryBtn.textContent = orig;
         }, 1800);
@@ -675,7 +687,7 @@ function initEvents() {
   if (sendDiscordBtn) {
     sendDiscordBtn.addEventListener("click", () => {
       if (!lastReportData) {
-        alert("전송할 요약 리포트가 없습니다.");
+        alert(t("dashMsgNoReport"));
         return;
       }
       chrome.storage.local.get(
@@ -688,18 +700,18 @@ function initEvents() {
             lowUrl: stored.discordWebhookUrlLow || "",
           };
           if (!webhookInput.defaultUrl && !webhookInput.highUrl && !webhookInput.mediumUrl && !webhookInput.lowUrl) {
-            alert("디스코드 Webhook URL을 먼저 설정 탭에서 입력해 주세요.");
+            alert(t("dashMsgNeedWebhook"));
             return;
           }
           chrome.runtime.sendMessage(
             { action: "sendDiscordNotification", webhookUrl: webhookInput, summaryReport: lastReportData },
             (res) => {
               if (chrome.runtime.lastError || (res && !res.ok)) {
-                alert(`전송 실패: ${(res && res.error) || (chrome.runtime.lastError && chrome.runtime.lastError.message)}`);
+                alert(t("dashMsgDiscordFailed", [(res && res.error) || (chrome.runtime.lastError && chrome.runtime.lastError.message) || ""]));
                 return;
               }
               const orig = sendDiscordBtn.textContent;
-              sendDiscordBtn.textContent = "✅ 디스코드 전송 완료!";
+              sendDiscordBtn.textContent = t("dashMsgDiscordSent");
               setTimeout(() => {
                 sendDiscordBtn.textContent = orig;
               }, 1800);
@@ -733,14 +745,14 @@ function initEvents() {
   const resetCategoriesBtn = $("dashResetCategoriesBtn");
   if (resetCategoriesBtn) {
     resetCategoriesBtn.addEventListener("click", () => {
-      if (!confirm("기본 라벨 카테고리로 초기화할까요? 현재 카테고리 설정이 대체됩니다.")) return;
-      const defs = DEFAULT_CATEGORY_DEFS.map((c) => ({ ...c }));
+      if (!confirm(t("dashConfirmResetCategories"))) return;
+      const defs = getLocalizedDefaultCategoryDefs();
       chrome.storage.local.set({ categoryDefinitions: defs }, () => {
         currentCategoryDefs = defs;
         renderDashboardCategories();
         renderSidebarLabels();
         renderSummaryLabelSelect();
-        alert("기본 라벨 카테고리로 초기화되었습니다!");
+        alert(t("msgCategoriesReset"));
       });
     });
   }
@@ -748,8 +760,8 @@ function initEvents() {
   const deleteAllLabelsBtn = $("dashDeleteAllLabelsBtn");
   if (deleteAllLabelsBtn) {
     deleteAllLabelsBtn.addEventListener("click", () => {
-      if (!confirm("이 확장이 관리하는 모든 Gmail 라벨을 삭제합니다. 되돌릴 수 없습니다. 계속할까요?")) return;
-      startJob({ action: "startDeleteAllLabels" }, "라벨 삭제 작업을 시작했습니다.");
+      if (!confirm(t("dashConfirmDeleteAllLabels"))) return;
+      startJob({ action: "startDeleteAllLabels" }, t("dashMsgDeleteLabelsStarted"));
     });
   }
 
@@ -760,7 +772,7 @@ function initEvents() {
       const select = $("dashRelabelSelect");
       const label = select ? select.value : "";
       if (!label) {
-        alert("재분류할 라벨을 선택해주세요.");
+        alert(t("dashMsgNeedRelabelLabel"));
         return;
       }
       const excludeSelfCheckbox = $("dashExcludeSelfCheckbox");
@@ -796,14 +808,14 @@ function initEvents() {
       collectApiKeysFromDom();
       const validKeys = dashApiKeys.filter((k) => k.key);
       if (!validKeys.length) {
-        alert("Gemini API 키를 1개 이상 입력해 주세요.");
+        alert(t("dashMsgNeedApiKey"));
         return;
       }
       // background.js의 getGeminiApiKeys()가 기대하는 [{key, label}] 형식으로 저장
       chrome.storage.local.set({ geminiApiKeys: validKeys, geminiApiKey: null }, () => {
         dashApiKeys = validKeys;
         renderApiKeyInputs();
-        alert(`Gemini API 키 ${validKeys.length}개가 저장되었습니다!`);
+        alert(t("dashMsgKeysSaved", [validKeys.length]));
       });
     });
   }
@@ -827,7 +839,7 @@ function initEvents() {
             low: val("dashCriteriaLow"),
           },
         },
-        () => alert("디스코드 및 중요도 설정이 저장되었습니다!")
+        () => alert(t("dashMsgDiscordSettingsSaved"))
       );
     });
   }
@@ -835,15 +847,15 @@ function initEvents() {
   const backupDriveBtn = $("dashBackupDriveBtn");
   if (backupDriveBtn) {
     backupDriveBtn.addEventListener("click", () => {
-      startJob({ action: "backupToDrive" }, "Google Drive 백업을 시작했습니다.");
+      startJob({ action: "backupToDrive" }, t("dashMsgBackupStarted"));
     });
   }
 
   const restoreDriveBtn = $("dashRestoreDriveBtn");
   if (restoreDriveBtn) {
     restoreDriveBtn.addEventListener("click", () => {
-      if (!confirm("Drive 백업으로 현재 설정을 덮어씁니다. 계속할까요?")) return;
-      startJob({ action: "startRestoreFromDrive", passphrase: "" }, "Google Drive 복원을 시작했습니다.");
+      if (!confirm(t("dashConfirmRestoreDrive"))) return;
+      startJob({ action: "startRestoreFromDrive", passphrase: "" }, t("dashMsgRestoreStarted"));
     });
   }
 
@@ -857,7 +869,12 @@ function initEvents() {
 }
 
 // ---------------- 진입점 ----------------
-function main() {
+async function main() {
+  // 대시보드는 예전에 i18n을 전혀 쓰지 않아서 화면 문자열이 전부 한국어로 고정돼 있었다.
+  // 먼저 로케일을 로드하고 DOM에 적용한 뒤에 나머지를 그린다(t()를 쓰는 렌더 함수들이 뒤따르므로 순서가 중요).
+  await i18nInit();
+  i18nApplyToDom(document);
+
   initTheme();
   loadCategories();
   initEvents();
@@ -868,6 +885,18 @@ function main() {
   });
 
   pollStatus();
+
+  // 팝업에서 언어를 바꾸면 열려 있는 대시보드에도 반영한다
+  chrome.storage.onChanged.addListener(async (changes, areaName) => {
+    if (areaName !== "local" || !changes.uiLanguage) return;
+    await i18nInit(true);
+    i18nApplyToDom(document);
+    pollStatus(); // 상태 pill과 진행/결과 문구를 새 언어로 다시 채운다
+    updateSelectedLabelHeader();
+    renderSidebarLabels();
+    renderDashboardCategories();
+    if (lastReportData) renderReport(lastReportData);
+  });
 }
 
 if (document.readyState === "loading") {

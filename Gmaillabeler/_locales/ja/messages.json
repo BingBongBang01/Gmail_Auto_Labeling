@@ -68,6 +68,24 @@
   "errorSelectSummaryLabel": {
     "message": "要約するラベルを選択してください。"
   },
+  "sectionDiscordWebhook": {
+    "message": "Discord 連携 (Discord Webhook)"
+  },
+  "labelDiscordWebhookUrl": {
+    "message": "Discord Webhook URL"
+  },
+  "placeholderDiscordWebhookUrl": {
+    "message": "https://discord.com/api/webhooks/..."
+  },
+  "btnSendDiscord": {
+    "message": "💬 Discord に送信"
+  },
+  "msgDiscordSent": {
+    "message": "Discordに要約レポートを送信しました。"
+  },
+  "errDiscordWebhookMissing": {
+    "message": "Discord Webhook URLを先に入力してください。"
+  },
   "tabSettings": {
     "message": "設定"
   },
@@ -2040,10 +2058,515 @@
       }
     }
   },
-  "errDiscordWebhookMissing": {
-    "message": "Discord Webhook URLを先に入力してください。"
+  "dashPageTitle": {
+    "message": "Gmail AI Labeler - ダッシュボード"
   },
-  "msgDiscordSent": {
-    "message": "Discordに要約レポートを送信しました。"
+  "dashSubtitle": {
+    "message": "メール分類と要約の統合ダッシュボード"
+  },
+  "dashBtnTheme": {
+    "message": "🌙 テーマ切替"
+  },
+  "dashBtnRefreshTitle": {
+    "message": "更新"
+  },
+  "dashNavTitleMain": {
+    "message": "メインメニュー"
+  },
+  "dashNavSummary": {
+    "message": "メール要約"
+  },
+  "dashNavClassify": {
+    "message": "AI ラベル分類"
+  },
+  "dashNavLabels": {
+    "message": "ラベル管理"
+  },
+  "dashNavRelabel": {
+    "message": "再適用と重複整理"
+  },
+  "dashNavSettings": {
+    "message": "設定と Discord"
+  },
+  "dashNavLogs": {
+    "message": "システムログ"
+  },
+  "dashNavTitleLabels": {
+    "message": "ラベル一覧"
+  },
+  "dashLabelSelected": {
+    "message": "ラベル:"
+  },
+  "dashOptionLoadingLabels": {
+    "message": "ラベルを読み込み中..."
+  },
+  "dashLabelAnalyzeCount": {
+    "message": "件数:"
+  },
+  "dashLabelFilterCriteria": {
+    "message": "抽出条件:"
+  },
+  "dashPlaceholderCriteria": {
+    "message": "例: 主要な予定と支出のみ抽出"
+  },
+  "dashBtnRunSummary": {
+    "message": "🚀 要約を実行"
+  },
+  "dashPanelSummaryTitle": {
+    "message": "📋 ラベルメール要約"
+  },
+  "dashProgressSummary": {
+    "message": "要約を処理中..."
+  },
+  "dashSummaryPlaceholder": {
+    "message": "左でラベルを選び、上の「要約を実行」を押すと、そのラベルのメール要約レポートを作成します。"
+  },
+  "dashSummaryTitleForLabel": {
+    "message": "📋 [$LABEL$] メール要約",
+    "placeholders": {
+      "label": {
+        "content": "$1"
+      }
+    }
+  },
+  "dashSummaryNeedLabel": {
+    "message": "📋 ラベルを選択"
+  },
+  "dashPanelClassifyTitle": {
+    "message": "🤖 AI 自動ラベル分類"
+  },
+  "dashClassifyDesc": {
+    "message": "受信トレイのメールを AI が分析し、設定したカテゴリラベルに自動で分類します。"
+  },
+  "dashBtnStartClassify": {
+    "message": "⚡ 自動分類を開始"
+  },
+  "dashBtnStopClassify": {
+    "message": "🛑 分類を中止"
+  },
+  "dashProgressClassify": {
+    "message": "分類中..."
+  },
+  "dashPanelLabelsTitle": {
+    "message": "🏷️ カテゴリとラベルの管理"
+  },
+  "dashBtnResetCategories": {
+    "message": "🔄 既定のラベルに戻す"
+  },
+  "dashBtnDeleteAllLabels": {
+    "message": "🗑️ すべてのラベルを削除"
+  },
+  "dashPanelRelabelTitle": {
+    "message": "🔄 ラベルの再適用と重複整理"
+  },
+  "dashRelabelHeading": {
+    "message": "既存メールの再分類"
+  },
+  "dashRelabelDesc": {
+    "message": "すでに受信したメールを現在のカテゴリ基準で再分類します。"
+  },
+  "dashOptionAllLabels": {
+    "message": "すべてのラベル"
+  },
+  "dashCheckboxExcludeSelf": {
+    "message": "このラベルを候補から除外"
+  },
+  "dashBtnStartRelabel": {
+    "message": "🚀 再分類を実行"
+  },
+  "dashDedupeHeading": {
+    "message": "重複ラベルの整理"
+  },
+  "dashDedupeDesc": {
+    "message": "1通のメールに複数の分類ラベルが付いている場合、最も適切な1つだけを残します。"
+  },
+  "dashBtnStartDedupe": {
+    "message": "🧹 重複を整理"
+  },
+  "dashPanelSettingsTitle": {
+    "message": "⚙️ カスタマイズと Discord 設定"
+  },
+  "dashApiKeyHeading": {
+    "message": "🔑 Gemini API キー"
+  },
+  "dashBtnAddApiKey": {
+    "message": "➕ キーを追加"
+  },
+  "dashBtnSaveApiKey": {
+    "message": "💾 キーを保存"
+  },
+  "dashPlaceholderKeyAlias": {
+    "message": "キーの名前(任意)"
+  },
+  "dashDiscordHeading": {
+    "message": "💬 重要度別 Discord Webhook"
+  },
+  "dashDiscordDesc": {
+    "message": "AI が判定した重要度(高/中/低)に応じて別々の Discord チャンネルに要約を送ります。空欄の等級は既定の Webhook に送信されます。"
+  },
+  "dashLabelWebhookDefault": {
+    "message": "既定の Webhook URL(全体送信用)"
+  },
+  "dashLabelWebhookHigh": {
+    "message": "🔴 重要度[高]専用 Webhook URL"
+  },
+  "dashLabelWebhookMedium": {
+    "message": "🟡 重要度[中]専用 Webhook URL"
+  },
+  "dashLabelWebhookLow": {
+    "message": "🟢 重要度[低]専用 Webhook URL"
+  },
+  "dashPlaceholderWebhookHigh": {
+    "message": "🔴 緊急/重要チャンネルの Webhook URL"
+  },
+  "dashPlaceholderWebhookMedium": {
+    "message": "🟡 一般のお知らせチャンネルの Webhook URL"
+  },
+  "dashPlaceholderWebhookLow": {
+    "message": "🟢 参考/ニュースレターチャンネルの Webhook URL"
+  },
+  "dashCriteriaHeading": {
+    "message": "🎯 重要度の判断基準"
+  },
+  "dashLabelCriteriaHigh": {
+    "message": "重要度[高]の基準"
+  },
+  "dashLabelCriteriaMedium": {
+    "message": "重要度[中]の基準"
+  },
+  "dashLabelCriteriaLow": {
+    "message": "重要度[低]の基準"
+  },
+  "dashPlaceholderCriteriaHigh": {
+    "message": "例: 即時返信/決済/契約/障害"
+  },
+  "dashPlaceholderCriteriaMedium": {
+    "message": "例: 通常業務/日程変更/案内"
+  },
+  "dashPlaceholderCriteriaLow": {
+    "message": "例: マーケティング/ニュースレター/広告/イベント"
+  },
+  "dashBtnSaveDiscordSettings": {
+    "message": "💾 Discord と重要度の設定を保存"
+  },
+  "dashDriveHeading": {
+    "message": "☁️ Google Drive バックアップと復元"
+  },
+  "dashDriveDesc": {
+    "message": "カテゴリ・分類基準・設定を Google Drive にバックアップ、または復元します。"
+  },
+  "dashBtnBackupDrive": {
+    "message": "☁️ Drive にバックアップ"
+  },
+  "dashBtnRestoreDrive": {
+    "message": "📥 Drive から復元"
+  },
+  "dashPanelLogsTitle": {
+    "message": "📜 システムログ"
+  },
+  "dashBtnClearLogs": {
+    "message": "🧹 ログを消去"
+  },
+  "dashLogsLoading": {
+    "message": "ログを読み込み中..."
+  },
+  "dashLogsEmpty": {
+    "message": "ログはまだありません。"
+  },
+  "dashFilterAll": {
+    "message": "すべて"
+  },
+  "dashFilterImportance": {
+    "message": "重要度 $LEVEL$",
+    "placeholders": {
+      "level": {
+        "content": "$1"
+      }
+    }
+  },
+  "dashImportanceHigh": {
+    "message": "高"
+  },
+  "dashImportanceMedium": {
+    "message": "中"
+  },
+  "dashImportanceLow": {
+    "message": "低"
+  },
+  "dashCardSender": {
+    "message": "送信者"
+  },
+  "dashCardAction": {
+    "message": "対応事項"
+  },
+  "dashCardActionNone": {
+    "message": "なし"
+  },
+  "dashNoSelectedMail": {
+    "message": "重要と判定されたメールはありません。"
+  },
+  "dashCopyHeader": {
+    "message": "[📋 $LABEL$ ラベルの AI 要約レポート]",
+    "placeholders": {
+      "label": {
+        "content": "$1"
+      }
+    }
+  },
+  "dashCopyOverall": {
+    "message": "総合要約"
+  },
+  "dashCopySelectedList": {
+    "message": "抽出されたメール ($SELECTED$/$TOTAL$)",
+    "placeholders": {
+      "selected": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      }
+    }
+  },
+  "dashCopyImportanceLabel": {
+    "message": "重要度"
+  },
+  "dashJobSummarizing": {
+    "message": "メールの収集と要約中"
+  },
+  "dashJobClassifying": {
+    "message": "メールを分類中"
+  },
+  "dashJobRunningGeneric": {
+    "message": "処理が進行中です..."
+  },
+  "dashResultDone": {
+    "message": "完了: $TOTAL$件中 $SUCCESS$件を処理",
+    "placeholders": {
+      "total": {
+        "content": "$1"
+      },
+      "success": {
+        "content": "$2"
+      }
+    }
+  },
+  "dashResultCancelled": {
+    "message": "中止: $TOTAL$件中 $SUCCESS$件を処理",
+    "placeholders": {
+      "total": {
+        "content": "$1"
+      },
+      "success": {
+        "content": "$2"
+      }
+    }
+  },
+  "dashResultQuota": {
+    "message": "割り当て超過で中止: $TOTAL$件中 $SUCCESS$件を処理",
+    "placeholders": {
+      "total": {
+        "content": "$1"
+      },
+      "success": {
+        "content": "$2"
+      }
+    }
+  },
+  "dashOptionSelectLabel": {
+    "message": "ラベルを選択してください"
+  },
+  "dashMsgNeedSummaryLabel": {
+    "message": "先に要約するラベルを選んでください。"
+  },
+  "dashMsgNeedRelabelLabel": {
+    "message": "先に再分類するラベルを選んでください。"
+  },
+  "dashMsgCopied": {
+    "message": "✅ コピーしました。"
+  },
+  "dashMsgNoReport": {
+    "message": "送信する要約レポートがありません。"
+  },
+  "dashMsgNeedWebhook": {
+    "message": "先に設定タブで Discord Webhook URL を入力してください。"
+  },
+  "dashMsgDiscordSent": {
+    "message": "✅ Discord に送信しました。"
+  },
+  "dashMsgDiscordFailed": {
+    "message": "送信に失敗: $ERROR$",
+    "placeholders": {
+      "error": {
+        "content": "$1"
+      }
+    }
+  },
+  "dashConfirmResetCategories": {
+    "message": "既定のカテゴリに戻しますか？現在のカテゴリは置き換えられます。"
+  },
+  "dashConfirmDeleteAllLabels": {
+    "message": "この拡張機能が作成した Gmail ラベルをすべて削除します。取り消せません。続けますか？"
+  },
+  "dashMsgDeleteLabelsStarted": {
+    "message": "ラベル削除を開始しました。"
+  },
+  "dashMsgNeedApiKey": {
+    "message": "Gemini API キーを1つ以上入力してください。"
+  },
+  "dashMsgKeysSaved": {
+    "message": "Gemini API キー $COUNT$件を保存しました。",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "dashMsgDiscordSettingsSaved": {
+    "message": "Discord と重要度の設定を保存しました。"
+  },
+  "dashMsgBackupStarted": {
+    "message": "Google Drive へのバックアップを開始しました。"
+  },
+  "dashConfirmRestoreDrive": {
+    "message": "Drive のバックアップで現在の設定を上書きします。続けますか？"
+  },
+  "dashMsgRestoreStarted": {
+    "message": "Google Drive からの復元を開始しました。"
+  },
+  "dashMsgCannotStart": {
+    "message": "リクエストを開始できませんでした。"
+  },
+  "dashSelectedCountLine": {
+    "message": "$TOTAL$件中 $SELECTED$件を抽出",
+    "placeholders": {
+      "total": {
+        "content": "$1"
+      },
+      "selected": {
+        "content": "$2"
+      }
+    }
+  },
+  "dashBriefTitle": {
+    "message": "💡 '$LABEL$' の AI ブリーフィング",
+    "placeholders": {
+      "label": {
+        "content": "$1"
+      }
+    }
+  },
+  "dashCardImportance": {
+    "message": "重要度: $LEVEL$",
+    "placeholders": {
+      "level": {
+        "content": "$1"
+      }
+    }
+  },
+  "dashSenderUnknown": {
+    "message": "不明"
+  },
+  "dashOpenInGmail": {
+    "message": "Gmail で開く ↗"
+  },
+  "dashBtnAddCategory": {
+    "message": "カテゴリを追加"
+  },
+  "dashBtnSaveCategories": {
+    "message": "カテゴリを保存"
+  },
+  "popupGlobalProgressTitle": {
+    "message": "⚡ 処理中..."
+  },
+  "popupBtnGlobalStopTitle": {
+    "message": "処理を中止"
+  },
+  "popupBtnGlobalStop": {
+    "message": "🛑 中止"
+  },
+  "popupBtnOpenDashboard": {
+    "message": "🖥️ 全画面ダッシュボードを開く"
+  },
+  "popupLinkOpenDashboard": {
+    "message": "🖥️ ダッシュボードを開く"
+  },
+  "hintDiscordPopup": {
+    "message": "Webhook URL を設定すると、メール要約や重要なお知らせを Discord チャンネルに送信します。"
+  },
+  "sectionCriteria": {
+    "message": "重要度(高/中/低)の判断基準"
+  },
+  "hintCriteria": {
+    "message": "AI がメールの重要度を判断する際の基準です。自分の業務に合わせて調整すると要約の質が上がります。"
+  },
+  "btnSaveCriteria": {
+    "message": "基準を保存"
+  },
+  "btnResetCriteria": {
+    "message": "既定値に戻す"
+  },
+  "msgCriteriaSaved": {
+    "message": "重要度の基準を保存しました。"
+  },
+  "msgCriteriaReset": {
+    "message": "既定の基準に戻しました。"
+  },
+  "msgDiscordWebhookSaved": {
+    "message": "Discord Webhook URL を保存しました。"
+  },
+  "popupJobClassify": {
+    "message": "⚡ メールを自動分類中..."
+  },
+  "popupJobRepeat": {
+    "message": "🔄 繰り返し分類中..."
+  },
+  "popupJobLabelSummary": {
+    "message": "📋 ラベル要約を作成中..."
+  },
+  "popupJobRelabel": {
+    "message": "🏷️ ラベルを再分類中..."
+  },
+  "popupJobDedupe": {
+    "message": "🧹 重複ラベルを整理中..."
+  },
+  "popupJobAnalyze": {
+    "message": "🔍 ラベルを分析中..."
+  },
+  "popupJobDeleteLabels": {
+    "message": "🗑️ ラベルを削除中..."
+  },
+  "popupProgressGeneric": {
+    "message": "処理中..."
+  },
+  "popupProgressMailCount": {
+    "message": "$PROCESSED$ / $TOTAL$ 件処理 ($PCT$%)",
+    "placeholders": {
+      "processed": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      },
+      "pct": {
+        "content": "$3"
+      }
+    }
+  },
+  "popupProgressPct": {
+    "message": "$PCT$% 進行",
+    "placeholders": {
+      "pct": {
+        "content": "$1"
+      }
+    }
+  },
+  "defaultCriteriaHigh": {
+    "message": "24時間以内の期限・返信要求、決済失敗、障害、アカウントのセキュリティ警告、上司の承認依頼、法務・費用の問題"
+  },
+  "defaultCriteriaMedium": {
+    "message": "1週間以内の会議・予定、プロジェクトの進捗共有、通常の業務依頼、主要なサービス通知"
+  },
+  "defaultCriteriaLow": {
+    "message": "ニュースレター、定期レポート、マーケティング/プロモーション、返信や対応の不要な情報通知"
   }
 }
