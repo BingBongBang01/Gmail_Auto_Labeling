@@ -8,28 +8,51 @@ const LEGACY_ID_ATTRS = [
   "data-legacy-thread-id",
 ];
 
+const LEGACY_ID_SELECTOR = LEGACY_ID_ATTRS.map((attr) => `[${attr}]`).join(",");
+
 function collectLegacyIds(rootEl) {
   const ids = new Set();
-  for (const attr of LEGACY_ID_ATTRS) {
-    if (rootEl.hasAttribute && rootEl.hasAttribute(attr)) {
-      ids.add(rootEl.getAttribute(attr));
+  if (rootEl.hasAttribute) {
+    for (const attr of LEGACY_ID_ATTRS) {
+      if (rootEl.hasAttribute(attr)) ids.add(rootEl.getAttribute(attr));
     }
-    rootEl.querySelectorAll(`[${attr}]`).forEach((el) => {
+  }
+  // 속성별로 따로 훑지 않고 한 번의 셀렉터로 모은다
+  rootEl.querySelectorAll(LEGACY_ID_SELECTOR).forEach((el) => {
+    for (const attr of LEGACY_ID_ATTRS) {
       const value = el.getAttribute(attr);
       if (value) ids.add(value);
-    });
-  }
+    }
+  });
   return ids;
+}
+
+// aiDataList를 매 행마다 선형 탐색하지 않도록 ID -> 항목 색인을 만들어 재사용한다.
+// (Gmail 목록은 한 화면에 50개 이상 행이 있고, DOM 변경마다 다시 훑기 때문에 누적 비용이 크다)
+let aiDataIndexCache = null;
+let aiDataIndexSource = null;
+
+function buildAiDataIndex(aiDataList) {
+  if (aiDataIndexCache && aiDataIndexSource === aiDataList) return aiDataIndexCache;
+  const index = new Map();
+  for (const item of aiDataList) {
+    if (!item || item.error || !item.labelName) continue;
+    if (item.id) index.set(item.id, item);
+    if (item.threadId && !index.has(item.threadId)) index.set(item.threadId, item);
+  }
+  aiDataIndexCache = index;
+  aiDataIndexSource = aiDataList;
+  return index;
 }
 
 function findAiDataByIds(aiDataList, ids) {
   if (!ids.size) return null;
-  return (
-    aiDataList.find((item) => {
-      if (item.error || !item.labelName) return false;
-      return (item.id && ids.has(item.id)) || (item.threadId && ids.has(item.threadId));
-    }) || null
-  );
+  const index = buildAiDataIndex(aiDataList);
+  for (const id of ids) {
+    const found = index.get(id);
+    if (found) return found;
+  }
+  return null;
 }
 
 function injectListBadges(aiDataList) {

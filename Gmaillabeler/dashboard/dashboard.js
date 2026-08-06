@@ -6,6 +6,23 @@ let selectedLabelName = "";
 let lastReportData = null;
 let selectedPriorityFilter = "all"; // 리포트를 다시 그려도 유지되도록 모듈 스코프에 둔다
 let pollTimer = null;
+let statusChangeListenerAdded = false;
+
+// 백그라운드가 진행률/상태를 storage에 쓰므로 변경 이벤트로 반응하고,
+// 폴링은 이벤트를 놓쳤을 때를 위한 백업으로만 느리게 돌린다.
+const STATUS_POLL_BACKUP_MS = 3000;
+
+function ensureStatusWatch() {
+  if (!pollTimer) pollTimer = setInterval(pollStatus, STATUS_POLL_BACKUP_MS);
+  if (statusChangeListenerAdded) return;
+  statusChangeListenerAdded = true;
+  chrome.storage.onChanged.addListener((changes, areaName) => {
+    if (areaName !== "local") return;
+    if (changes.jobProgress || changes.jobStatus || changes.jobResult || changes.jobError) {
+      pollStatus();
+    }
+  });
+}
 
 const darkModeMql = window.matchMedia("(prefers-color-scheme: dark)");
 
@@ -349,7 +366,7 @@ function pollStatus() {
     }
 
     if (isRunning) {
-      if (!pollTimer) pollTimer = setInterval(pollStatus, 2000);
+      ensureStatusWatch();
     } else if (pollTimer) {
       clearInterval(pollTimer);
       pollTimer = null;
@@ -599,7 +616,7 @@ function startJob(message, okMessage) {
       return;
     }
     if (okMessage) alert(okMessage);
-    if (!pollTimer) pollTimer = setInterval(pollStatus, 2000);
+    ensureStatusWatch();
     pollStatus();
   });
 }

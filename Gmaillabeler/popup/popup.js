@@ -212,6 +212,29 @@ async function main() {
   const progressText = document.getElementById("progressText");
 
   let pollTimer = null;
+  let statusChangeListenerAdded = false;
+
+  // 예전에는 작업 중 1초마다 무조건 상태를 물어봤다. 백그라운드가 진행률/상태를 storage에 쓰므로
+  // 변경 이벤트로 반응하고, 폴링은 이벤트를 놓쳤을 때를 위한 백업으로만 느리게 돌린다.
+  const STATUS_POLL_BACKUP_MS = 3000;
+
+  function ensureStatusWatch() {
+    if (!pollTimer) pollTimer = setInterval(pollStatus, STATUS_POLL_BACKUP_MS);
+    if (statusChangeListenerAdded) return;
+    statusChangeListenerAdded = true;
+    chrome.storage.onChanged.addListener((changes, areaName) => {
+      if (areaName !== "local") return;
+      if (
+        changes.jobProgress ||
+        changes.jobStatus ||
+        changes.jobResult ||
+        changes.jobError ||
+        changes.lastApiError
+      ) {
+        pollStatus();
+      }
+    });
+  }
   let config = { batchSize: 40, maxBatchCountPerRun: 10, maxEmailCountPerRun: 400 };
   let syncing = false;
 
@@ -558,7 +581,7 @@ async function main() {
       }
 
       if (result.jobStatus === "running") {
-        if (!pollTimer) pollTimer = setInterval(pollStatus, 1000);
+        ensureStatusWatch();
       } else if (pollTimer) {
         clearInterval(pollTimer);
         pollTimer = null;
@@ -596,7 +619,7 @@ async function main() {
       }
       showResult(resultBox, response ? translateResponse(response) : t("requestSent"));
       if (response && response.ok) {
-        if (!pollTimer) pollTimer = setInterval(pollStatus, 1000);
+        ensureStatusWatch();
         pollStatus();
       }
     });
@@ -667,7 +690,7 @@ async function main() {
       }
       showResult(repeatResultBox, response ? translateResponse(response) : t("requestSent"));
       if (response && response.ok) {
-        if (!pollTimer) pollTimer = setInterval(pollStatus, 1000);
+        ensureStatusWatch();
         pollStatus();
       }
     });
@@ -709,7 +732,7 @@ async function main() {
       }
       showResult(deleteAllLabelsResultBox, response ? translateResponse(response) : t("requestSent"));
       if (response && response.ok) {
-        if (!pollTimer) pollTimer = setInterval(pollStatus, 1000);
+        ensureStatusWatch();
         pollStatus();
       }
     });
@@ -756,7 +779,7 @@ async function main() {
       }
       showResult(relabelResultBox, response ? translateResponse(response) : t("requestSent"));
       if (response && response.ok) {
-        if (!pollTimer) pollTimer = setInterval(pollStatus, 1000);
+        ensureStatusWatch();
         pollStatus();
       }
     });
@@ -779,7 +802,7 @@ async function main() {
       }
       showResult(dedupeResultBox, response ? translateResponse(response) : t("requestSent"));
       if (response && response.ok) {
-        if (!pollTimer) pollTimer = setInterval(pollStatus, 1000);
+        ensureStatusWatch();
         pollStatus();
       }
     });
@@ -1032,7 +1055,7 @@ async function main() {
       }
       showResult(labelAnalysisResultBox, response ? translateResponse(response) : t("requestSent"));
       if (response && response.ok) {
-        if (!pollTimer) pollTimer = setInterval(pollStatus, 1000);
+        ensureStatusWatch();
         pollStatus();
       }
     });
@@ -1185,7 +1208,7 @@ async function main() {
       }
       showResult(oauthResultBox, response ? translateResponse(response) : t("requestSent"));
       if (response && response.ok) {
-        if (!pollTimer) pollTimer = setInterval(pollStatus, 1000);
+        ensureStatusWatch();
         pollStatus();
       } else {
         showResult(oauthResultBox, t("errorGenericPrefix", [(response && response.error) || ""]));
@@ -1240,7 +1263,7 @@ async function main() {
       }
       showResult(colorResultBox, response ? translateResponse(response) : t("requestSent"));
       if (response && response.ok) {
-        if (!pollTimer) pollTimer = setInterval(pollStatus, 1000);
+        ensureStatusWatch();
         pollStatus();
       }
     });
@@ -1353,7 +1376,7 @@ async function main() {
           return;
         }
         showResult(driveBackupResultBox, response ? translateResponse(response) : t("requestSent"));
-        if (!pollTimer) pollTimer = setInterval(pollStatus, 1000);
+        ensureStatusWatch();
         pollStatus();
         setTimeout(refreshDriveBackupStatus, 2000);
       }
@@ -1384,7 +1407,7 @@ async function main() {
         return;
       }
       showResult(driveBackupResultBox, response ? translateResponse(response) : t("requestSent"));
-      if (!pollTimer) pollTimer = setInterval(pollStatus, 1000);
+      ensureStatusWatch();
       pollStatus();
     });
   });
@@ -1637,7 +1660,7 @@ async function main() {
           if (response && !response.ok) {
             showResult(summaryResultBox, translateResponse(response));
           } else if (response && response.ok) {
-            if (!pollTimer) pollTimer = setInterval(pollStatus, 1000);
+            ensureStatusWatch();
             pollStatus();
           }
         }

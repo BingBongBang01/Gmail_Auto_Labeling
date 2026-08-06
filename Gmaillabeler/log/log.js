@@ -195,19 +195,13 @@ async function main() {
   await refreshLogs();
   refreshStatusAndProgress();
 
-  // 로그는 IndexedDB라 storage.onChanged로 실시간 감지가 안 되니, 가벼운 타임스탬프 변경을 신호로 주기적으로 다시 읽는다.
-  let lastSeenUpdate = 0;
-  setInterval(async () => {
-    const result = await new Promise((resolve) => chrome.storage.local.get(["jobLogsUpdatedAt"], resolve));
-    if ((result.jobLogsUpdatedAt || 0) !== lastSeenUpdate) {
-      lastSeenUpdate = result.jobLogsUpdatedAt || 0;
-      await refreshLogs();
-    }
-  }, 1000);
-
+  // 로그 본문은 IndexedDB에 있어 storage.onChanged로 직접 감지할 수 없지만,
+  // 백그라운드가 남기는 jobLogsUpdatedAt 타임스탬프는 storage 키라서 변경 이벤트로 알 수 있다.
+  // 예전에는 이 값을 1초마다 폴링했는데, 이벤트로 받으면 바뀔 때만 다시 읽으면 된다.
   chrome.storage.onChanged.addListener((changes, areaName) => {
     if (areaName !== "local") return;
     if (changes.jobStatus || changes.jobProgress) refreshStatusAndProgress();
+    if (changes.jobLogsUpdatedAt) refreshLogs();
     if (changes.themeMode) applyThemeFromStorage();
   });
 

@@ -1059,6 +1059,16 @@ async function getOrCreateLabelId(token, labelName, labelCache, categories) {
 
 // 새 라벨을 추가하면서, 이미 붙어있는 "다른 카테고리" 라벨은 함께 제거 (중복 라벨 방지)
 // 하위 라벨("부모/자식") 구조를 쓰므로, 각 최상위 카테고리 자신뿐 아니라 그 밑의 모든 하위 라벨도 제거 대상에 포함시킨다.
+// Gmail 화면에 배지/카드를 그리는 콘텐츠 스크립트에 넘길 데이터.
+// 결과 전체(수천 건)를 storage에 담으면 직렬화 비용과 용량이 커지고, 콘텐츠 스크립트는
+// 변경이 있을 때마다 이걸 전부 다시 읽는다. 실제로 화면에 쓰이는 것만 최근 것 위주로 남긴다.
+const MAX_AI_DATA_FOR_CONTENT_SCRIPT = 300;
+
+function trimAiDataForContentScript(results) {
+  const usable = (results || []).filter((r) => r && r.labelName && !r.error);
+  return usable.slice(0, MAX_AI_DATA_FOR_CONTENT_SCRIPT);
+}
+
 // messages.batchModify는 한 요청에 최대 1000개의 메일 ID를 받는다.
 const GMAIL_BATCH_MODIFY_LIMIT = 1000;
 
@@ -1517,6 +1527,8 @@ async function flushLogs() {
       });
       // 팝업/로그창이 "새 로그 있음"을 감지할 수 있도록 가벼운 타임스탬프만 남김(전체 로그는 IndexedDB에)
       await chrome.storage.local.set({ jobLogsUpdatedAt: Date.now() });
+      logsWrittenSincePrune += batch.length;
+      await pruneOldLogsIfNeeded();
     } catch (e) {
       console.error("로그 저장 실패:", e);
     }
@@ -1524,6 +1536,46 @@ async function flushLogs() {
 
   await logFlushInFlight;
   logFlushInFlight = null;
+}
+
+// 로그는 작업마다 지우지 않고 누적하므로, 무한정 늘어나지 않도록 보존 상한을 둔다.
+const MAX_STORED_LOG_ENTRIES = 5000;
+const LOG_PRUNE_CHECK_EVERY = 200; // 이만큼 기록될 때마다 한 번씩만 확인(매번 count 하면 낭비)
+let logsWrittenSincePrune = 0;
+
+async function pruneOldLogsIfNeeded() {
+  if (logsWrittenSincePrune < LOG_PRUNE_CHECK_EVERY) return;
+  logsWrittenSincePrune = 0;
+  try {
+    const db = await openLogDb();
+    const total = await new Promise((resolve, reject) => {
+      const tx = db.transaction(LOG_STORE_NAME, "readonly");
+      const req = tx.objectStore(LOG_STORE_NAME).count();
+      req.onsuccess = () => resolve(req.result || 0);
+      req.onerror = () => reject(req.error);
+    });
+    const excess = total - MAX_STORED_LOG_ENTRIES;
+    if (excess <= 0) return;
+
+    // id가 autoIncrement라 커서 앞쪽이 항상 가장 오래된 로그다
+    await new Promise((resolve, reject) => {
+      const tx = db.transaction(LOG_STORE_NAME, "readwrite");
+      const cursorReq = tx.objectStore(LOG_STORE_NAME).openCursor();
+      let removed = 0;
+      cursorReq.onsuccess = () => {
+        const cursor = cursorReq.result;
+        if (!cursor || removed >= excess) return;
+        cursor.delete();
+        removed += 1;
+        cursor.continue();
+      };
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
+    console.log(`[GmailLabeler] 오래된 로그 ${excess}건 정리 (보존 상한 ${MAX_STORED_LOG_ENTRIES}건)`);
+  } catch (e) {
+    console.error("오래된 로그 정리 실패:", e);
+  }
 }
 
 async function addLog(message, level, detail) {
@@ -1562,21 +1614,28 @@ async function getRecentLogs(limit = 100) {
   await flushLogs();
   try {
     const db = await openLogDb();
+    // 전체를 읽어와서 뒤에서 자르는 대신, 최신순 커서로 필요한 개수만 읽는다
     return await new Promise((resolve) => {
       const tx = db.transaction(LOG_STORE_NAME, "readonly");
-      const store = tx.objectStore(LOG_STORE_NAME);
-      const req = store.getAll();
-      req.onsuccess = () => {
-        const logs = req.result || [];
-        const mapped = logs.map((item) => ({
+      const cursorReq = tx.objectStore(LOG_STORE_NAME).openCursor(null, "prev");
+      const collected = [];
+      cursorReq.onsuccess = () => {
+        const cursor = cursorReq.result;
+        if (!cursor || collected.length >= limit) {
+          collected.reverse(); // 오래된 것 -> 최신 순으로 되돌림(기존 반환 순서 유지)
+          resolve(collected);
+          return;
+        }
+        const item = cursor.value;
+        collected.push({
           timestamp: item.t || Date.now(),
           level: item.level || "info",
           message: item.message || "",
           detail: item.detail || false,
-        }));
-        resolve(mapped.slice(-limit));
+        });
+        cursor.continue();
       };
-      req.onerror = () => resolve([]);
+      cursorReq.onerror = () => resolve([]);
     });
   } catch (e) {
     return [];
@@ -2986,7 +3045,10 @@ async function processRecentEmails(count) {
   }
 
   const summary = await classifyAndLabelMessages(token, categoryDefs, labelCache, messages, null);
-  await chrome.storage.local.set({ latestAiData: summary.results, latestAiDataUpdatedAt: Date.now() });
+  await chrome.storage.local.set({
+    latestAiData: trimAiDataForContentScript(summary.results),
+    latestAiDataUpdatedAt: Date.now(),
+  });
   return { ...summary, batchSize: BATCH_SIZE };
 }
 
@@ -3161,7 +3223,10 @@ async function processDedupeRelabel() {
 
   await addLog(t("logDedupeRemovedReclassify"));
   const summary = await classifyAndLabelMessages(token, categoryDefs, labelCache, targetMessages, null);
-  await chrome.storage.local.set({ latestAiData: summary.results, latestAiDataUpdatedAt: Date.now() });
+  await chrome.storage.local.set({
+    latestAiData: trimAiDataForContentScript(summary.results),
+    latestAiDataUpdatedAt: Date.now(),
+  });
   return { ...summary, batchSize: BATCH_SIZE };
 }
 
@@ -3193,7 +3258,10 @@ async function processRelabel(labelName, excludeSelf, maxResults) {
     messages,
     excludeSelf ? labelName : null
   );
-  await chrome.storage.local.set({ latestAiData: summary.results, latestAiDataUpdatedAt: Date.now() });
+  await chrome.storage.local.set({
+    latestAiData: trimAiDataForContentScript(summary.results),
+    latestAiDataUpdatedAt: Date.now(),
+  });
   return { ...summary, batchSize: BATCH_SIZE };
 }
 
