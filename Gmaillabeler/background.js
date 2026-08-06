@@ -110,8 +110,6 @@ const MAX_BATCH_COUNT_PER_RUN = 50; // UI 상 설정 가능한 상한. 실제 �
 const MAX_EMAIL_COUNT_PER_RUN = BATCH_SIZE * MAX_BATCH_COUNT_PER_RUN;
 const MAX_MESSAGES_PER_LABEL_FETCH = 1000; // 라벨 하나에서 메일을 조회할 때 한 번에 가져올 상한 (전체 재작업/라벨 정리용)
 
-const NEW_CATEGORY_SENTINEL = "__NEW_CATEGORY__";
-
 const DEFAULT_CATEGORIES = ["보안", "광고", "쇼핑", "공지", "뉴스레터", "업무", "개인", "기타"];
 
 // Gmail 자체 라벨 칩 색상 (콘텐츠 스크립트가 그리는 임시 배지와는 별개, Gmail API로 실제 라벨에 저장됨)
@@ -150,6 +148,41 @@ function getCategoryColor(labelName, categories) {
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+// Gmail 요청을 하나씩 순서대로 기다리면 메일 수백~수천 건 처리 시 왕복 지연이 그대로 누적된다.
+// 사용자당 초당 할당량(250 quota units/s, messages.get = 5 units) 안에서 안전한 수준으로만 동시에 보낸다.
+const GMAIL_FETCH_CONCURRENCY = 8;
+
+// Gemini 분류 배치를 몇 개까지 겹쳐서 진행할지.
+// 분당 요청 수 상한은 throttleGeminiCall()이 따로 지키므로, 이 값은 "응답 대기 시간을 얼마나
+// 겹쳐서 감출지"만 결정한다(값을 올려도 RPM을 더 쓰지는 않는다).
+const GEMINI_BATCH_CONCURRENCY = 3;
+
+// items를 최대 concurrency개씩 동시에 worker에 넘긴다. 결과는 입력 순서를 그대로 유지한다.
+// worker는 스스로 예외를 처리해야 한다(여기서는 개별 실패를 삼키지 않고 그대로 전파).
+async function mapWithConcurrency(items, concurrency, worker) {
+  const results = new Array(items.length);
+  const workerCount = Math.max(1, Math.min(concurrency, items.length));
+  let nextIndex = 0;
+
+  const runners = [];
+  for (let w = 0; w < workerCount; w += 1) {
+    runners.push(
+      (async () => {
+        while (true) {
+          const index = nextIndex;
+          nextIndex += 1;
+          if (index >= items.length) return;
+          if (isCancelled()) return; // 중지되면 남은 항목은 손대지 않는다
+          results[index] = await worker(items[index], index);
+        }
+      })()
+    );
+  }
+
+  await Promise.all(runners);
+  return results;
 }
 
 class JobCancelledError extends Error {
@@ -248,16 +281,6 @@ chrome.runtime.onInstalled.addListener(async (details) => {
 
 function normalizeLabelName(name) {
   return String(name).trim().replace(/\s+/g, "").toLowerCase();
-}
-
-// 두 이름이 사실상 같은 카테고리로 보이는지 판단 (완전일치 또는 포함관계)
-function isSimilarLabelName(a, b) {
-  const na = normalizeLabelName(a);
-  const nb = normalizeLabelName(b);
-  if (!na || !nb) return false;
-  if (na === nb) return true;
-  if (na.length >= 2 && nb.length >= 2 && (na.includes(nb) || nb.includes(na))) return true;
-  return false;
 }
 
 // 예전 버전은 API 키를 하나만 저장했는데, 이제는 여러 개를 등록해서 한 키의 일일 할당량이 다 차면
@@ -500,15 +523,31 @@ const LANGUAGE_NAME_BY_LOCALE = { ko: "한국어", en: "English", ja: "日本語
 async function gmailFetch(url, options) {
   const opts = options || {};
   const token = await getValidAccessToken();
-  const doFetch = (t) =>
-    fetch(url, { ...opts, headers: { ...(opts.headers || {}), Authorization: `Bearer ${t}` } });
 
-  let response = await doFetch(token);
-  if (response.status === 401) {
-    const freshToken = await getValidAccessToken(true);
-    response = await doFetch(freshToken);
+  // 중지 버튼을 누르면 진행 중인 Gmail 요청도 함께 끊기도록 AbortController를 등록한다.
+  // (예전에는 Gemini 요청만 취소돼서, 메일 상세를 수백 건 조회하는 도중 누른 중지가 즉시 반응하지 않았다)
+  const controller = new AbortController();
+  activeJobAbortControllers.add(controller);
+  const doFetch = (tk) =>
+    fetch(url, {
+      ...opts,
+      signal: controller.signal,
+      headers: { ...(opts.headers || {}), Authorization: `Bearer ${tk}` },
+    });
+
+  try {
+    let response = await doFetch(token);
+    if (response.status === 401) {
+      const freshToken = await getValidAccessToken(true);
+      response = await doFetch(freshToken);
+    }
+    return response;
+  } catch (err) {
+    if (isCancelled() || (err && err.name === "AbortError")) throw new JobCancelledError();
+    throw err;
+  } finally {
+    activeJobAbortControllers.delete(controller);
   }
-  return response;
 }
 
 // ---------------- Google Drive 설정 백업/복원 ----------------
@@ -673,26 +712,43 @@ async function processRestoreFromDrive(passphrase) {
   };
 }
 
+// Gmail messages.list는 maxResults 상한이 500이라, 그보다 많이 요청해도 500개만 돌아온다.
+// 따라서 요청 수량을 500 단위로 쪼개고 nextPageToken을 따라가며 원하는 개수만큼 채운다.
+const GMAIL_LIST_PAGE_LIMIT = 500;
+
+async function listMessagesPaged(baseParams, maxResults, errorKey, errorParams) {
+  const wanted = Math.max(1, maxResults || 1);
+  const collected = [];
+  let pageToken = null;
+
+  while (collected.length < wanted) {
+    const params = new URLSearchParams(baseParams);
+    params.set("maxResults", String(Math.min(GMAIL_LIST_PAGE_LIMIT, wanted - collected.length)));
+    if (pageToken) params.set("pageToken", pageToken);
+
+    const response = await gmailFetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages?${params.toString()}`);
+    if (!response.ok) throw new Error(t(errorKey, [...(errorParams || []), response.status]));
+    const data = await response.json();
+    const page = data.messages || [];
+    collected.push(...page);
+    pageToken = data.nextPageToken || null;
+    // 다음 페이지가 없거나 빈 페이지가 오면 더 가져올 게 없다(무한 루프 방지)
+    if (!pageToken || page.length === 0) break;
+    if (isCancelled()) break;
+  }
+
+  return collected.slice(0, wanted);
+}
+
 async function getRecentMessages(token, maxResults, categories) {
   // 카테고리 라벨이 하나라도 이미 붙어있는 메일은 제외 -> 재실행 시 이미 분류된 메일 재연산 방지
   const excludeQuery = (categories || []).map((c) => `-label:"${c}"`).join(" ");
-  const q = excludeQuery ? `?maxResults=${maxResults}&q=${encodeURIComponent(excludeQuery)}` : `?maxResults=${maxResults}`;
-  const response = await gmailFetch(
-    `https://gmail.googleapis.com/gmail/v1/users/me/messages${q}`
-  );
-  if (!response.ok) throw new Error(t("errMessageListFailed", [response.status]));
-  const data = await response.json();
-  return data.messages || [];
+  const params = excludeQuery ? { q: excludeQuery } : {};
+  return await listMessagesPaged(params, maxResults, "errMessageListFailed");
 }
 
 async function getMessagesByLabelName(token, labelName, maxResults) {
-  const query = `label:"${labelName}"`;
-  const response = await gmailFetch(
-    `https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=${maxResults}&q=${encodeURIComponent(query)}`
-  );
-  if (!response.ok) throw new Error(t("errLabelMessageListFailed", [labelName, response.status]));
-  const data = await response.json();
-  return data.messages || [];
+  return await listMessagesPaged({ q: `label:"${labelName}"` }, maxResults, "errLabelMessageListFailed", [labelName]);
 }
 
 function decodeBase64Url(data) {
@@ -779,10 +835,36 @@ function extractEmailText(payload) {
 const PROMO_FOOTER_PATTERN = /(수신\s*거부|구독\s*취소|프로모션\s*이메일|마케팅\s*(이메일|메일)|marketing\s*emails?|unsubscribe)/i;
 const MAX_BODY_CHARS_FOR_AI = 350;
 
+// 빠른 모드: 본문 전체(format=full)를 받지 않고 필요한 헤더 3개 + Gmail 자동 미리보기(snippet)만 받는다.
+// 전송량이 메일당 수십 KB에서 1KB 안쪽으로 줄지만, 본문 하단의 "수신거부/프로모션" 신호를 못 보므로
+// 광고성 메일 판별 정확도가 떨어질 수 있다. 그래서 기본값은 꺼짐이고 사용자가 직접 켜야 한다.
+const LIGHT_FETCH_METADATA_HEADERS = ["Subject", "From", "Date"];
+let lightMailFetchCache = null;
+
+async function isLightMailFetchEnabled() {
+  if (lightMailFetchCache !== null) return lightMailFetchCache;
+  const stored = await chrome.storage.local.get(["lightMailFetchEnabled"]);
+  lightMailFetchCache = stored.lightMailFetchEnabled === true;
+  return lightMailFetchCache;
+}
+
+// 설정이 바뀌면 캐시를 버려서 다음 작업에 바로 반영되게 한다
+chrome.storage.onChanged.addListener((changes, areaName) => {
+  if (areaName === "local" && changes.lightMailFetchEnabled) lightMailFetchCache = null;
+});
+
+function buildEmailContentUrl(messageId, lightMode) {
+  const base = `https://gmail.googleapis.com/gmail/v1/users/me/messages/${messageId}`;
+  if (lightMode) {
+    const headerParams = LIGHT_FETCH_METADATA_HEADERS.map((h) => `metadataHeaders=${h}`).join("&");
+    return `${base}?format=metadata&${headerParams}`;
+  }
+  return `${base}?format=full`;
+}
+
 async function getEmailContent(token, messageId) {
-  const response = await gmailFetch(
-    `https://gmail.googleapis.com/gmail/v1/users/me/messages/${messageId}?format=full`
-  );
+  const lightMode = await isLightMailFetchEnabled();
+  const response = await gmailFetch(buildEmailContentUrl(messageId, lightMode));
   if (!response.ok) throw new Error(t("errMessageContentFailed", [response.status]));
   const data = await response.json();
 
@@ -920,6 +1002,17 @@ async function initGeminiAndGmailContext() {
   return { categoryDefs, categories, token, labelCache };
 }
 
+// Gmail 라벨 이름을 실제로 바꾼 뒤, 메모리에 들고 있는 라벨 캐시도 같이 옮겨준다.
+function renameInLabelCache(labelCache, oldName, newName, labelId) {
+  if (!labelCache || !labelCache.exact) return;
+  labelCache.exact.delete(oldName);
+  labelCache.exact.set(newName, labelId);
+  if (labelCache.normalized) {
+    labelCache.normalized.delete(normalizeLabelName(oldName));
+    labelCache.normalized.set(normalizeLabelName(newName), { id: labelId, name: newName });
+  }
+}
+
 async function getOrCreateLabelId(token, labelName, labelCache, categories) {
   if (labelCache.exact.has(labelName)) {
     return { id: labelCache.exact.get(labelName), name: labelName };
@@ -966,16 +1059,53 @@ async function getOrCreateLabelId(token, labelName, labelCache, categories) {
 
 // 새 라벨을 추가하면서, 이미 붙어있는 "다른 카테고리" 라벨은 함께 제거 (중복 라벨 방지)
 // 하위 라벨("부모/자식") 구조를 쓰므로, 각 최상위 카테고리 자신뿐 아니라 그 밑의 모든 하위 라벨도 제거 대상에 포함시킨다.
-async function applyLabelExclusive(token, detail, newLabel, allCategories, labelCache) {
-  const topLevelSet = new Set(allCategories.map((c) => c.split("/")[0]));
-  const categoryLabelIds = [];
-  for (const [name, id] of labelCache.exact.entries()) {
-    if (id === newLabel.id) continue;
-    const topLevel = name.split("/")[0];
-    if (topLevelSet.has(topLevel)) categoryLabelIds.push(id);
-  }
+// Gmail 화면에 배지/카드를 그리는 콘텐츠 스크립트에 넘길 데이터.
+// 결과 전체(수천 건)를 storage에 담으면 직렬화 비용과 용량이 커지고, 콘텐츠 스크립트는
+// 변경이 있을 때마다 이걸 전부 다시 읽는다. 실제로 화면에 쓰이는 것만 최근 것 위주로 남긴다.
+const MAX_AI_DATA_FOR_CONTENT_SCRIPT = 300;
 
-  const removeLabelIds = (detail.labelIds || []).filter((id) => categoryLabelIds.includes(id));
+function trimAiDataForContentScript(results) {
+  const usable = (results || []).filter((r) => r && r.labelName && !r.error);
+  return usable.slice(0, MAX_AI_DATA_FOR_CONTENT_SCRIPT);
+}
+
+// messages.batchModify는 한 요청에 최대 1000개의 메일 ID를 받는다.
+const GMAIL_BATCH_MODIFY_LIMIT = 1000;
+
+// "우리가 관리하는 카테고리"에 속한 Gmail 라벨 ID 전체.
+// 메일마다 labelCache를 다시 순회하던 계산을 한 번만 하기 위해 분리했다.
+function collectManagedLabelIds(labelCache, allCategories) {
+  const topLevelSet = new Set(allCategories.map((c) => c.split("/")[0]));
+  const ids = new Set();
+  for (const [name, id] of labelCache.exact.entries()) {
+    if (topLevelSet.has(name.split("/")[0])) ids.add(id);
+  }
+  return ids;
+}
+
+// 이 메일에 이미 붙어있는 "다른 카테고리 라벨"들 - 배타 적용을 위해 떼어낼 대상.
+// 그룹핑 키로도 쓰이므로 순서를 정렬해서 같은 조합이 항상 같은 키가 되도록 한다.
+function computeExclusiveRemovals(detail, newLabel, managedLabelIds) {
+  return (detail.labelIds || []).filter((id) => id !== newLabel.id && managedLabelIds.has(id)).sort();
+}
+
+async function batchModifyLabels(messageIds, addLabelIds, removeLabelIds) {
+  if (!messageIds.length) return;
+  const body = { ids: messageIds, addLabelIds };
+  if (removeLabelIds && removeLabelIds.length) body.removeLabelIds = removeLabelIds;
+
+  const response = await gmailFetch("https://gmail.googleapis.com/gmail/v1/users/me/messages/batchModify", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!response.ok) throw new Error(t("errLabelApplyFailed", [response.status]));
+}
+
+// batchModify가 실패한 묶음을 메일 단위로 다시 시도할 때 쓰는 단건 경로.
+async function applyLabelExclusive(token, detail, newLabel, allCategories, labelCache, managedLabelIds) {
+  const managed = managedLabelIds || collectManagedLabelIds(labelCache, allCategories);
+  const removeLabelIds = computeExclusiveRemovals(detail, newLabel, managed);
 
   const body = { addLabelIds: [newLabel.id] };
   if (removeLabelIds.length) body.removeLabelIds = removeLabelIds;
@@ -999,12 +1129,25 @@ const INTERVAL_BACKOFF_MULTIPLIER = 1.6;
 const INTERVAL_RECOVERY_MULTIPLIER = 0.92;
 const DAILY_QUOTA_TEXT_PATTERN = /(per\s*day|daily|quota[^"]*day)/i;
 
+// RPM 슬롯 확보는 반드시 한 번에 하나씩 순서대로 이뤄져야 한다.
+// (예전 구현은 동시 호출이 모두 같은 lastGeminiCallAt을 읽어서, 병렬로 부르면 간격 제한이 무력화됐다)
+let geminiThrottleQueue = Promise.resolve();
+
 async function throttleGeminiCall() {
-  const now = Date.now();
-  const wait = lastGeminiCallAt + currentCallIntervalMs - now;
-  if (wait > 0) await sleep(wait);
+  const myTurn = geminiThrottleQueue.then(async () => {
+    const wait = lastGeminiCallAt + currentCallIntervalMs - Date.now();
+    if (wait > 0) await sleep(wait);
+    // 슬롯을 잡은 시각을 기록 - 응답을 기다리는 시간은 포함되지 않으므로,
+    // 다음 요청은 앞 요청의 응답을 기다리는 동안 출발할 수 있다(파이프라이닝).
+    lastGeminiCallAt = Date.now();
+  });
+  // 실패해도 뒤에 줄 선 호출이 막히지 않게 체인은 항상 성공으로 이어붙인다
+  geminiThrottleQueue = myTurn.then(
+    () => {},
+    () => {}
+  );
+  await myTurn;
   if (isCancelled()) throw new JobCancelledError();
-  lastGeminiCallAt = Date.now();
 }
 
 function increaseThrottleInterval() {
@@ -1018,9 +1161,16 @@ function decayThrottleInterval() {
 // ---------------- API 할당량 추정 (자체 추적, Google 공식 실시간 쿼터 조회가 아님) ----------------
 // Gemini API는 API 키만으로는 남은 쿼터를 조회하는 공식 엔드포인트가 없어서,
 // 우리가 실제로 보낸 요청 수를 로컬에 자정 기준으로 누적 기록해서 "오늘 RPD 중 얼마나 썼는지"를 추정치로 보여준다.
+// Gemini의 RPD는 태평양시(America/Los_Angeles) 자정에 리셋되므로, 로컬 자정이 아니라
+// 태평양시 날짜를 기준으로 누적해야 실제 리셋 시점과 어긋나지 않는다.
 function getTodayString() {
-  const d = new Date();
-  return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
+  try {
+    // en-CA 로케일은 YYYY-MM-DD 형식을 준다
+    return new Intl.DateTimeFormat("en-CA", { timeZone: "America/Los_Angeles" }).format(new Date());
+  } catch (e) {
+    const d = new Date();
+    return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
+  }
 }
 
 async function recordGeminiUsage(apiKey) {
@@ -1101,6 +1251,21 @@ function getSubLabelCandidates(parentCategory, labelCache) {
 // Gemini generateContent 호출 공용 래퍼: 429 재시도/속도 적응 조절/일일 한도 감지/사용량 기록을 한 곳에서 처리.
 // 등록된 키가 여러 개면, 한 키가 일일 한도에 도달했을 때 자동으로 다음 키로 넘어가서 재시도한다(모든 키 소진 시에만 중단).
 // requestBody의 responseSchema에 맞는 파싱된 JSON(배열 또는 객체)을 반환한다.
+// Retry-After는 초 단위 정수뿐 아니라 HTTP-date 형식으로도 올 수 있다.
+// 예전에는 parseFloat만 써서 HTTP-date인 경우 NaN -> sleep(NaN)으로 백오프가 사라졌다.
+function parseRetryAfterMs(headerValue) {
+  if (!headerValue) return null;
+  const raw = String(headerValue).trim();
+  if (/^\d+(\.\d+)?$/.test(raw)) {
+    return Math.max(0, Math.round(parseFloat(raw) * 1000));
+  }
+  const at = Date.parse(raw);
+  if (!Number.isNaN(at)) {
+    return Math.max(0, at - Date.now());
+  }
+  return null;
+}
+
 async function callGeminiForJson(requestBody, triedKeys) {
   const excluded = triedKeys || new Set();
   const keyEntry = await pickAvailableGeminiKey(excluded);
@@ -1149,8 +1314,7 @@ async function callGeminiForJson(requestBody, triedKeys) {
       if (attempt > maxRetries) {
         throw new Error(t("errGemini429Retries", [errText.slice(0, 200)]));
       }
-      const retryAfterHeader = response.headers.get("Retry-After");
-      const backoffMs = retryAfterHeader ? parseFloat(retryAfterHeader) * 1000 : currentCallIntervalMs * attempt;
+      const backoffMs = parseRetryAfterMs(response.headers.get("Retry-After")) ?? currentCallIntervalMs * attempt;
       await addLog(t("logGemini429Retry", [currentCallIntervalMs, attempt, maxRetries]), "warn");
       await sleep(backoffMs);
       if (isCancelled()) throw new JobCancelledError();
@@ -1162,16 +1326,24 @@ async function callGeminiForJson(requestBody, triedKeys) {
       throw new Error(t("errGeminiHttpError", [response.status, errText.slice(0, 200)]));
     }
 
+    // 여기까지 왔으면 요청은 실제로 소비됐다. 응답 파싱이 실패해도 할당량 추정에서 누락되지 않게
+    // 파싱 전에 사용량을 먼저 기록한다.
+    await recordGeminiUsage(apiKey);
+    decayThrottleInterval();
+
     const data = await response.json();
     const textResult = data.candidates?.[0]?.content?.parts?.[0]?.text;
     if (!textResult) throw new Error(t("errGeminiNoResult"));
 
     const cleaned = textResult.replace(/```json/g, "").replace(/```/g, "").trim();
-    const parsed = JSON.parse(cleaned);
-
-    await recordGeminiUsage(apiKey);
-    decayThrottleInterval();
-    return parsed;
+    try {
+      return JSON.parse(cleaned);
+    } catch (parseErr) {
+      // 응답이 중간에 잘리는 경우가 있어, raw 파서 오류 대신 무슨 일인지 알 수 있는 메시지로 감싼다.
+      const err = new Error(`Gemini 응답을 JSON으로 해석할 수 없습니다: ${String(parseErr.message || parseErr)} / 응답 앞부분: ${cleaned.slice(0, 200)}`);
+      err.isGeminiJsonParseError = true;
+      throw err;
+    }
   }
 }
 
@@ -1265,7 +1437,31 @@ function abortActiveJobRequests() {
   for (const controller of activeJobAbortControllers) controller.abort();
 }
 
+// IndexedDB 연결은 한 번만 열어 재사용한다.
+// 예전에는 로그 한 줄마다 indexedDB.open()을 새로 호출해서, 대량 처리 시 연결 생성 비용이
+// 로그 쓰기 자체보다 커지는 문제가 있었다.
+let logDbPromise = null;
+
 function openLogDb() {
+  if (logDbPromise) return logDbPromise;
+  logDbPromise = openLogDbConnection().then((db) => {
+    // 다른 컨텍스트가 버전을 올리려 하면 우리 연결을 닫아주고 캐시를 비운다(다음 호출에서 새로 연결)
+    db.onversionchange = () => {
+      db.close();
+      logDbPromise = null;
+    };
+    db.onclose = () => {
+      logDbPromise = null;
+    };
+    return db;
+  });
+  logDbPromise.catch(() => {
+    logDbPromise = null;
+  });
+  return logDbPromise;
+}
+
+function openLogDbConnection() {
   return new Promise((resolve, reject) => {
     const req = indexedDB.open(LOG_DB_NAME, LOG_DB_VERSION);
     req.onupgradeneeded = () => {
@@ -1287,25 +1483,119 @@ function openLogDb() {
   });
 }
 
-async function addLog(message, level, detail) {
-  const lvl = level || "info";
-  console.log(`[GmailLabeler] ${message}`);
+// 로그는 한 줄마다 트랜잭션 + storage.local.set을 하지 않고 버퍼에 모아 한 번에 기록한다.
+// (메일 수천 건을 처리할 때 로그 쓰기와 storage 변경 브로드캐스트가 전체 처리 시간을 지배했다)
+const LOG_FLUSH_INTERVAL_MS = 250;
+const LOG_FLUSH_MAX_PENDING = 25;
+
+let pendingLogEntries = [];
+let logFlushTimer = null;
+let logFlushInFlight = null;
+
+function scheduleLogFlush() {
+  if (logFlushTimer) return;
+  logFlushTimer = setTimeout(() => {
+    logFlushTimer = null;
+    flushLogs();
+  }, LOG_FLUSH_INTERVAL_MS);
+}
+
+async function flushLogs() {
+  if (logFlushTimer) {
+    clearTimeout(logFlushTimer);
+    logFlushTimer = null;
+  }
+  // 동시에 여러 flush가 겹치지 않도록 직렬화
+  if (logFlushInFlight) {
+    await logFlushInFlight;
+    if (!pendingLogEntries.length) return;
+  }
+  if (!pendingLogEntries.length) return;
+
+  const batch = pendingLogEntries;
+  pendingLogEntries = [];
+
+  logFlushInFlight = (async () => {
+    try {
+      const db = await openLogDb();
+      await new Promise((resolve, reject) => {
+        const tx = db.transaction(LOG_STORE_NAME, "readwrite");
+        const store = tx.objectStore(LOG_STORE_NAME);
+        for (const entry of batch) store.add(entry);
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => reject(tx.error);
+      });
+      // 팝업/로그창이 "새 로그 있음"을 감지할 수 있도록 가벼운 타임스탬프만 남김(전체 로그는 IndexedDB에)
+      await chrome.storage.local.set({ jobLogsUpdatedAt: Date.now() });
+      logsWrittenSincePrune += batch.length;
+      await pruneOldLogsIfNeeded();
+    } catch (e) {
+      console.error("로그 저장 실패:", e);
+    }
+  })();
+
+  await logFlushInFlight;
+  logFlushInFlight = null;
+}
+
+// 로그는 작업마다 지우지 않고 누적하므로, 무한정 늘어나지 않도록 보존 상한을 둔다.
+const MAX_STORED_LOG_ENTRIES = 5000;
+const LOG_PRUNE_CHECK_EVERY = 200; // 이만큼 기록될 때마다 한 번씩만 확인(매번 count 하면 낭비)
+let logsWrittenSincePrune = 0;
+
+async function pruneOldLogsIfNeeded() {
+  if (logsWrittenSincePrune < LOG_PRUNE_CHECK_EVERY) return;
+  logsWrittenSincePrune = 0;
   try {
     const db = await openLogDb();
+    const total = await new Promise((resolve, reject) => {
+      const tx = db.transaction(LOG_STORE_NAME, "readonly");
+      const req = tx.objectStore(LOG_STORE_NAME).count();
+      req.onsuccess = () => resolve(req.result || 0);
+      req.onerror = () => reject(req.error);
+    });
+    const excess = total - MAX_STORED_LOG_ENTRIES;
+    if (excess <= 0) return;
+
+    // id가 autoIncrement라 커서 앞쪽이 항상 가장 오래된 로그다
     await new Promise((resolve, reject) => {
       const tx = db.transaction(LOG_STORE_NAME, "readwrite");
-      tx.objectStore(LOG_STORE_NAME).add({ t: Date.now(), level: lvl, message, detail: !!detail });
+      const cursorReq = tx.objectStore(LOG_STORE_NAME).openCursor();
+      let removed = 0;
+      cursorReq.onsuccess = () => {
+        const cursor = cursorReq.result;
+        if (!cursor || removed >= excess) return;
+        cursor.delete();
+        removed += 1;
+        cursor.continue();
+      };
       tx.oncomplete = () => resolve();
       tx.onerror = () => reject(tx.error);
     });
+    console.log(`[GmailLabeler] 오래된 로그 ${excess}건 정리 (보존 상한 ${MAX_STORED_LOG_ENTRIES}건)`);
   } catch (e) {
-    console.error("로그 저장 실패:", e);
+    console.error("오래된 로그 정리 실패:", e);
   }
-  // 팝업/로그창이 "새 로그 있음"을 감지할 수 있도록 가벼운 타임스탬프만 별도로 남김(전체 로그는 IndexedDB에)
-  await chrome.storage.local.set({ jobLogsUpdatedAt: Date.now() });
+}
+
+async function addLog(message, level, detail) {
+  const lvl = level || "info";
+  console.log(`[GmailLabeler] ${message}`);
+  pendingLogEntries.push({ t: Date.now(), level: lvl, message, detail: !!detail });
+  if (pendingLogEntries.length >= LOG_FLUSH_MAX_PENDING) {
+    await flushLogs();
+    return;
+  }
+  scheduleLogFlush();
 }
 
 async function clearLogs() {
+  // 버퍼에 남은 로그가 나중에 되살아나지 않도록 함께 버린다
+  pendingLogEntries = [];
+  if (logFlushTimer) {
+    clearTimeout(logFlushTimer);
+    logFlushTimer = null;
+  }
   try {
     const db = await openLogDb();
     await new Promise((resolve, reject) => {
@@ -1320,30 +1610,69 @@ async function clearLogs() {
 }
 
 async function getRecentLogs(limit = 100) {
+  // 아직 디스크에 안 내려간 버퍼 로그도 조회 결과에 보이도록 먼저 flush
+  await flushLogs();
   try {
     const db = await openLogDb();
+    // 전체를 읽어와서 뒤에서 자르는 대신, 최신순 커서로 필요한 개수만 읽는다
     return await new Promise((resolve) => {
       const tx = db.transaction(LOG_STORE_NAME, "readonly");
-      const store = tx.objectStore(LOG_STORE_NAME);
-      const req = store.getAll();
-      req.onsuccess = () => {
-        const logs = req.result || [];
-        const mapped = logs.map((item) => ({
+      const cursorReq = tx.objectStore(LOG_STORE_NAME).openCursor(null, "prev");
+      const collected = [];
+      cursorReq.onsuccess = () => {
+        const cursor = cursorReq.result;
+        if (!cursor || collected.length >= limit) {
+          collected.reverse(); // 오래된 것 -> 최신 순으로 되돌림(기존 반환 순서 유지)
+          resolve(collected);
+          return;
+        }
+        const item = cursor.value;
+        collected.push({
           timestamp: item.t || Date.now(),
           level: item.level || "info",
           message: item.message || "",
           detail: item.detail || false,
-        }));
-        resolve(mapped.slice(-limit));
+        });
+        cursor.continue();
       };
-      req.onerror = () => resolve([]);
+      cursorReq.onerror = () => resolve([]);
     });
   } catch (e) {
     return [];
   }
 }
 
-async function updateProgress(progress) {
+// 진행률도 항목마다 storage에 쓰면(=모든 확장 컨텍스트에 변경 이벤트 브로드캐스트) 비용이 크다.
+// 팝업/대시보드가 1~2초 주기로 읽어가므로 그보다 잦게 쓸 이유가 없어 최소 간격을 둔다.
+const PROGRESS_WRITE_INTERVAL_MS = 800;
+let lastProgressWriteAt = 0;
+let pendingProgressValue = null;
+let progressFlushTimer = null;
+
+async function updateProgress(progress, options) {
+  const force = !!(options && options.force);
+  const now = Date.now();
+
+  if (!force && now - lastProgressWriteAt < PROGRESS_WRITE_INTERVAL_MS) {
+    // 마지막 값은 반드시 반영되도록, 스킵한 값을 예약해둔다
+    pendingProgressValue = progress;
+    if (!progressFlushTimer) {
+      progressFlushTimer = setTimeout(() => {
+        progressFlushTimer = null;
+        const queued = pendingProgressValue;
+        pendingProgressValue = null;
+        if (queued) writeProgress(queued);
+      }, PROGRESS_WRITE_INTERVAL_MS - (now - lastProgressWriteAt));
+    }
+    return;
+  }
+
+  pendingProgressValue = null;
+  await writeProgress(progress);
+}
+
+async function writeProgress(progress) {
+  lastProgressWriteAt = Date.now();
   await chrome.storage.local.set({ jobProgress: progress });
 
   try {
@@ -1373,21 +1702,41 @@ function isCancelled() {
 // ---------------- 수동 정정 학습 ----------------
 // 우리가 라벨을 붙일 때마다 "이 메일엔 이 라벨을 붙였다"를 기록해두고, 다음 실행 때 그중 일부를 다시 확인해서
 // 사용자가 그 사이 직접 다른 라벨로 바꿔놓았으면("정정") 그 사례를 모아 프롬프트에 참고 예시로 넣는다.
+// 히스토리 샘플 확인은 메일 상세를 샘플 수만큼 Gmail에 조회하므로, 매 실행마다 돌리면 낭비가 크다.
+// 마지막 확인 후 이 간격이 지났을 때만 다시 확인한다.
+const CORRECTION_SCAN_INTERVAL_MS = 6 * 60 * 60 * 1000;
+
+async function shouldScanCorrectionHistory() {
+  const stored = await chrome.storage.local.get(["lastCorrectionScanAt"]);
+  const last = Number(stored.lastCorrectionScanAt) || 0;
+  return Date.now() - last >= CORRECTION_SCAN_INTERVAL_MS;
+}
+
+async function markCorrectionHistoryScanned() {
+  await chrome.storage.local.set({ lastCorrectionScanAt: Date.now() });
+}
+
 const MAX_HISTORY_SAMPLE_PER_RUN = 40; // 매 실행마다 확인할 과거 기록 샘플 수 (너무 많으면 API 호출이 늘어남)
 const MAX_CORRECTION_EXAMPLES = 15; // 프롬프트에 넣을 정정 사례 최대 개수
 
-async function recordLabelHistory(messageId, subject, from, labelName) {
+// 여러 건의 히스토리를 한 트랜잭션으로 기록한다(건당 트랜잭션은 대량 처리 시 비용이 크다).
+async function recordLabelHistoryBatch(entries) {
+  if (!entries || !entries.length) return;
   try {
     const db = await openLogDb();
+    const now = Date.now();
     await new Promise((resolve, reject) => {
       const tx = db.transaction(HISTORY_STORE_NAME, "readwrite");
-      tx.objectStore(HISTORY_STORE_NAME).put({
-        messageId,
-        subject: (subject || "").slice(0, 120),
-        from: (from || "").slice(0, 120),
-        labelName,
-        appliedAt: Date.now(),
-      });
+      const store = tx.objectStore(HISTORY_STORE_NAME);
+      for (const entry of entries) {
+        store.put({
+          messageId: entry.messageId,
+          subject: (entry.subject || "").slice(0, 120),
+          from: (entry.from || "").slice(0, 120),
+          labelName: entry.labelName,
+          appliedAt: now,
+        });
+      }
       tx.oncomplete = () => resolve();
       tx.onerror = () => reject(tx.error);
     });
@@ -1449,15 +1798,20 @@ async function getCorrectionExamples(labelCache, categories) {
   // 최근 것 위주로 샘플링 (오래된 것보다 최근 정정이 더 의미 있음)
   const sample = [...history].sort((a, b) => b.appliedAt - a.appliedAt).slice(0, MAX_HISTORY_SAMPLE_PER_RUN);
 
-  const examples = [];
-  for (const entry of sample) {
-    if (examples.length >= MAX_CORRECTION_EXAMPLES) break;
-    let labelIds;
+  // 라벨 ID 조회(읽기 전용)는 병렬로 먼저 끝내고, 기록 갱신은 아래에서 순서대로 처리한다.
+  const labelIdsBySampleIndex = await mapWithConcurrency(sample, GMAIL_FETCH_CONCURRENCY, async (entry) => {
     try {
-      labelIds = await getMessageLabelIdsLight(entry.messageId);
+      return await getMessageLabelIdsLight(entry.messageId);
     } catch (e) {
-      continue; // 삭제된 메일 등 - 무시
+      return null; // 삭제된 메일 등 - 무시
     }
+  });
+
+  const examples = [];
+  for (let i = 0; i < sample.length; i += 1) {
+    const entry = sample[i];
+    if (examples.length >= MAX_CORRECTION_EXAMPLES) break;
+    const labelIds = labelIdsBySampleIndex[i];
     if (!labelIds) continue;
 
     // 이 메일에 지금 붙어있는 "우리가 관리하는 카테고리" 라벨을 전부 모은다(기존 라벨을 안 지우고 새 라벨만 추가한 경우 대비)
@@ -1493,6 +1847,10 @@ function buildCorrectionHintText(examples) {
 // ---------------- 정정 패턴 누적 학습 ----------------
 // "A 라벨로 분류했는데 사용자가 B로 바꿈"이 반복되는 패턴을 모아뒀다가, 충분히 반복되면(신뢰도 확보)
 // B 카테고리의 "분류 기준 설명"을 AI가 요약해서 자동으로 채워넣는다. 우연한 예외 한두 건으로는 반응하지 않는다.
+// 분류 파이프라인 도중에는 예산 밖 Gemini 호출이 생기지 않도록 자동 학습을 미뤄둔다.
+let deferInlineCategoryLearning = false;
+const deferredLearningPatternKeys = new Set();
+
 const CORRECTION_PATTERN_THRESHOLD = 5; // 같은 패턴이 이만큼 쌓이면 자동 학습을 실행
 const MAX_PATTERN_EXAMPLES_STORED = 12;
 
@@ -1536,6 +1894,12 @@ async function recordCorrectionPattern(fromLabel, toLabel, subject, from) {
   await saveCorrectionPattern(existing);
 
   if (existing.count >= CORRECTION_PATTERN_THRESHOLD) {
+    if (deferInlineCategoryLearning) {
+      // 분류 파이프라인 도중에는 Gemini를 추가로 호출하지 않는다.
+      // (예산 계산 밖의 호출이라 그대로 두면 일일 할당량을 넘길 수 있음) -> 분류가 끝난 뒤 한 번에 처리
+      deferredLearningPatternKeys.add(key);
+      return;
+    }
     await applyLearnedCategoryDescription(existing);
     // 학습 반영 후 카운트를 초기화(예시는 남겨둠) - 같은 패턴이 더 쌓이면 다시 한번 다듬을 수 있게
     existing.count = 0;
@@ -1543,11 +1907,33 @@ async function recordCorrectionPattern(fromLabel, toLabel, subject, from) {
   }
 }
 
+// 분류 도중에 밀어둔 자동 학습을 분류가 끝난 뒤 실행하고, 실제로 쓴 Gemini 요청 수를 돌려준다.
+// 이렇게 해야 requestsUsed 집계에 빠짐없이 반영된다.
+async function flushDeferredCategoryLearning() {
+  const keys = [...deferredLearningPatternKeys];
+  deferredLearningPatternKeys.clear();
+  let requestsUsed = 0;
+
+  for (const key of keys) {
+    if (isCancelled()) break;
+    const pattern = await getCorrectionPattern(key);
+    if (!pattern || pattern.count < CORRECTION_PATTERN_THRESHOLD) continue;
+    const applied = await applyLearnedCategoryDescription(pattern);
+    if (applied) requestsUsed += 1;
+    pattern.count = 0;
+    await saveCorrectionPattern(pattern);
+  }
+
+  return requestsUsed;
+}
+
 // 반복된 정정 패턴을 근거로, toLabel 카테고리의 분류 기준 설명을 Gemini로 요약해서 자동 채워넣는다.
+// Gemini 요청을 실제로 소비했으면 true를 돌려준다(호출자가 requestsUsed에 합산).
 async function applyLearnedCategoryDescription(pattern) {
+  let requestConsumed = false;
   try {
     const apiKeys = await getGeminiApiKeys();
-    if (!apiKeys.length) return;
+    if (!apiKeys.length) return false;
 
     const exampleText = pattern.examples
       .slice(-CORRECTION_PATTERN_THRESHOLD)
@@ -1575,8 +1961,9 @@ async function applyLearnedCategoryDescription(pattern) {
     };
 
     const result = await callGeminiForJson(requestBody);
+    requestConsumed = true;
     const newNote = (result && result.description && result.description.trim()) || "";
-    if (!newNote) return;
+    if (!newNote) return requestConsumed;
 
     const categoryDefs = await getCategoryDefinitions();
     const existingIdx = categoryDefs.findIndex((c) => c.name === pattern.toLabel);
@@ -1599,6 +1986,7 @@ async function applyLearnedCategoryDescription(pattern) {
   } catch (e) {
     console.error("정정 패턴 자동 학습 실패:", e);
   }
+  return requestConsumed;
 }
 
 const MAX_LABEL_ANALYSIS_SAMPLE = 40; // 라벨 분석 시 한 번에 살펴볼 메일 샘플 상한
@@ -1647,6 +2035,23 @@ async function processTranslateCategories(targetLocale) {
     return { ...c, name: found.name, description: found.description || c.description, autoLearned: false };
   });
 
+  // 서로 다른 카테고리가 같은 이름으로 번역되면 Gmail 라벨 이름이 충돌해서 PATCH가 실패한다.
+  // 저장 데이터와 실제 라벨이 어긋나지 않도록, 중복 이름은 여기서 미리 구분해둔다.
+  const usedNames = new Set();
+  for (const def of translatedDefs) {
+    let candidate = def.name;
+    let suffix = 2;
+    while (usedNames.has(normalizeLabelName(candidate))) {
+      candidate = `${def.name} ${suffix}`;
+      suffix += 1;
+    }
+    if (candidate !== def.name) {
+      await addLog(t("logTranslateNameConflict", [def.name, candidate]), "warn");
+      def.name = candidate;
+    }
+    usedNames.add(normalizeLabelName(candidate));
+  }
+
   // 실제 Gmail 라벨 이름도 함께 변경 (하위 라벨이 남아있으면 "새이름/자식" 형태로 함께 이동)
   for (let i = 0; i < categoryDefs.length; i += 1) {
     const oldName = categoryDefs[i].name;
@@ -1662,13 +2067,20 @@ async function processTranslateCategories(targetLocale) {
           body: JSON.stringify({ name: newName }),
         });
         if (resp.ok) {
+          // 캐시를 갱신하지 않으면 이후 단계(하위 라벨 처리·다음 작업)가 존재하지 않는 옛 이름을 계속 참조한다.
+          renameInLabelCache(labelCache, oldName, newName, labelId);
           await addLog(t("logTranslateLabelRenamed", [oldName, newName]));
         } else {
           const errText = await resp.text();
+          // 라벨 이름 변경이 실패했으면 저장 데이터도 옛 이름을 유지해야 실제 Gmail 상태와 어긋나지 않는다.
+          translatedDefs[i] = { ...translatedDefs[i], name: oldName };
           await addLog(t("logTranslateLabelRenameFailed", [oldName, newName, errText.slice(0, 150)]), "error");
+          continue;
         }
       } catch (e) {
+        translatedDefs[i] = { ...translatedDefs[i], name: oldName };
         await addLog(t("logTranslateLabelRenameFailed", [oldName, newName, String(e.message || e)]), "error");
+        continue;
       }
     }
 
@@ -1681,6 +2093,7 @@ async function processTranslateCategories(targetLocale) {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ name: `${newName}/${child}` }),
         });
+        renameInLabelCache(labelCache, `${oldName}/${child}`, `${newName}/${child}`, childId);
       } catch (e) {
         // 하위 라벨 개별 실패는 무시하고 계속
       }
@@ -1713,17 +2126,21 @@ async function analyzeOneLabelCriteria(token, categoryDefs, labelName) {
   }
 
   const sample = messages.slice(0, MAX_LABEL_ANALYSIS_SAMPLE);
-  const details = [];
-  for (const msg of sample) {
-    if (isCancelled()) break;
+  let sampleDone = 0;
+  const fetchedSamples = await mapWithConcurrency(sample, GMAIL_FETCH_CONCURRENCY, async (msg) => {
+    if (isCancelled()) return null;
     try {
       const detail = await getEmailContent(token, msg.id);
-      details.push(detail);
-      await addLog(t("logAnalysisSampleDone", [details.length, sample.length, truncateForLog(detail.subject)]), "info", true);
+      sampleDone += 1;
+      await addLog(t("logAnalysisSampleDone", [sampleDone, sample.length, truncateForLog(detail.subject)]), "info", true);
+      return detail;
     } catch (e) {
+      if (isCancellationError(e)) return null;
       await addLog(t("logAnalysisSampleFailed", [msg.id, String(e.message || e)]), "error", true);
+      return null;
     }
-  }
+  });
+  const details = fetchedSamples.filter(Boolean);
 
   if (!details.length) {
     throw new Error(t("errAnalysisNoSample"));
@@ -1763,12 +2180,29 @@ async function analyzeOneLabelCriteria(token, categoryDefs, labelName) {
   return { labelName, suggestion, sampleCount: details.length, totalCount: messages.length };
 }
 
+
+// 분석 결과(분류 기준 제안)를 임시저장 칸에 직접 적재한다.
+// 예전에는 팝업이 열려 있을 때만 팝업 쪽 코드가 이 작업을 해서, 대시보드에서 분석을 돌리거나
+// 팝업을 닫아두면 결과가 어디에도 남지 않았다. 이제 백그라운드가 저장하고 화면들은 읽기만 한다.
+async function appendCriteriaSuggestionsToScratchpad(suggestions) {
+  const usable = (suggestions || []).filter((s) => s && s.labelName && s.suggestion);
+  if (!usable.length) return;
+  const stored = await chrome.storage.local.get(["criteriaScratchpad"]);
+  let text = stored.criteriaScratchpad || "";
+  for (const s of usable) {
+    if (text.trim()) text += "\n\n";
+    text += `${s.labelName}\n${s.suggestion}`;
+  }
+  await chrome.storage.local.set({ criteriaScratchpad: text });
+}
+
 async function processAnalyzeLabelCriteria(labelName) {
   const { categoryDefs, categories, token } = await initGeminiAndGmailContext();
   if (!categories.includes(labelName)) {
     throw new Error(t("errLabelNotInCategories", [labelName]));
   }
   const oneResult = await analyzeOneLabelCriteria(token, categoryDefs, labelName);
+  await appendCriteriaSuggestionsToScratchpad([{ labelName: oneResult.labelName, suggestion: oneResult.suggestion }]);
   return {
     total: 1,
     success: 1,
@@ -1811,10 +2245,14 @@ async function processAnalyzeMultipleLabelsCriteria(labelNames) {
       failMessages.push(`${labelName}: ${msg}`);
       await addLog(t("logMultiAnalysisItemFailed", [i + 1, targets.length, labelName, msg]), "error");
     }
-    await updateProgress({ processed: i + 1, total: targets.length, batchIndex: i + 1, batchTotal: targets.length });
+    await updateProgress(
+      { processed: i + 1, total: targets.length, batchIndex: i + 1, batchTotal: targets.length },
+      { force: i + 1 === targets.length }
+    );
   }
 
   await addLog(t("logMultiAnalysisDone", [successCount, targets.length]));
+  await appendCriteriaSuggestionsToScratchpad(suggestions);
 
   return {
     total: targets.length,
@@ -1828,7 +2266,7 @@ async function processAnalyzeMultipleLabelsCriteria(labelNames) {
   };
 }
 
-// 선택한 라벨의 메일 목록을 수집하여 Gemini AI로 한국어 요약 및 중요 메일 선별 리포트를 생성한다.
+// 선택한 라벨의 메일 목록을 수집하여 Gemini AI로 요약 및 중요 메일 선별 리포트를 생성한다(출력 언어는 현재 UI 언어).
 async function processSummarizeLabelEmails(labelName, maxEmails, filterCriteria) {
   const { categoryDefs, categories, token } = await initGeminiAndGmailContext();
   const emailLimit = Math.max(1, Math.min(100, parseInt(maxEmails, 10) || 20));
@@ -1859,12 +2297,13 @@ async function processSummarizeLabelEmails(labelName, maxEmails, filterCriteria)
 
   await updateProgress({ processed: 0, total: messages.length, batchIndex: 1, batchTotal: 1 });
 
-  const emailDetails = [];
-  for (let i = 0; i < messages.length; i += 1) {
-    if (isCancelled()) throw new JobCancelledError();
+  // 본문 조회는 서로 독립적이므로 제한된 동시성으로 병렬 처리한다(순서는 그대로 유지됨).
+  let summaryFetchDone = 0;
+  const fetchedSummaryDetails = await mapWithConcurrency(messages, GMAIL_FETCH_CONCURRENCY, async (msg, i) => {
+    if (isCancelled()) return null;
     try {
-      const detail = await getEmailContent(token, messages[i].id);
-      emailDetails.push({
+      const detail = await getEmailContent(token, msg.id);
+      return {
         id: detail.id,
         threadId: detail.threadId,
         idx: i + 1,
@@ -1872,18 +2311,27 @@ async function processSummarizeLabelEmails(labelName, maxEmails, filterCriteria)
         subject: detail.subject,
         date: detail.date,
         snippet: detail.snippet,
-      });
+      };
     } catch (e) {
-      await addLog(`메일 본문 읽기 실패 (${messages[i].id}): ${e.message}`, "warn");
+      if (isCancellationError(e)) return null;
+      await addLog(`메일 본문 읽기 실패 (${msg.id}): ${e.message}`, "warn");
+      return null;
+    } finally {
+      summaryFetchDone += 1;
+      await updateProgress(
+        { processed: summaryFetchDone, total: messages.length, batchIndex: 1, batchTotal: 1 },
+        { force: summaryFetchDone === messages.length }
+      );
     }
-    await updateProgress({ processed: i + 1, total: messages.length, batchIndex: 1, batchTotal: 1 });
-  }
+  });
+  if (isCancelled()) throw new JobCancelledError();
+  const emailDetails = fetchedSummaryDetails.filter(Boolean);
 
   if (emailDetails.length === 0) {
     throw new Error("메일 본문을 읽어오지 못했습니다.");
   }
 
-  await addLog(`[요약] Gemini AI를 통해 한국어 메일 요약 및 선별 수행 중 (${emailDetails.length}개)...`);
+  await addLog(`[요약] Gemini AI로 메일 요약 및 선별 수행 중 (${emailDetails.length}개, 출력 언어: ${LANGUAGE_NAME_BY_LOCALE[i18nCurrentLocale()] || "한국어"})...`);
 
   const emailListText = emailDetails
     .map((item) => `[idx=${item.idx}] 발신자: ${item.from} / 제목: ${item.subject} / 내용: ${item.snippet}`)
@@ -1906,16 +2354,21 @@ async function processSummarizeLabelEmails(labelName, maxEmails, filterCriteria)
     `- "중" (공지/일정/업무): ${criteria.medium}\n` +
     `- "하" (정보/참고): ${criteria.low}\n\n`;
 
+  // 요약 결과가 보일 화면의 언어와 맞춰야 하므로, 출력 언어는 현재 UI 언어를 따른다.
+  // (예전에는 프롬프트에 "반드시 한국어로"가 박혀 있어서 영어/일본어/중국어 UI에서도 본문만 한국어로 나왔다)
+  const summaryLangName = LANGUAGE_NAME_BY_LOCALE[i18nCurrentLocale()] || "한국어";
+
   const prompt =
-    `아래는 '${labelName}' 라벨에 정리된 이메일 목록이다. 이 이메일들 중 중요하거나 사용자에게 필요한 메일만 선별하여 반드시 한국어(Korean)로 깔끔하게 요약해라.\n\n` +
+    `아래는 '${labelName}' 라벨에 정리된 이메일 목록이다. 이 이메일들 중 중요하거나 사용자에게 필요한 메일만 선별하여 반드시 ${summaryLangName}로 깔끔하게 요약해라.\n\n` +
     filterInstruction +
     importanceCriteriaInstruction +
     `[지침]\n` +
     `1. 스팸, 단순 반복 알림, 불필요한 홍보성 메일은 선별 대상에서 제외해라.\n` +
-    `2. 중요하거나 선별된 메일에 대해 핵심 내용 요약, 중요도(상/중/하 - 위 정밀 기준 준수), 그리고 발신자가 요구하거나 사용자가 해야 할 조치 사항(Action Item)을 한국어로 작성해라.\n` +
-    `3. 각 메일별로 디스코드(Discord) 채널 알림 전송 필요 여부('discordNotificationNeeded': true/false - 단순 뉴스레터는 false, 중요/긴급/조치 필요 메일은 true)와 디스코드 카테고리('discordCategory': "긴급/조치필요" | "공지/일정" | "일반/리포트"), 및 디스코드 채널 전용 한 줄 핵심 브리핑('discordSummaryText')을 AI 판단으로 자동 분류해라.\n` +
-    `4. 전체 메일을 종합한 'overallSummary'(전체 요약 브리핑, 한국어 2~4문장)를 작성해라.\n` +
-    `5. 선별된 메일 목록 'selectedEmails' 배열에 정보를 담아 반환해라.\n\n` +
+    `2. 중요하거나 선별된 메일에 대해 핵심 내용 요약, 중요도(상/중/하 - 위 정밀 기준 준수), 그리고 발신자가 요구하거나 사용자가 해야 할 조치 사항(Action Item)을 ${summaryLangName}로 작성해라.\n` +
+    `3. 각 메일별로 디스코드(Discord) 채널 알림 전송 필요 여부('discordNotificationNeeded': true/false - 단순 뉴스레터는 false, 중요/긴급/조치 필요 메일은 true)와 디스코드 카테고리('discordCategory': "긴급/조치필요" | "공지/일정" | "일반/리포트"), 및 디스코드 채널 전용 한 줄 핵심 브리핑('discordSummaryText', ${summaryLangName})을 AI 판단으로 자동 분류해라.\n` +
+    `4. 전체 메일을 종합한 'overallSummary'(전체 요약 브리핑, ${summaryLangName} 2~4문장)를 작성해라.\n` +
+    `5. 선별된 메일 목록 'selectedEmails' 배열에 정보를 담아 반환해라.\n` +
+    `6. 조치할 것이 없는 메일은 'actionRequired'를 다른 표현 없이 정확히 "없음"으로만 적어라(화면에서 이 값을 기준으로 조치 항목을 숨긴다).\n\n` +
     `[이메일 목록]\n` +
     emailListText;
 
@@ -1986,7 +2439,7 @@ async function processSummarizeLabelEmails(labelName, maxEmails, filterCriteria)
   };
 
   await chrome.storage.local.set({ lastLabelSummary: summaryReport });
-  await addLog(`[요약 완료] ${emailDetails.length}개 중 ${enrichedSelectedEmails.length}개 메일 선별 및 한국어 요약 완료.`);
+  await addLog(`[요약 완료] ${emailDetails.length}개 중 ${enrichedSelectedEmails.length}개 메일 선별 및 요약 완료.`);
 
   return {
     total: emailDetails.length,
@@ -2000,21 +2453,46 @@ async function processSummarizeLabelEmails(labelName, maxEmails, filterCriteria)
   };
 }
 
-async function sendSingleDiscordEmbed(url, title, description, color, fields) {
-  if (!url || !url.startsWith("http")) return;
+// Discord embed 제약: 필드 25개, name 256자, value 1024자, embed 전체 6000자.
+// 선별 메일이 많으면 이 제한을 넘겨 전송이 통째로 실패하므로, 여러 메시지로 쪼개 보낸다.
+const DISCORD_MAX_FIELDS_PER_EMBED = 25;
+const DISCORD_MAX_EMBED_CHARS = 5800; // 6000에서 약간 여유를 둔 값
+
+function normalizeDiscordFields(fields) {
+  return (fields || []).map((f) => ({
+    name: String(f.name || "-").slice(0, 256),
+    value: String(f.value || "-").slice(0, 1024),
+    inline: !!f.inline,
+  }));
+}
+
+// 필드를 embed 문자 총량과 필드 개수 제한에 맞춰 여러 묶음으로 나눈다.
+function chunkDiscordFields(fields, baseChars) {
+  const chunks = [];
+  let current = [];
+  let currentChars = baseChars;
+
+  for (const field of fields) {
+    const fieldChars = field.name.length + field.value.length;
+    const wouldOverflow =
+      current.length >= DISCORD_MAX_FIELDS_PER_EMBED || currentChars + fieldChars > DISCORD_MAX_EMBED_CHARS;
+    if (wouldOverflow && current.length) {
+      chunks.push(current);
+      current = [];
+      currentChars = baseChars;
+    }
+    current.push(field);
+    currentChars += fieldChars;
+  }
+  if (current.length) chunks.push(current);
+  return chunks.length ? chunks : [[]];
+}
+
+async function postDiscordEmbed(url, embed) {
   const payload = {
     username: "Gmail AI Labeler",
     avatar_url: "https://mail.google.com/favicon.ico",
-    embeds: [
-      {
-        title,
-        description,
-        color,
-        fields,
-        footer: { text: "Gmail AI Labeler v1.9 • Discord Routing Sync" },
-        timestamp: new Date().toISOString(),
-      },
-    ],
+    embeds: [embed],
   };
   const response = await fetch(url, {
     method: "POST",
@@ -2023,8 +2501,40 @@ async function sendSingleDiscordEmbed(url, title, description, color, fields) {
   });
   if (!response.ok) {
     const errText = await response.text();
-    throw new Error(`Discord Webhook (${title}) 전송 실패: ${errText.slice(0, 100)}`);
+    throw new Error(`Discord Webhook (${embed.title}) 전송 실패: ${errText.slice(0, 100)}`);
   }
+}
+
+async function sendSingleDiscordEmbed(url, title, description, color, fields) {
+  if (!url || !url.startsWith("http")) return;
+
+  const safeTitle = String(title || "").slice(0, 256);
+  const safeDescription = String(description || "").slice(0, 4096);
+  const normalized = normalizeDiscordFields(fields);
+  const baseChars = safeTitle.length + safeDescription.length + 80; // footer 등 고정 문자 여유
+  const chunks = chunkDiscordFields(normalized, baseChars);
+
+  for (let i = 0; i < chunks.length; i += 1) {
+    const pageSuffix = chunks.length > 1 ? ` (${i + 1}/${chunks.length})` : "";
+    await postDiscordEmbed(url, {
+      title: `${safeTitle}${pageSuffix}`.slice(0, 256),
+      // 종합 브리핑은 첫 메시지에만 넣어서 뒤 페이지가 불필요하게 길어지지 않게 한다
+      description: i === 0 ? safeDescription : "",
+      color,
+      fields: chunks[i],
+      footer: { text: "Gmail AI Labeler • Discord Routing Sync" },
+      timestamp: new Date().toISOString(),
+    });
+  }
+}
+
+// 중요도별 웹훅 중 일부만 설정된 경우, 나머지 등급 메일이 아무 곳에도 안 가고 조용히 사라지지 않도록
+// 기본 웹훅으로 흘려보낸다.
+function resolveDiscordTargetUrl(webhooks, tier) {
+  const specific = webhooks[`${tier}Url`];
+  if (specific && specific.startsWith("http")) return specific;
+  if (webhooks.defaultUrl && webhooks.defaultUrl.startsWith("http")) return webhooks.defaultUrl;
+  return null;
 }
 
 // 요약 리포트를 지정한 Discord Webhook URL(또는 중요도별 분리 채널)로 전송한다.
@@ -2052,33 +2562,33 @@ async function sendSummaryToDiscord(webhookInput, summaryReport) {
 
     let sentCount = 0;
 
-    if (webhooks.highUrl && highEmails.length) {
+    if (resolveDiscordTargetUrl(webhooks, "high") && highEmails.length) {
       const fields = highEmails.map((item, idx) => ({
         name: `${idx + 1}. 🔴 [긴급/조치] ${item.subject.slice(0, 200)}`,
         value: `${item.discordSummaryText ? `💬 **AI 브리핑**: ${item.discordSummaryText}\n` : ""}**발신자**: ${item.sender || ""}\n${(item.summaryPoints || []).map(p => `• ${p}`).join("\n")}\n⚡ **조치**: ${item.actionRequired || "필요"}${item.id ? `\n🔗 [Gmail에서 메일 보기](https://mail.google.com/mail/u/0/#inbox/${item.id})` : ""}`.slice(0, 1024),
         inline: false,
       }));
-      await sendSingleDiscordEmbed(webhooks.highUrl, `🚨 [${summaryReport.labelName}] 긴급/상 메일 알림 (${highEmails.length}건)`, summaryReport.overallSummary || "", 0xf43f5e, fields);
+      await sendSingleDiscordEmbed(resolveDiscordTargetUrl(webhooks, "high"), `🚨 [${summaryReport.labelName}] 긴급/상 메일 알림 (${highEmails.length}건)`, summaryReport.overallSummary || "", 0xf43f5e, fields);
       sentCount += 1;
     }
 
-    if (webhooks.mediumUrl && medEmails.length) {
+    if (resolveDiscordTargetUrl(webhooks, "medium") && medEmails.length) {
       const fields = medEmails.map((item, idx) => ({
         name: `${idx + 1}. 🟡 [공지/일정] ${item.subject.slice(0, 200)}`,
         value: `${item.discordSummaryText ? `💬 **AI 브리핑**: ${item.discordSummaryText}\n` : ""}**발신자**: ${item.sender || ""}\n${(item.summaryPoints || []).map(p => `• ${p}`).join("\n")}${item.actionRequired && item.actionRequired !== "없음" ? `\n⚡ **조치**: ${item.actionRequired}` : ""}${item.id ? `\n🔗 [Gmail에서 메일 보기](https://mail.google.com/mail/u/0/#inbox/${item.id})` : ""}`.slice(0, 1024),
         inline: false,
       }));
-      await sendSingleDiscordEmbed(webhooks.mediumUrl, `📢 [${summaryReport.labelName}] 공지/일정(중) 메일 리포트 (${medEmails.length}건)`, summaryReport.overallSummary || "", 0xf59e0b, fields);
+      await sendSingleDiscordEmbed(resolveDiscordTargetUrl(webhooks, "medium"), `📢 [${summaryReport.labelName}] 공지/일정(중) 메일 리포트 (${medEmails.length}건)`, summaryReport.overallSummary || "", 0xf59e0b, fields);
       sentCount += 1;
     }
 
-    if (webhooks.lowUrl && lowEmails.length) {
+    if (resolveDiscordTargetUrl(webhooks, "low") && lowEmails.length) {
       const fields = lowEmails.map((item, idx) => ({
         name: `${idx + 1}. 🟢 [정보/리포트] ${item.subject.slice(0, 200)}`,
         value: `${item.discordSummaryText ? `💬 **AI 브리핑**: ${item.discordSummaryText}\n` : ""}**발신자**: ${item.sender || ""}\n${(item.summaryPoints || []).map(p => `• ${p}`).join("\n")}${item.id ? `\n🔗 [Gmail에서 메일 보기](https://mail.google.com/mail/u/0/#inbox/${item.id})` : ""}`.slice(0, 1024),
         inline: false,
       }));
-      await sendSingleDiscordEmbed(webhooks.lowUrl, `ℹ️ [${summaryReport.labelName}] 정보성(하) 메일 요약 (${lowEmails.length}건)`, summaryReport.overallSummary || "", 0x10b981, fields);
+      await sendSingleDiscordEmbed(resolveDiscordTargetUrl(webhooks, "low"), `ℹ️ [${summaryReport.labelName}] 정보성(하) 메일 요약 (${lowEmails.length}건)`, summaryReport.overallSummary || "", 0x10b981, fields);
       sentCount += 1;
     }
 
@@ -2100,7 +2610,8 @@ async function sendSummaryToDiscord(webhookInput, summaryReport) {
   const embedColor = hasHigh ? 0xf43f5e : hasMedium ? 0xf59e0b : 0x10b981;
 
   if (Array.isArray(summaryReport.selectedEmails) && summaryReport.selectedEmails.length) {
-    const list = summaryReport.selectedEmails.slice(0, 5);
+    // embed 제한은 sendSingleDiscordEmbed가 여러 메시지로 쪼개 처리하므로 선별 메일을 잘라내지 않는다
+    const list = summaryReport.selectedEmails;
     list.forEach((item, idx) => {
       const imp = item.importance || "중";
       const impIcon = imp === "상" ? "🔴" : imp === "중" ? "🟡" : "🟢";
@@ -2192,29 +2703,39 @@ async function classifyAndLabelMessages(token, categoryDefs, labelCache, message
     return updateProgress({ processed: computeCombinedProgress(), total: messages.length, batchIndex, batchTotal });
   }
 
-  const details = [];
-  let fetchCancelled = false;
-  for (const msg of messages) {
-    if (isCancelled()) {
-      await addLog(t("logCancelledDuringFetch", [fetchDone, messages.length]), "warn");
-      fetchCancelled = true;
-      break;
-    }
+  // 상세 조회는 서로 독립적이라 순서대로 기다릴 이유가 없다 - 제한된 동시성으로 병렬 처리한다.
+  // 결과 순서는 mapWithConcurrency가 입력 순서로 유지해주므로 이후 단계 동작은 그대로다.
+  const fetched = await mapWithConcurrency(messages, GMAIL_FETCH_CONCURRENCY, async (msg) => {
+    if (isCancelled()) return null;
     try {
       const detail = await getEmailContent(token, msg.id);
-      details.push(detail);
       fetchDone += 1;
       await addLog(t("logFetchItemDone", [fetchDone, messages.length, truncateForLog(detail.subject), detail.from]), "info", true);
+      await reportProgress(0, 3);
+      return { detail };
     } catch (err) {
+      if (isCancellationError(err)) return null;
       fetchDone += 1;
       const msgText = String(err.message || err);
-      results.push({ id: msg.id, error: msgText });
-      failMessages.push(msgText);
       await addLog(t("logFetchItemFailed", [fetchDone, messages.length, msg.id, msgText]), "error", true);
+      await reportProgress(0, 3);
+      return { error: msgText, id: msg.id };
     }
-    await reportProgress(0, 3);
+  });
+
+  const details = [];
+  for (const entry of fetched) {
+    if (!entry) continue; // 중지되어 처리하지 않은 항목
+    if (entry.error) {
+      results.push({ id: entry.id, error: entry.error });
+      failMessages.push(entry.error);
+      continue;
+    }
+    details.push(entry.detail);
   }
-  if (fetchCancelled) {
+
+  if (isCancelled()) {
+    await addLog(t("logCancelledDuringFetch", [fetchDone, messages.length]), "warn");
     return { results, failMessages, successCount, success: successCount, total: messages.length, requestsUsed: 0, cancelled: true, quotaExhausted: false };
   }
   await addLog(t("logFetchComplete", [fetchDone, messages.length]));
@@ -2245,14 +2766,21 @@ async function classifyAndLabelMessages(token, categoryDefs, labelCache, message
       chrome.storage.local.get(["correctionLearningEnabled"], resolve)
     );
     const learningEnabled = learningSetting.correctionLearningEnabled !== false; // 기본값 켜짐
-    if (learningEnabled) {
-      const correctionExamples = await getCorrectionExamples(labelCache, categories);
-      if (correctionExamples.length) {
-        correctionHint = buildCorrectionHintText(correctionExamples);
-        await addLog(t("logCorrectionExamplesUsed", [correctionExamples.length]));
+    if (learningEnabled && (await shouldScanCorrectionHistory())) {
+      deferInlineCategoryLearning = true;
+      try {
+        const correctionExamples = await getCorrectionExamples(labelCache, categories);
+        if (correctionExamples.length) {
+          correctionHint = buildCorrectionHintText(correctionExamples);
+          await addLog(t("logCorrectionExamplesUsed", [correctionExamples.length]));
+        }
+      } finally {
+        deferInlineCategoryLearning = false;
       }
+      await markCorrectionHistoryScanned();
     }
   } catch (e) {
+    deferInlineCategoryLearning = false;
     // 학습 예시 조회 실패는 치명적이지 않으므로 무시하고 계속 진행
   }
 
@@ -2266,14 +2794,22 @@ async function classifyAndLabelMessages(token, categoryDefs, labelCache, message
   if (excludeLabel) await addLog(t("logSplitModeExclude", [excludeLabel]));
   await reportProgress(1, 3);
 
-  classifyLoop: for (let b = 0; b < batches.length; b += 1) {
+  // 배치끼리는 서로 의존하지 않으므로 겹쳐서 보낸다.
+  // RPM 상한은 throttleGeminiCall()이 지키고, 이렇게 하면 앞 요청의 응답 대기 시간 동안
+  // 다음 요청이 출발해서 "간격 + 응답지연"이 배치마다 누적되던 것을 없앨 수 있다.
+  let stopClassifying = false;
+  let fatalClassifyError = null;
+  let batchesDone = 0;
+
+  await mapWithConcurrency(batches, GEMINI_BATCH_CONCURRENCY, async (batch, b) => {
+    if (stopClassifying) return;
     if (isCancelled()) {
       await addLog(t("logCancelledBeforeBatch", [b + 1, totalBatches]), "warn");
       cancelled = true;
-      break;
+      stopClassifying = true;
+      return;
     }
 
-    const batch = batches[b];
     const items = batch.map((d, i) => ({ idx: i, subject: d.subject, from: d.from, snippet: d.snippet }));
 
     await addLog(t("logBatchRequesting", [b + 1, totalBatches, batch.length]));
@@ -2282,16 +2818,22 @@ async function classifyAndLabelMessages(token, categoryDefs, labelCache, message
     try {
       rawEntries = await classifyTopLevelBatch(items, candidateDefs, correctionHint);
       requestsUsed += 1;
+      batchesDone += 1;
       await addLog(t("logBatchDone", [b + 1, totalBatches]));
     } catch (err) {
       if (isCancelled() || isCancellationError(err)) {
         await addLog(t("logCancelledAfterBatch", [b + 1, totalBatches]), "warn");
         cancelled = true;
-        break classifyLoop;
+        stopClassifying = true;
+        return;
       }
       // A hung Gemini request is not a mail-specific classification failure.
       // End the job and surface it instead of spending another timeout per batch.
-      if (err && err.isRequestTimeout) throw err;
+      if (err && err.isRequestTimeout) {
+        fatalClassifyError = err;
+        stopClassifying = true;
+        return;
+      }
       const msgText = String(err.message || err);
       await addLog(t("logBatchFailed", [b + 1, totalBatches, msgText]), "error");
       batch.forEach((d) => {
@@ -2301,11 +2843,13 @@ async function classifyAndLabelMessages(token, categoryDefs, labelCache, message
       if (err.isQuotaExhausted) {
         await addLog(t("logQuotaExhaustedStop"), "error");
         quotaExhausted = true;
-        break classifyLoop;
+        stopClassifying = true;
+        return;
       }
       classifyDone += batch.length;
-      await reportProgress(b + 1, totalBatches);
-      continue;
+      batchesDone += 1;
+      await reportProgress(batchesDone, totalBatches);
+      return;
     }
 
     const entryByIdx = new Map(rawEntries.map((e) => [e.idx, e]));
@@ -2318,69 +2862,171 @@ async function classifyAndLabelMessages(token, categoryDefs, labelCache, message
     }
 
     classifyDone += batch.length;
-    await reportProgress(b + 1, totalBatches);
+    await reportProgress(batchesDone, totalBatches);
 
     if (isCancelled()) {
       await addLog(t("logCancelledAfterBatch", [b + 1, totalBatches]), "warn");
       cancelled = true;
-      break;
+      stopClassifying = true;
     }
-  }
+  });
+
+  // 응답이 오지 않아 타임아웃된 경우는 메일별 실패가 아니라 작업 자체의 실패로 올린다.
+  if (fatalClassifyError) throw fatalClassifyError;
 
   // 취소/오류로 분류를 못 거친 메일은 최종 라벨에서 제외(적용 대상에서 빠짐)
   await addLog(t("logClassifyDoneApplyStart", [finalLabelById.size]));
 
   // ---------------- 라벨 실제 적용 (필터 매칭분 + AI 분류분 전체) ----------------
+  // 메일마다 messages.modify를 한 번씩 보내면 수천 번의 왕복이 생긴다.
+  // "붙일 라벨 + 뗄 라벨"이 같은 메일끼리 묶어서 messages.batchModify로 한 번에 처리한다.
   let processedCount = 0;
   const totalToApply = finalLabelById.size;
+  const managedLabelIds = collectManagedLabelIds(labelCache, categories);
+
+  // 같은 라벨 이름을 메일마다 다시 조회하지 않도록 이름당 한 번만 확인/생성한다.
+  const labelByName = new Map();
+  async function resolveLabel(labelName) {
+    if (labelByName.has(labelName)) return labelByName.get(labelName);
+    const label = await getOrCreateLabelId(token, labelName, labelCache, categories);
+    labelByName.set(labelName, label);
+    return label;
+  }
+
+  // groupKey -> { label, removeLabelIds, details }
+  const applyGroups = new Map();
   for (const detail of details) {
-    if (isCancelled()) {
-      await addLog(t("logCancelledDuringApply", [processedCount, totalToApply]), "warn");
-      cancelled = true;
-      break;
-    }
     const labelName = finalLabelById.get(detail.id);
     if (!labelName) continue;
 
+    let label;
     try {
-      const label = await getOrCreateLabelId(token, labelName, labelCache, categories);
-      const replaced = await applyLabelExclusive(token, detail, label, categories, labelCache);
-      const color = getCategoryColor(label.name, categories);
-      await recordLabelHistory(detail.id, detail.subject, detail.from, label.name);
-
-      results.push({
-        id: detail.id,
-        threadId: detail.threadId,
-        subject: detail.subject,
-        from: detail.from,
-        labelName: label.name,
-        bgColor: color.bgColor,
-        textColor: color.textColor,
-      });
-      successCount += 1;
-      processedCount += 1;
-      applyDone += 1;
-
-      await addLog(
-        t("logApplyItemDone", [processedCount, totalToApply, truncateForLog(detail.subject), label.name]) +
-          (replaced ? t("logReplacedSuffix") : ""),
-        "info",
-        true
-      );
+      label = await resolveLabel(labelName);
     } catch (err) {
       const msgText = String(err.message || err);
+      if (isCancellationError(err)) {
+        cancelled = true;
+        break;
+      }
       processedCount += 1;
       applyDone += 1;
       results.push({ id: detail.id, error: msgText });
       failMessages.push(msgText);
       await addLog(t("logApplyItemFailed", [processedCount, totalToApply, truncateForLog(detail.subject), msgText]), "error", true);
+      continue;
     }
 
-    await reportProgress(totalBatches, totalBatches);
+    const removeLabelIds = computeExclusiveRemovals(detail, label, managedLabelIds);
+    const groupKey = `${label.id}|${removeLabelIds.join(",")}`;
+    if (!applyGroups.has(groupKey)) applyGroups.set(groupKey, { label, removeLabelIds, details: [] });
+    applyGroups.get(groupKey).details.push(detail);
+  }
+
+  for (const group of applyGroups.values()) {
+    if (isCancelled()) {
+      await addLog(t("logCancelledDuringApply", [processedCount, totalToApply]), "warn");
+      cancelled = true;
+      break;
+    }
+
+    for (const chunk of chunkArray(group.details, GMAIL_BATCH_MODIFY_LIMIT)) {
+      if (isCancelled()) {
+        await addLog(t("logCancelledDuringApply", [processedCount, totalToApply]), "warn");
+        cancelled = true;
+        break;
+      }
+
+      // batchModify는 부분 실패를 알려주지 않으므로(전체 성공 아니면 전체 실패),
+      // 실패하면 그 묶음만 메일 단위로 다시 시도해서 어느 메일이 문제인지 남긴다.
+      let appliedIds;
+      try {
+        await batchModifyLabels(
+          chunk.map((d) => d.id),
+          [group.label.id],
+          group.removeLabelIds
+        );
+        appliedIds = chunk;
+      } catch (err) {
+        if (isCancellationError(err)) {
+          cancelled = true;
+          break;
+        }
+        await addLog(t("logBatchApplyFallback", [chunk.length, String(err.message || err)]), "warn");
+        appliedIds = [];
+        for (const detail of chunk) {
+          if (isCancelled()) {
+            cancelled = true;
+            break;
+          }
+          try {
+            await applyLabelExclusive(token, detail, group.label, categories, labelCache, managedLabelIds);
+            appliedIds.push(detail);
+          } catch (itemErr) {
+            const msgText = String(itemErr.message || itemErr);
+            processedCount += 1;
+            applyDone += 1;
+            results.push({ id: detail.id, error: msgText });
+            failMessages.push(msgText);
+            await addLog(
+              t("logApplyItemFailed", [processedCount, totalToApply, truncateForLog(detail.subject), msgText]),
+              "error",
+              true
+            );
+          }
+        }
+      }
+
+      const historyEntries = [];
+      for (const detail of appliedIds) {
+        const color = getCategoryColor(group.label.name, categories);
+        historyEntries.push({
+          messageId: detail.id,
+          subject: detail.subject,
+          from: detail.from,
+          labelName: group.label.name,
+        });
+
+        results.push({
+          id: detail.id,
+          threadId: detail.threadId,
+          subject: detail.subject,
+          from: detail.from,
+          labelName: group.label.name,
+          bgColor: color.bgColor,
+          textColor: color.textColor,
+        });
+        successCount += 1;
+        processedCount += 1;
+        applyDone += 1;
+
+        await addLog(
+          t("logApplyItemDone", [processedCount, totalToApply, truncateForLog(detail.subject), group.label.name]) +
+            (group.removeLabelIds.length ? t("logReplacedSuffix") : ""),
+          "info",
+          true
+        );
+      }
+
+      // 히스토리도 건당 트랜잭션을 열지 않고 한 번에 기록
+      await recordLabelHistoryBatch(historyEntries);
+      await reportProgress(totalBatches, totalBatches);
+    }
+
+    if (cancelled) break;
   }
 
   await addLog(t("logApplyComplete", [processedCount, totalToApply]));
-  await updateProgress({ processed: messages.length, total: messages.length, batchIndex: totalBatches, batchTotal: totalBatches });
+  await updateProgress(
+    { processed: messages.length, total: messages.length, batchIndex: totalBatches, batchTotal: totalBatches },
+    { force: true }
+  );
+
+  // 라벨 적용을 묶음으로 처리하면서 결과가 그룹 순서로 쌓이므로, 호출자가 보던 대로 입력 순서로 되돌린다.
+  const inputOrderById = new Map(messages.map((m, i) => [m.id, i]));
+  results.sort((a, b) => (inputOrderById.get(a.id) ?? 0) - (inputOrderById.get(b.id) ?? 0));
+
+  // 분류 도중 미뤄둔 자동 학습을 여기서 처리하고, 소비한 요청 수를 집계에 합산한다.
+  requestsUsed += await flushDeferredCategoryLearning();
 
   return { results, failMessages, successCount, success: successCount, total: messages.length, requestsUsed, cancelled, quotaExhausted };
 }
@@ -2390,7 +3036,9 @@ async function classifyAndLabelMessages(token, categoryDefs, labelCache, message
 // 오늘 남은 추정 RPD에 맞춰 요청 개수를 미리 안전하게 축소한다 (배치 1개 = 요청 1회 기준)
 async function computeSafeEmailCount(requestedCount) {
   const usage = await getQuotaUsage();
-  const remainingRequests = Math.max(0, usage.rpd - usage.requestsToday);
+  // 분류 배치 외에도 자동 학습/요약 등 부수적인 Gemini 호출이 몇 건 생길 수 있으므로 여유분을 남겨둔다.
+  const QUOTA_RESERVE_REQUESTS = 5;
+  const remainingRequests = Math.max(0, usage.rpd - usage.requestsToday - QUOTA_RESERVE_REQUESTS);
   const maxEmailsFromQuota = remainingRequests * BATCH_SIZE;
 
   if (maxEmailsFromQuota <= 0) {
@@ -2420,7 +3068,10 @@ async function processRecentEmails(count) {
   }
 
   const summary = await classifyAndLabelMessages(token, categoryDefs, labelCache, messages, null);
-  await chrome.storage.local.set({ latestAiData: summary.results, latestAiDataUpdatedAt: Date.now() });
+  await chrome.storage.local.set({
+    latestAiData: trimAiDataForContentScript(summary.results),
+    latestAiDataUpdatedAt: Date.now(),
+  });
   return { ...summary, batchSize: BATCH_SIZE };
 }
 
@@ -2595,7 +3246,10 @@ async function processDedupeRelabel() {
 
   await addLog(t("logDedupeRemovedReclassify"));
   const summary = await classifyAndLabelMessages(token, categoryDefs, labelCache, targetMessages, null);
-  await chrome.storage.local.set({ latestAiData: summary.results, latestAiDataUpdatedAt: Date.now() });
+  await chrome.storage.local.set({
+    latestAiData: trimAiDataForContentScript(summary.results),
+    latestAiDataUpdatedAt: Date.now(),
+  });
   return { ...summary, batchSize: BATCH_SIZE };
 }
 
@@ -2627,7 +3281,10 @@ async function processRelabel(labelName, excludeSelf, maxResults) {
     messages,
     excludeSelf ? labelName : null
   );
-  await chrome.storage.local.set({ latestAiData: summary.results, latestAiDataUpdatedAt: Date.now() });
+  await chrome.storage.local.set({
+    latestAiData: trimAiDataForContentScript(summary.results),
+    latestAiDataUpdatedAt: Date.now(),
+  });
   return { ...summary, batchSize: BATCH_SIZE };
 }
 
@@ -2648,12 +3305,7 @@ async function modifyMessageLabels(token, messageId, addIds, removeIds) {
 }
 
 async function getMessagesByLabelId(token, labelId, maxResults) {
-  const response = await gmailFetch(
-    `https://gmail.googleapis.com/gmail/v1/users/me/messages?labelIds=${labelId}&maxResults=${maxResults}`
-  );
-  if (!response.ok) throw new Error(t("errLabelIdMessageListFailed", [response.status]));
-  const data = await response.json();
-  return data.messages || [];
+  return await listMessagesPaged({ labelIds: labelId }, maxResults, "errLabelIdMessageListFailed");
 }
 
 async function patchLabelColor(token, labelId, color) {
@@ -2688,7 +3340,10 @@ async function processApplyLabelColors() {
       failMessages.push(msgText);
       await addLog(t("logColorItemFailed", [cat, msgText]), "error");
     }
-    await updateProgress({ processed: i + 1, total: categories.length, batchIndex: 1, batchTotal: 1 });
+    await updateProgress(
+      { processed: i + 1, total: categories.length, batchIndex: 1, batchTotal: 1 },
+      { force: i + 1 === categories.length }
+    );
   }
 
   await addLog(t("logColorsDone", [successCount, categories.length]));
@@ -2812,7 +3467,13 @@ function notifyError(title, errMsg) {
 
 function setActionIconRunning(isRunning) {
   try {
-    chrome.action.setIcon({ path: isRunning ? "icon128-active.png" : "icon128.png" });
+    if (isRunning) {
+      chrome.action.setIcon({ path: "icon128-active.png" });
+    } else {
+      // 평상시 아이콘은 setIcon({path})로 덮어쓰면 시작 시 코드로 그린 동적 아이콘이 사라지므로,
+      // 항상 같은 드로잉 코드로 다시 렌더링해서 되돌린다.
+      updateDynamicIconFromCode();
+    }
   } catch (e) {
     // 아이콘 전환 실패는 치명적이지 않으므로 무시
   }
@@ -2822,7 +3483,7 @@ async function markJobRunning(jobKind) {
   cancelRequested = false;
   startKeepAlive();
   setActionIconRunning(true);
-  await clearLogs();
+  // 로그는 작업마다 지우지 않고 누적 보존한다(사용자가 로그 창에서 직접 "초기화"할 때만 삭제).
   await chrome.storage.local.set({
     jobStatus: "running",
     jobKind: jobKind || "unknown",
@@ -2870,6 +3531,8 @@ async function runJob(jobFn, notifyTitleKey, notifyTitleParams) {
   } finally {
     stopKeepAlive();
     setActionIconRunning(false);
+    clearProgressBadge(); // 작업이 끝난 뒤 "100%" 배지가 계속 남지 않게 지운다
+    await flushLogs(); // 버퍼에 남은 로그를 확실히 기록(서비스 워커가 곧 중단될 수 있음)
   }
 }
 

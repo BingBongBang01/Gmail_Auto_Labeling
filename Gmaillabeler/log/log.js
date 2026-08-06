@@ -27,7 +27,19 @@ let allLogsCache = [];
 function openLogDb() {
   return new Promise((resolve, reject) => {
     const req = indexedDB.open(LOG_DB_NAME);
-    req.onsuccess = () => resolve(req.result);
+    req.onsuccess = () => {
+      const db = req.result;
+      // 백그라운드가 아직 한 번도 로그를 쓰지 않았으면 스토어가 없는 빈 DB일 수 있다.
+      // 이 창은 스토어를 만들지 않으므로, 이 경우엔 "읽을 게 없음"으로 처리한다(NotFoundError 방지).
+      if (!db.objectStoreNames.contains(LOG_STORE_NAME)) {
+        db.close();
+        const err = new Error("log store not created yet");
+        err.isStoreMissing = true;
+        reject(err);
+        return;
+      }
+      resolve(db);
+    };
     req.onerror = () => reject(req.error);
   });
 }
@@ -42,7 +54,7 @@ async function readAllLogs() {
       req.onerror = () => reject(req.error);
     });
   } catch (e) {
-    console.error("로그 읽기 실패:", e);
+    if (!e || !e.isStoreMissing) console.error("로그 읽기 실패:", e);
     return [];
   }
 }
@@ -183,19 +195,13 @@ async function main() {
   await refreshLogs();
   refreshStatusAndProgress();
 
-  // 로그는 IndexedDB라 storage.onChanged로 실시간 감지가 안 되니, 가벼운 타임스탬프 변경을 신호로 주기적으로 다시 읽는다.
-  let lastSeenUpdate = 0;
-  setInterval(async () => {
-    const result = await new Promise((resolve) => chrome.storage.local.get(["jobLogsUpdatedAt"], resolve));
-    if ((result.jobLogsUpdatedAt || 0) !== lastSeenUpdate) {
-      lastSeenUpdate = result.jobLogsUpdatedAt || 0;
-      await refreshLogs();
-    }
-  }, 1000);
-
+  // 로그 본문은 IndexedDB에 있어 storage.onChanged로 직접 감지할 수 없지만,
+  // 백그라운드가 남기는 jobLogsUpdatedAt 타임스탬프는 storage 키라서 변경 이벤트로 알 수 있다.
+  // 예전에는 이 값을 1초마다 폴링했는데, 이벤트로 받으면 바뀔 때만 다시 읽으면 된다.
   chrome.storage.onChanged.addListener((changes, areaName) => {
     if (areaName !== "local") return;
     if (changes.jobStatus || changes.jobProgress) refreshStatusAndProgress();
+    if (changes.jobLogsUpdatedAt) refreshLogs();
     if (changes.themeMode) applyThemeFromStorage();
   });
 
@@ -217,7 +223,14 @@ async function main() {
   });
 
   clearBtn.addEventListener("click", () => {
-    logBox.innerHTML = "";
+    // DOM만 비우면 새로고침 시 로그가 다시 나타난다 - 실제 저장소(IndexedDB)까지 지운다.
+    clearBtn.disabled = true;
+    chrome.runtime.sendMessage({ action: "clearLogs" }, () => {
+      allLogsCache = [];
+      logBox.innerHTML = "";
+      clearBtn.disabled = false;
+      renderLogs();
+    });
   });
 }
 

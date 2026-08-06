@@ -3,6 +3,15 @@
 // See LICENSE file at the extension root for terms. Unauthorized redistribution or resale is prohibited.
 const DEFAULT_CATEGORIES = ["보안", "광고", "쇼핑", "공지", "뉴스레터", "업무", "개인", "기타"]; // i18n 로딩 실패 시 최종 안전망
 
+// 중요도 값은 "상"/"중"/"하" 문자열로 저장된다(백그라운드 스키마·디스코드 라우팅이 이 값을 쓴다).
+// 데이터는 그대로 두고 화면 표시만 현재 언어로 바꾼다.
+function importanceLabel(value) {
+  if (value === "상") return t("dashImportanceHigh");
+  if (value === "중") return t("dashImportanceMedium");
+  if (value === "하") return t("dashImportanceLow");
+  return value || "";
+}
+
 function getLocalizedDefaultCategories() {
   const raw = t("defaultCategoriesList");
   if (!raw || raw === "defaultCategoriesList") return DEFAULT_CATEGORIES;
@@ -117,13 +126,95 @@ async function main() {
   initLanguageSelect();
 
   // ---------------- 탭 전환 ----------------
+  function activateTab(tabName) {
+    document.querySelectorAll(".tab-btn").forEach((b) => b.classList.toggle("active", b.dataset.tab === tabName));
+    document.querySelectorAll(".tab-panel").forEach((p) => p.classList.toggle("active", p.id === `panel-${tabName}`));
+  }
+
   document.querySelectorAll(".tab-btn").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      document.querySelectorAll(".tab-btn").forEach((b) => b.classList.remove("active"));
-      document.querySelectorAll(".tab-panel").forEach((p) => p.classList.remove("active"));
-      btn.classList.add("active");
-      document.getElementById(`panel-${btn.dataset.tab}`).classList.add("active");
+    btn.addEventListener("click", () => activateTab(btn.dataset.tab));
+  });
+
+  // 설정 탭의 특정 섹션을 펼치고 그 위치로 스크롤한다(체크리스트에서 "이동"을 눌렀을 때).
+  function revealSettingsSection(sectionId) {
+    activateTab("settings");
+    const section = document.getElementById(sectionId);
+    if (!section) return;
+    section.open = true;
+    // 탭이 표시된 뒤에 위치를 계산해야 스크롤이 정확하다
+    requestAnimationFrame(() => section.scrollIntoView({ behavior: "smooth", block: "start" }));
+  }
+
+  // ---------------- 최초 설정 체크리스트 ----------------
+  // 이 확장은 쓰기 전에 "OAuth 클라이언트 등록 -> 로그인 -> Gemini 키 등록"이 반드시 필요한데,
+  // 예전에는 이걸 알려주는 화면이 없어서 분류를 눌러야 비로소 오류 문구로 알 수 있었다.
+  // 남은 단계가 있을 때만 상단에 표시하고, 다 끝나면 자동으로 사라진다.
+  let setupIncomplete = false;
+
+  const setupCard = document.getElementById("setupCard");
+
+  function paintSetupStep(stepId, markId, stepNumber, done) {
+    const row = document.getElementById(stepId);
+    const mark = document.getElementById(markId);
+    if (!row || !mark) return;
+    row.classList.toggle("done", done);
+    mark.textContent = done ? "✅" : String(stepNumber);
+  }
+
+  function refreshSetupChecklist() {
+    chrome.storage.local.get(["oauthClientId", "oauthClientSecret", "geminiApiKeys", "geminiApiKey"], (stored) => {
+      chrome.runtime.sendMessage({ action: "getOAuthStatus" }, (oauth) => {
+        if (chrome.runtime.lastError) return;
+
+        const hasCredentials = !!(stored.oauthClientId || "").trim() && !!(stored.oauthClientSecret || "").trim();
+        const connected = !!(oauth && oauth.connected);
+        const hasApiKey =
+          (Array.isArray(stored.geminiApiKeys) && stored.geminiApiKeys.some((k) => k && k.key)) ||
+          !!stored.geminiApiKey;
+
+        // 안내서 단계는 읽었는지 알 수 없으므로, 클라이언트를 등록하면 완료된 것으로 본다
+        paintSetupStep("setupStepGuide", "setupStepGuideMark", 1, hasCredentials);
+        paintSetupStep("setupStepCredentials", "setupStepCredentialsMark", 2, hasCredentials);
+        paintSetupStep("setupStepLogin", "setupStepLoginMark", 3, connected);
+        paintSetupStep("setupStepApiKey", "setupStepApiKeyMark", 4, hasApiKey);
+
+        // 클라이언트와 키는 이미 등록했고 로그인만 풀린 경우(토큰 만료 등)는 "처음 설정"이 아니다.
+        // 이때는 체크리스트 대신 가벼운 "다시 로그인" 배너로 안내한다.
+        const onlyLoginMissing = hasCredentials && hasApiKey && !connected;
+        setupIncomplete = !(hasCredentials && connected && hasApiKey) && !onlyLoginMissing;
+
+        if (setupCard) setupCard.classList.toggle("show", setupIncomplete);
+        // setupIncomplete 값이 정해진 뒤에 배너 표시 여부를 다시 계산한다
+        refreshOAuthStatus();
+      });
     });
+  }
+
+  document.getElementById("setupOpenGuideBtn").addEventListener("click", () => {
+    chrome.tabs.create({ url: chrome.runtime.getURL("guide/oauth-guide.html") });
+  });
+  document.getElementById("setupGoCredentialsBtn").addEventListener("click", () => {
+    revealSettingsSection("oauthSection");
+  });
+  document.getElementById("setupLoginBtn").addEventListener("click", () => {
+    // 클라이언트 등록이 안 된 상태에서 로그인을 누르면 실패하므로, 먼저 그 칸으로 안내한다
+    const loginRow = document.getElementById("setupStepCredentials");
+    if (loginRow && !loginRow.classList.contains("done")) {
+      revealSettingsSection("oauthSection");
+      return;
+    }
+    document.getElementById("connectOAuthBtn").click();
+  });
+  document.getElementById("setupGoApiKeyBtn").addEventListener("click", () => {
+    revealSettingsSection("apiKeySection");
+  });
+
+  // 설정이 바뀌면(키 저장, 로그인 완료 등) 체크리스트를 다시 그린다
+  chrome.storage.onChanged.addListener((changes, areaName) => {
+    if (areaName !== "local") return;
+    if (changes.oauthClientId || changes.oauthClientSecret || changes.geminiApiKeys || changes.geminiApiKey || changes.oauthTokens) {
+      refreshSetupChecklist();
+    }
   });
 
   function openLogWindow() {
@@ -203,7 +294,6 @@ async function main() {
   const startBtn = document.getElementById("startBtn");
   const cancelBtn = document.getElementById("cancelBtn");
   const forceCancelBtn = document.getElementById("forceCancelBtn");
-  const batchCountInput = document.getElementById("batchCountInput");
   const emailCountInput = document.getElementById("emailCountInput");
   const batchHint = document.getElementById("batchHint");
   const resultBox = document.getElementById("resultBox");
@@ -212,67 +302,128 @@ async function main() {
   const progressText = document.getElementById("progressText");
 
   let pollTimer = null;
+  let statusChangeListenerAdded = false;
+
+  // 예전에는 작업 중 1초마다 무조건 상태를 물어봤다. 백그라운드가 진행률/상태를 storage에 쓰므로
+  // 변경 이벤트로 반응하고, 폴링은 이벤트를 놓쳤을 때를 위한 백업으로만 느리게 돌린다.
+  const STATUS_POLL_BACKUP_MS = 3000;
+
+  function ensureStatusWatch() {
+    if (!pollTimer) pollTimer = setInterval(pollStatus, STATUS_POLL_BACKUP_MS);
+    if (statusChangeListenerAdded) return;
+    statusChangeListenerAdded = true;
+    chrome.storage.onChanged.addListener((changes, areaName) => {
+      if (areaName !== "local") return;
+      if (
+        changes.jobProgress ||
+        changes.jobStatus ||
+        changes.jobResult ||
+        changes.jobError ||
+        changes.lastApiError
+      ) {
+        pollStatus();
+      }
+    });
+  }
   let config = { batchSize: 40, maxBatchCountPerRun: 10, maxEmailCountPerRun: 400 };
   let syncing = false;
 
-  function syncFromEmailCount() {
+  // 사용자가 정해야 하는 값은 "몇 통 처리할지" 하나뿐이다.
+  // 예전에는 "배치 수"와 "메일 개수" 두 칸이 서로 자동 계산되며 함께 떠 있어서,
+  // 둘의 관계를 사용자가 추측해야 했다. 배치는 내부 구현이므로 힌트 문장으로만 설명한다.
+  function clampEmailCount() {
     if (syncing) return;
     syncing = true;
     let count = parseInt(emailCountInput.value, 10);
     if (isNaN(count) || count < 1) count = 1;
     if (count > config.maxEmailCountPerRun) count = config.maxEmailCountPerRun;
     emailCountInput.value = count;
-    batchCountInput.value = Math.max(1, Math.ceil(count / config.batchSize));
     syncing = false;
+    updateCountHint();
   }
 
-  function syncFromBatchCount() {
-    if (syncing) return;
-    syncing = true;
-    let batches = parseInt(batchCountInput.value, 10);
-    if (isNaN(batches) || batches < 1) batches = 1;
-    if (batches > config.maxBatchCountPerRun) batches = config.maxBatchCountPerRun;
-    batchCountInput.value = batches;
-    emailCountInput.value = batches * config.batchSize;
-    syncing = false;
+  // 이 설정이 API 요청을 몇 번 쓰는지 사용자 언어로 알려준다(RPM/TPM 같은 용어를 그대로 노출하지 않는다).
+  function updateCountHint() {
+    if (!batchHint) return;
+    const count = Math.max(1, parseInt(emailCountInput.value, 10) || 1);
+    const requests = Math.max(1, Math.ceil(count / config.batchSize));
+    batchHint.textContent = t("hintEmailCount", [config.batchSize, requests, config.rpd, config.maxEmailCountPerRun]);
   }
 
-  emailCountInput.addEventListener("input", syncFromEmailCount);
-  batchCountInput.addEventListener("input", syncFromBatchCount);
+  emailCountInput.addEventListener("input", clampEmailCount);
 
   function initConfig() {
     chrome.runtime.sendMessage({ action: "getConfig" }, (result) => {
       if (chrome.runtime.lastError || !result) return;
       config = result;
-      batchCountInput.max = config.maxBatchCountPerRun;
       emailCountInput.max = config.maxEmailCountPerRun;
-      batchHint.textContent = t("batchHint", [config.batchSize, config.rpm, config.tpm, config.rpd]);
-      emailCountInput.value = config.batchSize;
-      syncFromEmailCount();
+      // 기본값은 37 같은 내부 배치 크기 대신 사람이 읽기 쉬운 값으로 둔다
+      const defaultCount = Math.min(50, config.maxEmailCountPerRun);
+      if (!emailCountInput.value || parseInt(emailCountInput.value, 10) < 1) emailCountInput.value = defaultCount;
+      clampEmailCount();
+      updateRepeatHint();
       const autoInput = document.getElementById("autoClassifyThresholdInput");
       if (autoInput) autoInput.max = config.batchSize;
     });
   }
   initConfig();
 
+  // 중지 버튼이 세 개(중지 / 강제 중지 / 배너의 중지) 나란히 떠 있으면 무엇을 눌러야 하는지 알 수 없다.
+  // 평소에는 "중지" 하나만 두고, 중지를 눌렀는데도 작업이 계속될 때만 "강제 중지"를 보여준다.
+  const FORCE_STOP_REVEAL_MS = 6000;
+  let stopRequestedAt = 0;
+  let forceStopRevealTimer = null;
+
+  function markStopRequested() {
+    stopRequestedAt = Date.now();
+    if (forceStopRevealTimer) clearTimeout(forceStopRevealTimer);
+    // 유예 시간이 지난 뒤에도 작업이 살아있으면 강제 중지를 노출한다
+    forceStopRevealTimer = setTimeout(() => {
+      forceStopRevealTimer = null;
+      pollStatus();
+    }, FORCE_STOP_REVEAL_MS + 200);
+  }
+
+  function shouldRevealForceStop() {
+    return stopRequestedAt > 0 && Date.now() - stopRequestedAt >= FORCE_STOP_REVEAL_MS;
+  }
+
+  function updateForceStopVisibility(isRunningThis) {
+    const hint = document.getElementById("forceStopHint");
+    const reveal = isRunningThis && shouldRevealForceStop();
+    forceCancelBtn.classList.toggle("show", reveal);
+    if (reveal) {
+      forceCancelBtn.disabled = false;
+      forceCancelBtn.textContent = t("btnForceStop");
+    }
+    if (hint) hint.style.display = reveal ? "block" : "none";
+  }
+
   function setClassifyRunningUi(isRunningThis, isAnyRunning) {
     startBtn.disabled = isAnyRunning;
-    batchCountInput.disabled = isAnyRunning;
     emailCountInput.disabled = isAnyRunning;
     if (isRunningThis) {
       startBtn.classList.add("running");
       startBtn.textContent = t("btnStartRunning");
       cancelBtn.classList.add("show");
-      cancelBtn.disabled = false;
-      cancelBtn.textContent = t("btnStop");
-      forceCancelBtn.classList.add("show");
-      forceCancelBtn.disabled = false;
-      forceCancelBtn.textContent = t("btnForceStop");
+      if (!stopRequestedAt) {
+        cancelBtn.disabled = false;
+        cancelBtn.textContent = t("btnStop");
+      }
+      updateForceStopVisibility(true);
     } else {
       startBtn.classList.remove("running");
       startBtn.textContent = t("btnStart");
       cancelBtn.classList.remove("show");
-      forceCancelBtn.classList.remove("show");
+      cancelBtn.disabled = false;
+      cancelBtn.textContent = t("btnStop");
+      // 작업이 끝났으면 다음 실행을 위해 중지 상태를 초기화한다
+      stopRequestedAt = 0;
+      if (forceStopRevealTimer) {
+        clearTimeout(forceStopRevealTimer);
+        forceStopRevealTimer = null;
+      }
+      updateForceStopVisibility(false);
     }
   }
 
@@ -311,6 +462,58 @@ async function main() {
     box.classList.add("show");
   }
 
+// ---------------- 결과 요약 카드 ----------------
+  // 예전에는 "마지막 결과: 120개 중 118개 성공" 같은 한 줄 텍스트만 보여줘서
+  // 실패가 몇 건인지, 요청을 얼마나 썼는지 한눈에 파악하기 어려웠다.
+  function buildResultCardHtml(jobStatus, jobResult, jobError, finishedAt) {
+    const statusKey =
+      jobStatus === "done" ? "statusDone"
+      : jobStatus === "cancelled" ? "statusCancelled"
+      : jobStatus === "quota_exceeded" ? "statusQuotaExceeded"
+      : "statusError";
+    const icon =
+      jobStatus === "done" ? "✅" : jobStatus === "cancelled" ? "🛑" : jobStatus === "quota_exceeded" ? "⏳" : "⚠️";
+
+    const r = jobResult || {};
+    const total = Number(r.total || 0);
+    const success = Number(r.success || 0);
+    // 실패는 실제로 실패 메시지가 남은 건수만 센다.
+  // (중지/할당량 초과로 손대지 못한 나머지는 실패가 아니라 미처리이므로 total - success로 추정하지 않는다)
+  const failed = r.failMessages ? r.failMessages.length : 0;
+    const requests = r.requestsUsed;
+
+    let html = `<div class="result-card">`;
+    html += `<div class="result-card-head ${escapeHtml(jobStatus)}">${icon} ${escapeHtml(t(statusKey))}</div>`;
+
+    if (jobStatus !== "error") {
+      html += `<div class="result-card-stats">
+        <div class="result-stat ok"><div class="result-stat-label">${escapeHtml(t("resultCardSuccess"))}</div><div class="result-stat-value">${success}</div></div>
+        <div class="result-stat ${failed ? "fail" : ""}"><div class="result-stat-label">${escapeHtml(t("resultCardFailed"))}</div><div class="result-stat-value">${failed}</div></div>
+        <div class="result-stat"><div class="result-stat-label">${escapeHtml(t("resultCardTotal"))}</div><div class="result-stat-value">${total}</div></div>
+        <div class="result-stat"><div class="result-stat-label">${escapeHtml(t("resultCardRequests"))}</div><div class="result-stat-value">${requests === undefined ? "-" : requests}</div></div>
+      </div>`;
+    }
+
+    const reason = jobStatus === "error" ? jobError : (r.failMessages && r.failMessages[0]);
+    if (reason) {
+      html += `<div class="result-card-reason">${escapeHtml(t("resultCardFailReason"))}: ${escapeHtml(String(reason))}</div>`;
+    }
+    if (jobStatus === "quota_exceeded") {
+      html += `<div class="result-card-reason">${escapeHtml(t("resultQuotaExceeded", [success, total]))}</div>`;
+    }
+    if (finishedAt) {
+      html += `<div class="result-card-time">${escapeHtml(t("resultCardFinishedAt"))}: ${escapeHtml(new Date(finishedAt).toLocaleString())}</div>`;
+    }
+    html += `</div>`;
+    return html;
+  }
+
+  function showResultCard(box, jobStatus, jobResult, jobError, finishedAt) {
+    if (!box) return;
+    box.innerHTML = buildResultCardHtml(jobStatus, jobResult, jobError, finishedAt);
+    box.classList.add("show");
+  }
+
   function translateResponse(response) {
     if (!response) return "";
     if (response.messageKey) return t(response.messageKey, response.messageParams);
@@ -329,27 +532,27 @@ async function main() {
     if (result && result.jobStatus === "running") {
       banner.style.display = "block";
 
-      const kindNames = {
-        classify: "⚡ 이메일 자동 분류 진행 중...",
-        repeat: "🔄 반복 분류 진행 중...",
-        labelSummary: "📋 라벨 한국어 요약 생성 중...",
-        relabel: "🏷️ 라벨 재분류 진행 중...",
-        dedupe: "🧹 중복/오분류 라벨 정리 중...",
-        analyze: "🔍 라벨 분석 진행 중...",
-        deleteLabels: "🗑️ 모든 라벨 삭제 진행 중..."
+      const kindKeys = {
+        classify: "popupJobClassify",
+        repeat: "popupJobRepeat",
+        labelSummary: "popupJobLabelSummary",
+        relabel: "popupJobRelabel",
+        dedupe: "popupJobDedupe",
+        analyze: "popupJobAnalyze",
+        deleteLabels: "popupJobDeleteLabels",
       };
 
-      const titleText = kindNames[result.jobKind] || "⚡ 작업 진행 중...";
+      const titleText = t(kindKeys[result.jobKind] || "popupGlobalProgressTitle");
       if (titleEl) titleEl.textContent = titleText;
 
       let pct = 0;
-      let text = "진행 중...";
+      let text = t("popupProgressGeneric");
       if (result.jobProgress && result.jobProgress.total) {
         pct = Math.min(100, Math.round((result.jobProgress.processed / result.jobProgress.total) * 100));
-        text = `${result.jobProgress.processed} / ${result.jobProgress.total} 메일 처리 완료 (${pct}%)`;
+        text = t("popupProgressMailCount", [result.jobProgress.processed, result.jobProgress.total, pct]);
       } else if (result.jobProgress && typeof result.jobProgress.pct === "number") {
         pct = result.jobProgress.pct;
-        text = `${pct}% 진행됨`;
+        text = t("popupProgressPct", [pct]);
       }
 
       if (barEl) barEl.style.width = `${pct}%`;
@@ -358,6 +561,9 @@ async function main() {
       if (cancelBtn) {
         cancelBtn.onclick = () => {
           chrome.runtime.sendMessage({ action: "cancelJob" });
+          // 배너에서 중지를 눌렀을 때도 같은 상태를 기록해서,
+          // 반응이 없으면 분류 탭의 "강제 중지"가 나타나도록 한다
+          markStopRequested();
         };
       }
     } else {
@@ -381,19 +587,10 @@ async function main() {
       if (result.jobKind === "repeat") {
         if (result.jobStatus === "running") {
           showResult(repeatResultBox, t("statusRunning"));
-        } else if (result.jobStatus === "done" && result.jobResult) {
-          const r = result.jobResult;
-          let text = t("resultLastRun", [r.success, r.total]);
-          if (r.failMessages && r.failMessages.length) text += t("resultFailReasonSuffix", [r.failMessages[0]]);
-          showResult(repeatResultBox, text);
-        } else if (result.jobStatus === "cancelled" && result.jobResult) {
-          const r = result.jobResult;
-          showResult(repeatResultBox, t("resultCancelled", [r.success, r.total]));
-        } else if (result.jobStatus === "quota_exceeded" && result.jobResult) {
-          const r = result.jobResult;
-          showResult(repeatResultBox, t("resultQuotaExceeded", [r.success, r.total]));
+        } else if (["done", "cancelled", "quota_exceeded"].includes(result.jobStatus) && result.jobResult) {
+          showResultCard(repeatResultBox, result.jobStatus, result.jobResult, null, result.jobFinishedAt);
         } else if (result.jobStatus === "error") {
-          showResult(repeatResultBox, t("resultLastError", [result.jobError]));
+          showResultCard(repeatResultBox, "error", null, result.jobError, result.jobFinishedAt);
         }
       }
 
@@ -495,13 +692,13 @@ async function main() {
 
             // 단일 분석(jobResult.suggestion)과 다중 분석(jobResult.suggestions 배열) 둘 다 처리
             if (result.jobResult.suggestion) {
-              appendToScratchpad(result.jobResult.labelName, result.jobResult.suggestion);
+              reloadScratchpadFromStorage();
               showResult(
                 labelAnalysisResultBox,
                 t("msgLabelAnalysisDone", [result.jobResult.labelName, result.jobResult.sampleCount, result.jobResult.totalCount])
               );
             } else if (Array.isArray(result.jobResult.suggestions)) {
-              result.jobResult.suggestions.forEach((s) => appendToScratchpad(s.labelName, s.suggestion));
+              reloadScratchpadFromStorage();
               let text = t("msgLabelAnalysisMultiDone", [result.jobResult.success, result.jobResult.total]);
               if (result.jobResult.failMessages && result.jobResult.failMessages.length) {
                 text += t("resultFailReasonSuffix", [result.jobResult.failMessages[0]]);
@@ -540,25 +737,15 @@ async function main() {
       if (result.jobKind === "classify") {
         if (result.jobStatus === "running") {
           showResult(resultBox, t("statusRunning"));
-        } else if (result.jobStatus === "done" && result.jobResult) {
-          const r = result.jobResult;
-          let text = t("resultLastRun", [r.success, r.total]);
-          if (r.requestsUsed !== undefined) text += t("resultRequestsUsedSuffix", [r.requestsUsed]);
-          if (r.failMessages && r.failMessages.length) text += t("resultFailReasonSuffix", [r.failMessages[0]]);
-          showResult(resultBox, text);
-        } else if (result.jobStatus === "cancelled" && result.jobResult) {
-          const r = result.jobResult;
-          showResult(resultBox, t("resultCancelled", [r.success, r.total]));
-        } else if (result.jobStatus === "quota_exceeded" && result.jobResult) {
-          const r = result.jobResult;
-          showResult(resultBox, t("resultQuotaExceeded", [r.success, r.total]));
+        } else if (["done", "cancelled", "quota_exceeded"].includes(result.jobStatus) && result.jobResult) {
+          showResultCard(resultBox, result.jobStatus, result.jobResult, null, result.jobFinishedAt);
         } else if (result.jobStatus === "error") {
-          showResult(resultBox, t("resultLastError", [result.jobError]));
+          showResultCard(resultBox, "error", null, result.jobError, result.jobFinishedAt);
         }
       }
 
       if (result.jobStatus === "running") {
-        if (!pollTimer) pollTimer = setInterval(pollStatus, 1000);
+        ensureStatusWatch();
       } else if (pollTimer) {
         clearInterval(pollTimer);
         pollTimer = null;
@@ -571,6 +758,7 @@ async function main() {
   cancelBtn.addEventListener("click", () => {
     cancelBtn.disabled = true;
     cancelBtn.textContent = t("btnStopRequesting");
+    markStopRequested();
     chrome.runtime.sendMessage({ action: "cancelJob" }, () => {
       // 상태는 다음 폴링에서 자동 반영됨
     });
@@ -596,7 +784,7 @@ async function main() {
       }
       showResult(resultBox, response ? translateResponse(response) : t("requestSent"));
       if (response && response.ok) {
-        if (!pollTimer) pollTimer = setInterval(pollStatus, 1000);
+        ensureStatusWatch();
         pollStatus();
       }
     });
@@ -611,17 +799,34 @@ async function main() {
   const repeatProgressBar = document.getElementById("repeatProgressBar");
   const repeatProgressText = document.getElementById("repeatProgressText");
 
-  repeatBatchesInput.addEventListener("change", () => {
+  // "배치"는 내부 단위라 숫자만 봐서는 몇 통이 처리되는지 알 수 없다.
+  // 실제 처리량(라운드당 메일 수 x 라운드 수)을 힌트로 함께 보여준다.
+  function updateRepeatHint() {
+    const hint = document.getElementById("repeatHint");
+    if (!hint) return;
+    const batchesEl = document.getElementById("repeatBatchesInput");
+    const roundsEl = document.getElementById("repeatCountInput");
+    if (!batchesEl || !roundsEl) return;
+    const batches = Math.max(1, Math.min(5, parseInt(batchesEl.value, 10) || 1));
+    const rounds = Math.max(1, parseInt(roundsEl.value, 10) || 1);
+    const perRound = batches * config.batchSize;
+    hint.textContent = t("hintRepeatRounds", [perRound, rounds, perRound * rounds]);
+  }
+
+  repeatBatchesInput.addEventListener("input", () => {
     let v = parseInt(repeatBatchesInput.value, 10);
     if (isNaN(v) || v < 1) v = 1;
     if (v > 5) v = 5;
     repeatBatchesInput.value = v;
+    updateRepeatHint();
   });
-  repeatCountInput.addEventListener("change", () => {
+  repeatCountInput.addEventListener("input", () => {
     let v = parseInt(repeatCountInput.value, 10);
     if (isNaN(v) || v < 1) v = 1;
     repeatCountInput.value = v;
+    updateRepeatHint();
   });
+  updateRepeatHint();
 
   function setRepeatRunningUi(isRunningThis, isAnyRunning) {
     repeatBtn.disabled = isAnyRunning;
@@ -667,7 +872,7 @@ async function main() {
       }
       showResult(repeatResultBox, response ? translateResponse(response) : t("requestSent"));
       if (response && response.ok) {
-        if (!pollTimer) pollTimer = setInterval(pollStatus, 1000);
+        ensureStatusWatch();
         pollStatus();
       }
     });
@@ -709,7 +914,7 @@ async function main() {
       }
       showResult(deleteAllLabelsResultBox, response ? translateResponse(response) : t("requestSent"));
       if (response && response.ok) {
-        if (!pollTimer) pollTimer = setInterval(pollStatus, 1000);
+        ensureStatusWatch();
         pollStatus();
       }
     });
@@ -756,7 +961,7 @@ async function main() {
       }
       showResult(relabelResultBox, response ? translateResponse(response) : t("requestSent"));
       if (response && response.ok) {
-        if (!pollTimer) pollTimer = setInterval(pollStatus, 1000);
+        ensureStatusWatch();
         pollStatus();
       }
     });
@@ -779,7 +984,7 @@ async function main() {
       }
       showResult(dedupeResultBox, response ? translateResponse(response) : t("requestSent"));
       if (response && response.ok) {
-        if (!pollTimer) pollTimer = setInterval(pollStatus, 1000);
+        ensureStatusWatch();
         pollStatus();
       }
     });
@@ -1010,13 +1215,21 @@ async function main() {
   });
 
   // "라벨이름 줄바꿈 분류기준" 형식으로 기존 내용 뒤에 이어붙임(여러 번 만들면 빈 줄로 구분)
-  function appendToScratchpad(labelName, suggestion) {
-    const entry = `${labelName}\n${suggestion}`;
-    const current = criteriaScratchpad.value.replace(/\s+$/, "");
-    const updated = current ? `${current}\n\n${entry}` : entry;
-    criteriaScratchpad.value = updated;
-    chrome.storage.local.set({ criteriaScratchpad: updated });
+  // 분석 결과는 백그라운드가 임시저장 칸에 직접 적재한다(팝업이 닫혀 있어도 남게 하기 위함).
+  // 팝업은 저장된 값을 다시 읽어서 화면에만 반영한다.
+  function reloadScratchpadFromStorage() {
+    chrome.storage.local.get(["criteriaScratchpad"], (result) => {
+      criteriaScratchpad.value = result.criteriaScratchpad || "";
+    });
   }
+
+  chrome.storage.onChanged.addListener((changes, areaName) => {
+    if (areaName !== "local" || !changes.criteriaScratchpad) return;
+    const incoming = changes.criteriaScratchpad.newValue || "";
+    // 사용자가 지금 입력 중인 내용을 덮어쓰지 않도록, 포커스가 있을 때는 건드리지 않는다
+    if (document.activeElement === criteriaScratchpad) return;
+    criteriaScratchpad.value = incoming;
+  });
 
   analyzeLabelBtn.addEventListener("click", () => {
     const labelNames = Array.from(labelAnalysisChecklist.querySelectorAll("input:checked")).map((el) => el.value);
@@ -1032,7 +1245,7 @@ async function main() {
       }
       showResult(labelAnalysisResultBox, response ? translateResponse(response) : t("requestSent"));
       if (response && response.ok) {
-        if (!pollTimer) pollTimer = setInterval(pollStatus, 1000);
+        ensureStatusWatch();
         pollStatus();
       }
     });
@@ -1154,10 +1367,13 @@ async function main() {
     chrome.runtime.sendMessage({ action: "getOAuthStatus" }, (response) => {
       if (chrome.runtime.lastError || !response) return;
       oauthStatusText.textContent = response.connected ? t("oauthStatusConnected") : t("oauthStatusNotConnected");
-      oauthReauthBanner.classList.toggle("show", !!response.requiresLogin);
+      // 최초 설정이 아직 안 끝난 상태에서는 체크리스트가 같은 얘기를 하므로 배너까지 띄우지 않는다.
+      // (설정을 마친 뒤 토큰이 만료된 "다시 로그인" 상황에서만 배너를 쓴다)
+      const showReauthBanner = !!response.requiresLogin && !setupIncomplete;
+      oauthReauthBanner.classList.toggle("show", showReauthBanner);
     });
   }
-  refreshOAuthStatus();
+  refreshSetupChecklist(); // 내부에서 refreshOAuthStatus()도 함께 호출한다
 
   document.getElementById("openOAuthGuideBtn").addEventListener("click", () => {
     chrome.tabs.create({ url: chrome.runtime.getURL("guide/oauth-guide.html") });
@@ -1185,7 +1401,7 @@ async function main() {
       }
       showResult(oauthResultBox, response ? translateResponse(response) : t("requestSent"));
       if (response && response.ok) {
-        if (!pollTimer) pollTimer = setInterval(pollStatus, 1000);
+        ensureStatusWatch();
         pollStatus();
       } else {
         showResult(oauthResultBox, t("errorGenericPrefix", [(response && response.error) || ""]));
@@ -1240,7 +1456,7 @@ async function main() {
       }
       showResult(colorResultBox, response ? translateResponse(response) : t("requestSent"));
       if (response && response.ok) {
-        if (!pollTimer) pollTimer = setInterval(pollStatus, 1000);
+        ensureStatusWatch();
         pollStatus();
       }
     });
@@ -1275,6 +1491,15 @@ async function main() {
   });
   correctionLearningCheckbox.addEventListener("change", () => {
     chrome.storage.local.set({ correctionLearningEnabled: correctionLearningCheckbox.checked });
+  });
+
+  // ---- 고급 옵션: 본문 대신 헤더+미리보기만 읽는 빠른 모드 ----
+  const lightMailFetchCheckbox = document.getElementById("lightMailFetchCheckbox");
+  chrome.storage.local.get(["lightMailFetchEnabled"], (result) => {
+    lightMailFetchCheckbox.checked = result.lightMailFetchEnabled === true; // 기본값 꺼짐
+  });
+  lightMailFetchCheckbox.addEventListener("change", () => {
+    chrome.storage.local.set({ lightMailFetchEnabled: lightMailFetchCheckbox.checked });
   });
 
   // ---- 고급 옵션: API 할당량 표시 ----
@@ -1344,7 +1569,7 @@ async function main() {
           return;
         }
         showResult(driveBackupResultBox, response ? translateResponse(response) : t("requestSent"));
-        if (!pollTimer) pollTimer = setInterval(pollStatus, 1000);
+        ensureStatusWatch();
         pollStatus();
         setTimeout(refreshDriveBackupStatus, 2000);
       }
@@ -1375,7 +1600,7 @@ async function main() {
         return;
       }
       showResult(driveBackupResultBox, response ? translateResponse(response) : t("requestSent"));
-      if (!pollTimer) pollTimer = setInterval(pollStatus, 1000);
+      ensureStatusWatch();
       pollStatus();
     });
   });
@@ -1390,6 +1615,7 @@ async function main() {
     "uiLanguage",
     "showQuotaOnMain",
     "correctionLearningEnabled",
+    "lightMailFetchEnabled",
     "importanceCriteria",
     "discordWebhookUrl",
     "discordWebhookUrlHigh",
@@ -1536,15 +1762,15 @@ async function main() {
   function renderSummaryReportHTML(report) {
     if (!report) return "";
     let html = `<div style="font-family: inherit; font-size: 12px; line-height: 1.5;">`;
-    html += `<div style="font-weight: 700; font-size: 13px; color: var(--blue); margin-bottom: 6px;">📋 '${escapeHtml(report.labelName)}' 라벨 요약 리포트</div>`;
+    html += `<div style="font-weight: 700; font-size: 13px; color: var(--blue); margin-bottom: 6px;">${escapeHtml(t("dashBriefTitle", [report.labelName || ""]))}</div>`;
 
     if (report.overallSummary) {
       html += `<div style="background: var(--surface-2); border-left: 3px solid var(--blue); padding: 8px 10px; border-radius: 4px; margin-bottom: 10px; font-size: 12px; white-space: pre-wrap;">${escapeHtml(report.overallSummary)}</div>`;
     }
 
-    html += `<div style="font-size: 11px; color: var(--text-secondary); margin-bottom: 8px;">전체 ${report.totalAnalyzed || 0}개 메일 중 ${report.selectedCount || 0}개 주요 메일 선별</div>`;
+    html += `<div style="font-size: 11px; color: var(--text-secondary); margin-bottom: 8px;">${escapeHtml(t("dashSelectedCountLine", [report.totalAnalyzed || 0, report.selectedCount || 0]))}</div>`;
 
-    let plainText = `[${report.labelName} 라벨 요약 리포트]\n\n● 전체 요약:\n${report.overallSummary || ""}\n\n● 주요 선별 메일 목록 (${report.selectedCount || 0}/${report.totalAnalyzed || 0}):\n`;
+    let plainText = `${t("dashCopyHeader", [report.labelName || ""])}\n\n● ${t("dashCopyOverall")}:\n${report.overallSummary || ""}\n\n● ${t("dashCopySelectedList", [report.selectedCount || 0, report.totalAnalyzed || 0])}:\n`;
 
     if (Array.isArray(report.selectedEmails) && report.selectedEmails.length) {
       report.selectedEmails.forEach((item, idx) => {
@@ -1555,10 +1781,10 @@ async function main() {
         html += `<div style="border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px; margin-bottom: 8px; background: var(--bg);">`;
         html += `<div style="display: flex; align-items: center; justify-content: space-between; gap: 6px; margin-bottom: 4px;">`;
         html += `<span style="font-weight: 600; font-size: 12.5px;">${idx + 1}. ${escapeHtml(item.subject)}</span>`;
-        html += `<span style="font-size: 10px; font-weight: 700; color: #fff; background: ${badgeColor}; padding: 1px 6px; border-radius: 10px; white-space: nowrap;">중요도: ${escapeHtml(imp)}</span>`;
+        html += `<span style="font-size: 10px; font-weight: 700; color: #fff; background: ${badgeColor}; padding: 1px 6px; border-radius: 10px; white-space: nowrap;">${escapeHtml(t("dashCardImportance", [importanceLabel(imp)]))}</span>`;
         html += `</div>`;
 
-        html += `<div style="font-size: 11px; color: var(--text-secondary); margin-bottom: 4px;">발신자: ${escapeHtml(item.sender || "")}</div>`;
+        html += `<div style="font-size: 11px; color: var(--text-secondary); margin-bottom: 4px;">${escapeHtml(t("dashCardSender"))}: ${escapeHtml(item.sender || "")}</div>`;
 
         if (Array.isArray(item.summaryPoints) && item.summaryPoints.length) {
           html += `<ul style="margin: 4px 0 6px 16px; padding: 0; font-size: 11.5px;">`;
@@ -1569,26 +1795,26 @@ async function main() {
         }
 
         if (item.actionRequired && item.actionRequired !== "없음") {
-          html += `<div style="font-size: 11px; color: var(--red); font-weight: 600; margin-top: 4px;">⚡ 조치 사항: ${escapeHtml(item.actionRequired)}</div>`;
+          html += `<div style="font-size: 11px; color: var(--red); font-weight: 600; margin-top: 4px;">⚡ ${escapeHtml(t("dashCardAction"))}: ${escapeHtml(item.actionRequired)}</div>`;
         }
 
         if (mailUrl) {
-          html += `<div style="margin-top: 6px; text-align: right;"><a href="${mailUrl}" target="_blank" style="font-size: 11px; color: var(--blue); text-decoration: none;">메일 보기 ↗</a></div>`;
+          html += `<div style="margin-top: 6px; text-align: right;"><a href="${mailUrl}" target="_blank" style="font-size: 11px; color: var(--blue); text-decoration: none;">${escapeHtml(t("dashOpenInGmail"))}</a></div>`;
         }
         html += `</div>`;
 
-        plainText += `\n${idx + 1}. [중요도: ${imp}] ${item.subject}\n   - 발신자: ${item.sender || ""}\n`;
+        plainText += `\n${idx + 1}. [${t("dashCopyImportanceLabel")}: ${importanceLabel(imp)}] ${item.subject}\n   - ${t("dashCardSender")}: ${item.sender || ""}\n`;
         if (Array.isArray(item.summaryPoints)) {
           item.summaryPoints.forEach((pt) => {
             plainText += `   - ${pt}\n`;
           });
         }
         if (item.actionRequired && item.actionRequired !== "없음") {
-          plainText += `   - 조치 사항: ${item.actionRequired}\n`;
+          plainText += `   - ${t("dashCardAction")}: ${item.actionRequired}\n`;
         }
       });
     } else {
-      html += `<div style="font-size: 12px; color: var(--text-secondary);">선별된 중요 메일이 없습니다.</div>`;
+      html += `<div style="font-size: 12px; color: var(--text-secondary);">${escapeHtml(t("dashNoSelectedMail"))}</div>`;
     }
 
     html += `</div>`;
@@ -1627,7 +1853,7 @@ async function main() {
           if (response && !response.ok) {
             showResult(summaryResultBox, translateResponse(response));
           } else if (response && response.ok) {
-            if (!pollTimer) pollTimer = setInterval(pollStatus, 1000);
+            ensureStatusWatch();
             pollStatus();
           }
         }
@@ -1653,7 +1879,7 @@ async function main() {
     sendDiscordBtn.addEventListener("click", () => {
       chrome.storage.local.get(["lastLabelSummary", "discordWebhookUrl", "discordWebhookUrlHigh", "discordWebhookUrlMedium", "discordWebhookUrlLow"], (stored) => {
         if (!stored.lastLabelSummary) {
-          showResult(summaryResultBox, "전송할 요약 리포트가 없습니다.");
+          showResult(summaryResultBox, t("dashMsgNoReport"));
           return;
         }
         const webhookInput = {
@@ -1694,16 +1920,17 @@ async function main() {
     savePopupDiscordBtn.addEventListener("click", () => {
       const url = popupDiscordWebhookUrl.value.trim();
       chrome.storage.local.set({ discordWebhookUrl: url }, () => {
-        showResult(discordResultBox, "디스코드 웹훅 URL이 저장되었습니다.");
+        showResult(discordResultBox, t("msgDiscordWebhookSaved"));
       });
     });
   }
 
   // ---------------- 중요도 분류 기준 설정 ----------------
+  // 기본 기준도 현재 언어로 제공한다(AI 프롬프트에 그대로 들어가는 값이라 언어가 맞아야 판단이 정확하다)
   const DEFAULT_IMPORTANCE_CRITERIA = {
-    high: "24시간 이내 마감/회신 요구, 결제 실패/서버 오류/계정 보안 경고, 상사의 직접 승인 요청, 법적/비용적 이슈 메일",
-    medium: "일주일 이내 미팅/회의 일정, 프로젝트 진행상황 공유, 일반 업무 요청, 주요 회사/서비스 공지사항",
-    low: "뉴스레터, 정기 보고서, 마케팅/프로모션 참고용, 회신이나 조치가 필요 없는 순수 정보성 알림"
+    high: t("defaultCriteriaHigh"),
+    medium: t("defaultCriteriaMedium"),
+    low: t("defaultCriteriaLow"),
   };
 
   const criteriaHighInput = document.getElementById("criteriaHighInput");
@@ -1730,7 +1957,7 @@ async function main() {
         low: criteriaLowInput.value.trim()
       };
       chrome.storage.local.set({ importanceCriteria }, () => {
-        showResult(criteriaResultBox, "중요도 분류 기준이 저장되었습니다.");
+        showResult(criteriaResultBox, t("msgCriteriaSaved"));
       });
     });
   }
@@ -1739,7 +1966,7 @@ async function main() {
     resetCriteriaBtn.addEventListener("click", () => {
       chrome.storage.local.set({ importanceCriteria: DEFAULT_IMPORTANCE_CRITERIA }, () => {
         loadCriteriaFields();
-        showResult(criteriaResultBox, "기본 분류 기준으로 복원되었습니다.");
+        showResult(criteriaResultBox, t("msgCriteriaReset"));
       });
     });
   }

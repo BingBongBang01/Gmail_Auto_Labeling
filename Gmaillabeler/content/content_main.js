@@ -22,17 +22,34 @@ function stopObservingIfInvalid() {
   return false;
 }
 
+// Gmail은 화면 조작마다 DOM을 대량으로 갈아치우기 때문에, 이 콜백은 초당 수백 번까지 불린다.
+// 실제로 필요한 일은 "주소가 바뀌었는지" 확인하는 것뿐이므로, 짧은 시간 동안 몰려 들어오는
+// 변경들은 한 번으로 합쳐서 처리한다.
+const ROUTE_CHECK_DEBOUNCE_MS = 250;
+
 function observeGmailNavigation() {
   let lastUrl = location.href;
-  observerRef = new MutationObserver(() => {
+  let debounceTimer = null;
+
+  const checkRoute = () => {
+    debounceTimer = null;
     if (stopObservingIfInvalid()) return;
     const url = location.href;
     if (url !== lastUrl) {
       lastUrl = url;
       handleRouteChange(url);
     }
+  };
+
+  observerRef = new MutationObserver(() => {
+    if (debounceTimer) return;
+    debounceTimer = setTimeout(checkRoute, ROUTE_CHECK_DEBOUNCE_MS);
   });
   observerRef.observe(document, { subtree: true, childList: true });
+
+  // 주소 변경은 popstate/hashchange로도 알 수 있어서, 이쪽은 즉시 반응한다
+  window.addEventListener("popstate", checkRoute);
+  window.addEventListener("hashchange", checkRoute);
 }
 
 function handleRouteChange(url) {

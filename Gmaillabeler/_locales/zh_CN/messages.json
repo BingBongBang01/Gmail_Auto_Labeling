@@ -36,7 +36,7 @@
     "message": "摘要"
   },
   "sectionLabelSummary": {
-    "message": "所选标签邮件摘要"
+    "message": "邮件摘要"
   },
   "labelSelectSummaryLabel": {
     "message": "要摘要的标签"
@@ -51,7 +51,7 @@
     "message": "例：仅筛选重要工作通知及支付记录"
   },
   "btnStartSummary": {
-    "message": "生成韩语摘要"
+    "message": "生成摘要"
   },
   "btnCopySummary": {
     "message": "复制摘要"
@@ -67,6 +67,24 @@
   },
   "errorSelectSummaryLabel": {
     "message": "请选择要摘要 summarize 的标签。"
+  },
+  "sectionDiscordWebhook": {
+    "message": "Discord 集成（Discord Webhook）"
+  },
+  "labelDiscordWebhookUrl": {
+    "message": "Discord Webhook URL"
+  },
+  "placeholderDiscordWebhookUrl": {
+    "message": "https://discord.com/api/webhooks/..."
+  },
+  "btnSendDiscord": {
+    "message": "💬 发送到 Discord"
+  },
+  "msgDiscordSent": {
+    "message": "已将摘要报告发送到 Discord。"
+  },
+  "errDiscordWebhookMissing": {
+    "message": "请先输入 Discord Webhook URL。"
   },
   "tabSettings": {
     "message": "设置"
@@ -317,6 +335,12 @@
   },
   "hintQuota": {
     "message": "Gemini 的 API 密钥认证没有官方的实时配额查询接口，这只是本扩展自行统计的、每天午夜重置的请求次数估算值，可能与 Google 控制台的实际数值略有出入。"
+  },
+  "checkboxLightMailFetch": {
+    "message": "快速模式：只读取邮件头和预览，不读取正文"
+  },
+  "hintLightMailFetch": {
+    "message": "不获取完整正文，只获取主题、发件人、日期和 Gmail 预览（约100字）。传输量大幅减少，但无法看到正文底部的退订/促销字样，广告识别准确度可能下降。默认关闭。"
   },
   "quotaText": {
     "message": "今日 Gemini 请求(估算)：$TODAY$ / $RPD$ (按 RPD 计算，午夜重置)",
@@ -626,6 +650,45 @@
   },
   "oauthReauthBanner": {
     "message": "需要登录 Google 才能分类邮件。"
+  },
+  "setupTitle": {
+    "message": "开始使用前需要完成以下设置"
+  },
+  "setupDesc": {
+    "message": "只需设置一次。已完成的步骤会自动打勾，全部完成后本提示会自动消失。"
+  },
+  "setupStepGuideName": {
+    "message": "阅读连接指南"
+  },
+  "setupStepGuideHint": {
+    "message": "逐步说明如何创建你自己的 Google OAuth 客户端（约10分钟）。"
+  },
+  "setupStepCredentialsName": {
+    "message": "填写 OAuth 客户端 ID / 密钥"
+  },
+  "setupStepCredentialsHint": {
+    "message": "把指南中获取的值保存到设置里。"
+  },
+  "setupStepLoginName": {
+    "message": "使用 Google 账号登录"
+  },
+  "setupStepLoginHint": {
+    "message": "授予读取邮件和添加标签的权限。"
+  },
+  "setupStepApiKeyName": {
+    "message": "注册 Gemini API 密钥"
+  },
+  "setupStepApiKeyHint": {
+    "message": "用于 AI 分类。免费密钥也可以使用。"
+  },
+  "setupBtnOpenGuide": {
+    "message": "打开指南"
+  },
+  "setupBtnGo": {
+    "message": "前往设置"
+  },
+  "setupBtnLogin": {
+    "message": "登录"
   },
   "btnOAuthReauth": {
     "message": "登录"
@@ -1185,6 +1248,17 @@
       }
     }
   },
+  "logBatchApplyFallback": {
+    "message": "$COUNT$ 封邮件的批量标签应用失败，将逐封重试。($ERROR$)",
+    "placeholders": {
+      "count": {
+        "content": "$1$"
+      },
+      "error": {
+        "content": "$2$"
+      }
+    }
+  },
   "logApplyComplete": {
     "message": "标签应用完成 ($DONE$/$TOTAL$)",
     "placeholders": {
@@ -1227,7 +1301,7 @@
     }
   },
   "errNoApiKey": {
-    "message": "未设置 Gemini API 密钥。请在扩展程序的选项页面中输入密钥。"
+    "message": "没有 Gemini API 密钥。点击扩展图标，在[设置]标签 >[Gemini API 密钥]中添加密钥。"
   },
   "errNoOAuthClientId": {
     "message": "未设置 Google OAuth 客户端 ID。请在设置标签中输入，获取方法请参考设置指南。"
@@ -1839,6 +1913,17 @@
       }
     }
   },
+  "logTranslateNameConflict": {
+    "message": "两个分类被翻译成了相同的名称，为避免 Gmail 标签冲突，将使用 \"$NEW$\" 而不是 \"$OLD$\"。",
+    "placeholders": {
+      "old": {
+        "content": "$1$"
+      },
+      "new": {
+        "content": "$2$"
+      }
+    }
+  },
   "logTranslateLabelRenameFailed": {
     "message": "重命名 Gmail 标签失败(“$OLD$” → “$NEW$”)：$ERR$",
     "placeholders": {
@@ -1973,10 +2058,670 @@
       }
     }
   },
-  "errDiscordWebhookMissing": {
-    "message": "请先输入 Discord Webhook URL。"
+  "dashPageTitle": {
+    "message": "Gmail AI Labeler - 控制面板"
   },
-  "msgDiscordSent": {
-    "message": "已将摘要报告发送到 Discord。"
+  "dashSubtitle": {
+    "message": "邮件分类与摘要综合面板"
+  },
+  "dashBtnTheme": {
+    "message": "🌙 切换主题"
+  },
+  "dashBtnRefreshTitle": {
+    "message": "刷新"
+  },
+  "dashNavTitleMain": {
+    "message": "主菜单"
+  },
+  "dashNavSummary": {
+    "message": "邮件摘要"
+  },
+  "dashNavClassify": {
+    "message": "AI 标签分类"
+  },
+  "dashNavLabels": {
+    "message": "标签管理"
+  },
+  "dashNavRelabel": {
+    "message": "重新应用与去重"
+  },
+  "dashNavSettings": {
+    "message": "设置与 Discord"
+  },
+  "dashNavLogs": {
+    "message": "系统日志"
+  },
+  "dashNavTitleLabels": {
+    "message": "标签列表"
+  },
+  "dashLabelSelected": {
+    "message": "标签："
+  },
+  "dashOptionLoadingLabels": {
+    "message": "正在加载标签..."
+  },
+  "dashLabelAnalyzeCount": {
+    "message": "邮件数："
+  },
+  "dashLabelFilterCriteria": {
+    "message": "筛选条件："
+  },
+  "dashPlaceholderCriteria": {
+    "message": "例：只筛选重要日程和支出"
+  },
+  "dashBtnRunSummary": {
+    "message": "🚀 生成摘要"
+  },
+  "dashPanelSummaryTitle": {
+    "message": "📋 标签邮件摘要"
+  },
+  "dashProgressSummary": {
+    "message": "正在处理摘要..."
+  },
+  "dashSummaryPlaceholder": {
+    "message": "在左侧选择标签，然后点击上方的“生成摘要”，即可为该标签的邮件生成摘要报告。"
+  },
+  "dashSummaryTitleForLabel": {
+    "message": "📋 [$LABEL$] 邮件摘要",
+    "placeholders": {
+      "label": {
+        "content": "$1"
+      }
+    }
+  },
+  "dashSummaryNeedLabel": {
+    "message": "📋 请选择标签"
+  },
+  "dashPanelClassifyTitle": {
+    "message": "🤖 AI 自动标签分类"
+  },
+  "dashClassifyDesc": {
+    "message": "AI 会分析收件箱中的邮件，并自动归入你设置的分类标签。"
+  },
+  "dashBtnStartClassify": {
+    "message": "⚡ 开始自动分类"
+  },
+  "dashBtnStopClassify": {
+    "message": "🛑 停止分类"
+  },
+  "dashProgressClassify": {
+    "message": "正在分类..."
+  },
+  "dashPanelLabelsTitle": {
+    "message": "🏷️ 分类与标签管理"
+  },
+  "dashBtnResetCategories": {
+    "message": "🔄 恢复默认标签"
+  },
+  "dashBtnDeleteAllLabels": {
+    "message": "🗑️ 删除全部标签"
+  },
+  "dashPanelRelabelTitle": {
+    "message": "🔄 重新应用标签与去重"
+  },
+  "dashRelabelHeading": {
+    "message": "重新分类已有邮件"
+  },
+  "dashRelabelDesc": {
+    "message": "使用当前分类标准，对已收到的邮件重新分类。"
+  },
+  "dashOptionAllLabels": {
+    "message": "全部标签"
+  },
+  "dashCheckboxExcludeSelf": {
+    "message": "从候选中排除该标签"
+  },
+  "dashBtnStartRelabel": {
+    "message": "🚀 开始重新分类"
+  },
+  "dashDedupeHeading": {
+    "message": "整理重复标签"
+  },
+  "dashDedupeDesc": {
+    "message": "如果一封邮件带有多个分类标签，只保留最合适的一个。"
+  },
+  "dashBtnStartDedupe": {
+    "message": "🧹 整理重复标签"
+  },
+  "dashPanelSettingsTitle": {
+    "message": "⚙️ 个性化与 Discord 设置"
+  },
+  "dashApiKeyHeading": {
+    "message": "🔑 Gemini API 密钥"
+  },
+  "dashBtnAddApiKey": {
+    "message": "➕ 添加密钥"
+  },
+  "dashBtnSaveApiKey": {
+    "message": "💾 保存密钥"
+  },
+  "dashPlaceholderKeyAlias": {
+    "message": "密钥别名（可选）"
+  },
+  "dashDiscordHeading": {
+    "message": "💬 按重要度分流的 Discord Webhook"
+  },
+  "dashDiscordDesc": {
+    "message": "根据 AI 判定的重要度（高/中/低）分别发送到不同的 Discord 频道。留空的等级会发送到默认 Webhook。"
+  },
+  "dashLabelWebhookDefault": {
+    "message": "默认 Webhook URL（全部发送）"
+  },
+  "dashLabelWebhookHigh": {
+    "message": "🔴 高重要度专用 Webhook URL"
+  },
+  "dashLabelWebhookMedium": {
+    "message": "🟡 中等重要度专用 Webhook URL"
+  },
+  "dashLabelWebhookLow": {
+    "message": "🟢 低重要度专用 Webhook URL"
+  },
+  "dashPlaceholderWebhookHigh": {
+    "message": "🔴 紧急/重要频道 Webhook URL"
+  },
+  "dashPlaceholderWebhookMedium": {
+    "message": "🟡 一般通知频道 Webhook URL"
+  },
+  "dashPlaceholderWebhookLow": {
+    "message": "🟢 参考/订阅通讯频道 Webhook URL"
+  },
+  "dashCriteriaHeading": {
+    "message": "🎯 重要度判断标准"
+  },
+  "dashLabelCriteriaHigh": {
+    "message": "高重要度标准"
+  },
+  "dashLabelCriteriaMedium": {
+    "message": "中等重要度标准"
+  },
+  "dashLabelCriteriaLow": {
+    "message": "低重要度标准"
+  },
+  "dashPlaceholderCriteriaHigh": {
+    "message": "例：需立即回复/付款/合同/故障"
+  },
+  "dashPlaceholderCriteriaMedium": {
+    "message": "例：日常事务/日程变更/通知"
+  },
+  "dashPlaceholderCriteriaLow": {
+    "message": "例：营销/订阅通讯/广告/活动"
+  },
+  "dashBtnSaveDiscordSettings": {
+    "message": "💾 保存 Discord 与重要度设置"
+  },
+  "dashDriveHeading": {
+    "message": "☁️ Google Drive 备份与恢复"
+  },
+  "dashDriveDesc": {
+    "message": "将分类、判断标准和设置备份到 Google Drive，或从中恢复。"
+  },
+  "dashBtnBackupDrive": {
+    "message": "☁️ 备份到 Drive"
+  },
+  "dashBtnRestoreDrive": {
+    "message": "📥 从 Drive 恢复"
+  },
+  "dashPanelLogsTitle": {
+    "message": "📜 系统日志"
+  },
+  "dashBtnClearLogs": {
+    "message": "🧹 清空日志"
+  },
+  "dashLogsLoading": {
+    "message": "正在加载日志..."
+  },
+  "dashLogsEmpty": {
+    "message": "暂无日志记录。"
+  },
+  "dashFilterAll": {
+    "message": "全部"
+  },
+  "dashFilterImportance": {
+    "message": "重要度 $LEVEL$",
+    "placeholders": {
+      "level": {
+        "content": "$1"
+      }
+    }
+  },
+  "dashImportanceHigh": {
+    "message": "高"
+  },
+  "dashImportanceMedium": {
+    "message": "中"
+  },
+  "dashImportanceLow": {
+    "message": "低"
+  },
+  "dashCardSender": {
+    "message": "发件人"
+  },
+  "dashCardAction": {
+    "message": "需处理事项"
+  },
+  "dashCardActionNone": {
+    "message": "无"
+  },
+  "dashNoSelectedMail": {
+    "message": "没有被选为重要的邮件。"
+  },
+  "dashCopyHeader": {
+    "message": "[📋 $LABEL$ 标签 AI 摘要报告]",
+    "placeholders": {
+      "label": {
+        "content": "$1"
+      }
+    }
+  },
+  "dashCopyOverall": {
+    "message": "总体摘要"
+  },
+  "dashCopySelectedList": {
+    "message": "已筛选邮件 ($SELECTED$/$TOTAL$)",
+    "placeholders": {
+      "selected": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      }
+    }
+  },
+  "dashCopyImportanceLabel": {
+    "message": "重要度"
+  },
+  "dashJobSummarizing": {
+    "message": "正在收集并摘要邮件"
+  },
+  "dashJobClassifying": {
+    "message": "正在分类邮件"
+  },
+  "dashJobRunningGeneric": {
+    "message": "任务正在进行..."
+  },
+  "dashResultDone": {
+    "message": "完成：$TOTAL$ 封中处理了 $SUCCESS$ 封",
+    "placeholders": {
+      "total": {
+        "content": "$1"
+      },
+      "success": {
+        "content": "$2"
+      }
+    }
+  },
+  "dashResultCancelled": {
+    "message": "已停止：$TOTAL$ 封中处理了 $SUCCESS$ 封",
+    "placeholders": {
+      "total": {
+        "content": "$1"
+      },
+      "success": {
+        "content": "$2"
+      }
+    }
+  },
+  "dashResultQuota": {
+    "message": "配额超限中止：$TOTAL$ 封中处理了 $SUCCESS$ 封",
+    "placeholders": {
+      "total": {
+        "content": "$1"
+      },
+      "success": {
+        "content": "$2"
+      }
+    }
+  },
+  "dashOptionSelectLabel": {
+    "message": "请选择标签"
+  },
+  "dashMsgNeedSummaryLabel": {
+    "message": "请先选择要摘要的标签。"
+  },
+  "dashMsgNeedRelabelLabel": {
+    "message": "请先选择要重新分类的标签。"
+  },
+  "dashMsgCopied": {
+    "message": "✅ 已复制。"
+  },
+  "dashMsgNoReport": {
+    "message": "没有可发送的摘要报告。"
+  },
+  "dashMsgNeedWebhook": {
+    "message": "请先在设置标签中填写 Discord Webhook URL。"
+  },
+  "dashMsgDiscordSent": {
+    "message": "✅ 已发送到 Discord。"
+  },
+  "dashMsgDiscordFailed": {
+    "message": "发送失败：$ERROR$",
+    "placeholders": {
+      "error": {
+        "content": "$1"
+      }
+    }
+  },
+  "dashConfirmResetCategories": {
+    "message": "要恢复为默认分类吗？当前的分类将被替换。"
+  },
+  "dashConfirmDeleteAllLabels": {
+    "message": "将删除本扩展创建的所有 Gmail 标签，且无法撤销。要继续吗？"
+  },
+  "dashMsgDeleteLabelsStarted": {
+    "message": "已开始删除标签。"
+  },
+  "dashMsgNeedApiKey": {
+    "message": "请至少填写一个 Gemini API 密钥。"
+  },
+  "dashMsgKeysSaved": {
+    "message": "已保存 $COUNT$ 个 Gemini API 密钥。",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "dashMsgDiscordSettingsSaved": {
+    "message": "已保存 Discord 与重要度设置。"
+  },
+  "dashMsgBackupStarted": {
+    "message": "已开始备份到 Google Drive。"
+  },
+  "dashConfirmRestoreDrive": {
+    "message": "将用 Drive 备份覆盖当前设置。要继续吗？"
+  },
+  "dashMsgRestoreStarted": {
+    "message": "已开始从 Google Drive 恢复。"
+  },
+  "dashMsgCannotStart": {
+    "message": "无法开始该请求。"
+  },
+  "dashSelectedCountLine": {
+    "message": "$TOTAL$ 封中筛选出 $SELECTED$ 封",
+    "placeholders": {
+      "total": {
+        "content": "$1"
+      },
+      "selected": {
+        "content": "$2"
+      }
+    }
+  },
+  "dashBriefTitle": {
+    "message": "💡 “$LABEL$” AI 综合简报",
+    "placeholders": {
+      "label": {
+        "content": "$1"
+      }
+    }
+  },
+  "dashCardImportance": {
+    "message": "重要度：$LEVEL$",
+    "placeholders": {
+      "level": {
+        "content": "$1"
+      }
+    }
+  },
+  "dashSenderUnknown": {
+    "message": "未知"
+  },
+  "dashOpenInGmail": {
+    "message": "在 Gmail 中打开 ↗"
+  },
+  "dashBtnAddCategory": {
+    "message": "添加分类"
+  },
+  "dashBtnSaveCategories": {
+    "message": "保存分类"
+  },
+  "popupGlobalProgressTitle": {
+    "message": "⚡ 正在处理..."
+  },
+  "popupBtnGlobalStopTitle": {
+    "message": "停止任务"
+  },
+  "popupBtnGlobalStop": {
+    "message": "🛑 停止"
+  },
+  "popupBtnOpenDashboard": {
+    "message": "🖥️ 打开全屏控制面板"
+  },
+  "popupLinkOpenDashboard": {
+    "message": "🖥️ 打开控制面板"
+  },
+  "hintDiscordPopup": {
+    "message": "填写 Webhook URL 后，邮件摘要和重要通知会发送到你的 Discord 频道。"
+  },
+  "sectionCriteria": {
+    "message": "重要度（高/中/低）判断标准"
+  },
+  "hintCriteria": {
+    "message": "这些是 AI 判断邮件重要度的标准。按你的工作调整后，摘要质量会更好。"
+  },
+  "btnSaveCriteria": {
+    "message": "保存标准"
+  },
+  "btnResetCriteria": {
+    "message": "恢复默认"
+  },
+  "msgCriteriaSaved": {
+    "message": "已保存重要度标准。"
+  },
+  "msgCriteriaReset": {
+    "message": "已恢复为默认标准。"
+  },
+  "msgDiscordWebhookSaved": {
+    "message": "已保存 Discord Webhook URL。"
+  },
+  "popupJobClassify": {
+    "message": "⚡ 正在自动分类邮件..."
+  },
+  "popupJobRepeat": {
+    "message": "🔄 正在重复分类..."
+  },
+  "popupJobLabelSummary": {
+    "message": "📋 正在生成标签摘要..."
+  },
+  "popupJobRelabel": {
+    "message": "🏷️ 正在重新分类标签..."
+  },
+  "popupJobDedupe": {
+    "message": "🧹 正在整理重复标签..."
+  },
+  "popupJobAnalyze": {
+    "message": "🔍 正在分析标签..."
+  },
+  "popupJobDeleteLabels": {
+    "message": "🗑️ 正在删除标签..."
+  },
+  "popupProgressGeneric": {
+    "message": "正在处理..."
+  },
+  "popupProgressMailCount": {
+    "message": "已处理 $PROCESSED$ / $TOTAL$ 封（$PCT$%）",
+    "placeholders": {
+      "processed": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      },
+      "pct": {
+        "content": "$3"
+      }
+    }
+  },
+  "popupProgressPct": {
+    "message": "已完成 $PCT$%",
+    "placeholders": {
+      "pct": {
+        "content": "$1"
+      }
+    }
+  },
+  "defaultCriteriaHigh": {
+    "message": "24 小时内到期或需回复、付款失败、服务故障、账号安全警告、上级的审批请求、法务或费用问题"
+  },
+  "defaultCriteriaMedium": {
+    "message": "一周内的会议或日程、项目进展、常规工作请求、重要服务通知"
+  },
+  "defaultCriteriaLow": {
+    "message": "订阅通讯、定期报告、营销促销、无需回复或处理的信息通知"
+  },
+  "hintEmailCount": {
+    "message": "每次 AI 请求处理 $BATCH$ 封邮件。当前设置约使用 $REQUESTS$ 次请求（每日估算上限 $RPD$ 次）。最多可设置 $MAX$ 封。",
+    "placeholders": {
+      "batch": {
+        "content": "$1"
+      },
+      "requests": {
+        "content": "$2"
+      },
+      "rpd": {
+        "content": "$3"
+      },
+      "max": {
+        "content": "$4"
+      }
+    }
+  },
+  "hintRepeatRounds": {
+    "message": "每轮最多 $PERROUND$ 封 × $ROUNDS$ 轮 = 最多 $TOTAL$ 封",
+    "placeholders": {
+      "perround": {
+        "content": "$1"
+      },
+      "rounds": {
+        "content": "$2"
+      },
+      "total": {
+        "content": "$3"
+      }
+    }
+  },
+  "hintForceStop": {
+    "message": "停止请求尚未生效。[强制停止]会立即结束任务而不再等待（已添加的标签会保留）。"
+  },
+  "settingsGroupEssential": {
+    "message": "必需连接"
+  },
+  "settingsGroupRules": {
+    "message": "分类规则"
+  },
+  "settingsGroupTools": {
+    "message": "标签整理工具"
+  },
+  "settingsGroupApp": {
+    "message": "通知与应用设置"
+  },
+  "dashRepeatHeading": {
+    "message": "重复分类"
+  },
+  "dashRepeatDesc": {
+    "message": "一次性全部处理可能超出每日 API 上限而中断。积压较多时，分成小批多次执行更安全。"
+  },
+  "dashLabelRepeatBatches": {
+    "message": "每轮批数 (1-5)"
+  },
+  "dashLabelRepeatRounds": {
+    "message": "轮数"
+  },
+  "dashBtnStartRepeat": {
+    "message": "🔁 开始重复分类"
+  },
+  "dashFilterRulesHeading": {
+    "message": "个人筛选规则"
+  },
+  "dashFilterRulesDesc": {
+    "message": "在 AI 分析之前先检查。匹配时直接添加指定标签，不调用 AI。"
+  },
+  "dashBtnAddFilterRule": {
+    "message": "➕ 添加规则"
+  },
+  "dashBtnSaveFilterRules": {
+    "message": "💾 保存规则"
+  },
+  "dashMsgFilterRulesSaved": {
+    "message": "已保存 $COUNT$ 条筛选规则。",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "dashPlaceholderMatchValue": {
+    "message": "要匹配的文本（例：@shop.com）"
+  },
+  "dashPlaceholderTargetLabel": {
+    "message": "要添加的标签名"
+  },
+  "dashBtnDeleteRule": {
+    "message": "删除"
+  },
+  "dashLabelAnalysisHeading": {
+    "message": "分析标签生成分类标准"
+  },
+  "dashLabelAnalysisDesc": {
+    "message": "选择标签后，AI 会查看实际归入该标签的邮件，并提出可用的分类标准文本。"
+  },
+  "dashBtnSelectAll": {
+    "message": "全选"
+  },
+  "dashBtnSelectNone": {
+    "message": "取消全选"
+  },
+  "dashBtnAnalyze": {
+    "message": "🔍 开始分析"
+  },
+  "dashScratchpadDesc": {
+    "message": "草稿区。生成的建议会保留，即使关闭页面也不会丢失。点击[应用到分类]会填入各分类的说明栏。"
+  },
+  "dashBtnApplyScratchpad": {
+    "message": "应用到分类"
+  },
+  "dashBtnClearScratchpad": {
+    "message": "清空"
+  },
+  "dashMsgNeedAnalysisLabel": {
+    "message": "请至少选择一个要分析的标签。"
+  },
+  "dashMsgScratchpadApplied": {
+    "message": "已填入 $COUNT$ 个分类的标准。",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "dashMsgScratchpadNotFound": {
+    "message": "未找到可应用的内容。请检查是否为“分类名: 标准”格式。"
+  },
+  "dashMsgScratchpadEmpty": {
+    "message": "草稿区为空。"
+  },
+  "dashRoleHintPopup": {
+    "message": "在此弹窗中也可完成设置，但项目较多时全屏控制面板更方便。"
+  },
+  "resultCardSuccess": {
+    "message": "成功"
+  },
+  "resultCardFailed": {
+    "message": "失败"
+  },
+  "resultCardTotal": {
+    "message": "总计"
+  },
+  "resultCardRequests": {
+    "message": "AI 请求"
+  },
+  "resultCardFailReason": {
+    "message": "失败原因"
+  },
+  "resultCardFinishedAt": {
+    "message": "完成"
+  },
+  "resultCardNothingYet": {
+    "message": "尚未执行任何任务。"
   }
 }
