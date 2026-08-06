@@ -2602,5 +2602,17 @@
   },
   "hintForceStop": {
     "message": "The stop request has not taken effect yet. [Force stop] ends the job immediately without waiting (labels already applied stay)."
+  },
+  "settingsGroupEssential": {
+    "message": "Required connections"
+  },
+  "settingsGroupRules": {
+    "message": "Classification rules"
+  },
+  "settingsGroupTools": {
+    "message": "Label cleanup tools"
+  },
+  "settingsGroupApp": {
+    "message": "Notifications and app settings"
   }
 }

@@ -78,6 +78,16 @@
   html[data-theme="dark"] .api-error-banner { background: #3a2a28; color: #ffb4ab; }
   @keyframes blink { 0%,100%{opacity:1;} 50%{opacity:0.35;} }
 
+  /* ---- 설정 탭 그룹 (섹션 14개를 성격별로 묶어서 훑기 쉽게 함) ---- */
+  .settings-cluster { margin: 0 0 18px; }
+  .settings-cluster:last-child { margin-bottom: 4px; }
+  .settings-cluster-title {
+    font-size: 10.5px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase;
+    color: var(--text-secondary); padding: 0 2px 6px;
+    border-bottom: 1px solid var(--border); margin-bottom: 8px;
+  }
+  .settings-cluster .settings-group { margin-left: 0; margin-right: 0; }
+
   /* ---- 최초 설정 안내 (설정이 끝나면 자동으로 사라짐) ---- */
   .setup-card {
     display: none; margin: 8px 12px 0; padding: 10px 12px; border-radius: 8px;
@@ -430,9 +440,10 @@
 
   <!-- 통합 설정 탭 -->
   <div class="tab-panel" id="panel-settings">
-    
-    <!-- 1. API 키 설정 -->
-    <details class="settings-group" id="apiKeySection" open>
+
+    <div class="settings-cluster">
+      <div class="settings-cluster-title" data-i18n="settingsGroupEssential">Required connections</div>
+<details class="settings-group" id="apiKeySection" open>
       <summary data-i18n="sectionApiKey">Gemini API Key</summary>
       <div class="hint" data-i18n="hintApiKey"></div>
       <button class="link" id="openAiStudioBtn" type="button" style="padding-left:0;" data-i18n="btnGetApiKey">Get a key</button>
@@ -443,114 +454,7 @@
       </div>
       <div class="result-box" id="keyResultBox"></div>
     </details>
-
-    <!-- 2. 디스코드 연동 -->
-    <details class="settings-group">
-      <summary data-i18n="sectionDiscordWebhook">Discord Integration (Discord Webhook)</summary>
-      <div class="hint" data-i18n="hintDiscordPopup"></div>
-      <input type="password" id="popupDiscordWebhookUrl" data-i18n-placeholder="placeholderDiscordWebhookUrl" placeholder="https://discord.com/api/webhooks/...">
-      <div class="btn-row" style="margin-top:6px;">
-        <button class="primary" id="savePopupDiscordBtn">Save Discord Webhook</button>
-      </div>
-      <div class="result-box" id="discordResultBox"></div>
-    </details>
-
-    <!-- 3. 중요도 분류 기준 -->
-    <details class="settings-group">
-      <summary data-i18n="sectionCriteria">Importance criteria (high/medium/low)</summary>
-      <div class="hint" data-i18n="hintCriteria"></div>
-      
-      <div class="field-row" style="flex-direction:column; align-items:stretch; margin-bottom:6px;">
-        <label for="criteriaHighInput" style="font-weight:600; color:var(--red);">🔴 <span data-i18n="dashLabelCriteriaHigh">High importance criteria</span></label>
-        <textarea id="criteriaHighInput" rows="2" style="font-size:11.5px;"></textarea>
-      </div>
-
-      <div class="field-row" style="flex-direction:column; align-items:stretch; margin-bottom:6px;">
-        <label for="criteriaMediumInput" style="font-weight:600; color:var(--amber);">🟡 <span data-i18n="dashLabelCriteriaMedium">Medium importance criteria</span></label>
-        <textarea id="criteriaMediumInput" rows="2" style="font-size:11.5px;"></textarea>
-      </div>
-
-      <div class="field-row" style="flex-direction:column; align-items:stretch; margin-bottom:6px;">
-        <label for="criteriaLowInput" style="font-weight:600; color:var(--green);">🟢 <span data-i18n="dashLabelCriteriaLow">Low importance criteria</span></label>
-        <textarea id="criteriaLowInput" rows="2" style="font-size:11.5px;"></textarea>
-      </div>
-
-      <div class="btn-row">
-        <button class="primary" id="saveCriteriaBtn" data-i18n="btnSaveCriteria">Save criteria</button>
-        <button id="resetCriteriaBtn" data-i18n="btnResetCriteria">Reset to defaults</button>
-      </div>
-      <div class="result-box" id="criteriaResultBox"></div>
-    </details>
-
-    <!-- 4. 개인 필터 규칙 -->
-    <details class="settings-group">
-      <summary data-i18n="sectionFilterRules">Personal filter rules</summary>
-      <div class="hint" data-i18n="hintFilterRules"></div>
-      <div id="filterRulesList"></div>
-      <div class="btn-row">
-        <button id="addFilterRuleBtn" data-i18n="btnAddFilterRule">+ Add rule</button>
-        <button class="primary" id="saveFilterRulesBtn" data-i18n="btnSaveFilterRules">Save rules</button>
-      </div>
-      <div class="result-box" id="filterRulesResultBox"></div>
-    </details>
-
-    <!-- 5. 라벨 카테고리 설정 -->
-    <details class="settings-group">
-      <summary data-i18n="sectionCategories">Label categories</summary>
-      <div class="hint" data-i18n="hintCategories"></div>
-      <div id="categoriesList"></div>
-      <div class="btn-row">
-        <button id="addCategoryBtn" data-i18n="btnAddCategory">+ Add category</button>
-        <button class="primary" id="saveCategoriesBtn" data-i18n="btnSaveCategories">Save</button>
-      </div>
-      <button id="resetCategoriesBtn" type="button" style="width:100%; margin-top:6px;" data-i18n="btnResetCategories">Reset to defaults</button>
-      <div class="result-box" id="categoryResultBox"></div>
-    </details>
-
-    <!-- 6. 재분류/분할 및 중복 라벨 정리 -->
-    <details class="settings-group">
-      <summary data-i18n="sectionRelabelSplit">Relabel / split</summary>
-      <div class="hint" data-i18n="hintRelabelSplit"></div>
-      <select id="relabelSelect"></select>
-      <label class="checkbox-row">
-        <input type="checkbox" id="excludeSelfCheckbox">
-        <span data-i18n="checkboxExcludeSelf">Exclude this label from candidates (split mode)</span>
-      </label>
-      <button class="primary" id="relabelBtn" data-i18n="btnStartRelabel">Start relabeling</button>
-      <div class="result-box" id="relabelResultBox"></div>
-    </details>
-
-    <details class="settings-group">
-      <summary data-i18n="sectionDedupe">Clean up duplicate/miss-applied labels</summary>
-      <div class="hint" data-i18n="hintDedupe"></div>
-      <button class="danger" id="dedupeBtn" style="width:100%;" data-i18n="btnDedupe">Remove labels & reclassify</button>
-      <div class="result-box" id="dedupeResultBox"></div>
-    </details>
-
-    <!-- 7. 라벨 분석 -->
-    <details class="settings-group">
-      <summary data-i18n="sectionLabelAnalysis">Analyze label for criteria</summary>
-      <div class="hint" data-i18n="hintLabelAnalysis"></div>
-      <div id="labelAnalysisChecklist"></div>
-      <div class="btn-row">
-        <button id="labelAnalysisSelectAllBtn" type="button" data-i18n="btnSelectAll">Select all</button>
-        <button id="labelAnalysisSelectNoneBtn" type="button" data-i18n="btnSelectNone">Select none</button>
-      </div>
-      <button class="primary" id="analyzeLabelBtn" style="width:100%; margin-top:6px;" data-i18n="btnAnalyzeLabel">Analyze</button>
-      <div class="progress-wrap" id="labelAnalysisProgressWrap"><div class="progress-bar" id="labelAnalysisProgressBar"></div></div>
-      <div class="progress-text" id="labelAnalysisProgressText"></div>
-      <div class="result-box" id="labelAnalysisResultBox"></div>
-
-      <div class="hint" data-i18n="hintScratchpad" style="margin-top:10px;"></div>
-      <textarea id="criteriaScratchpad" rows="7" data-i18n-placeholder="placeholderScratchpad" style="width:100%; font-size:12px;"></textarea>
-      <div class="btn-row">
-        <button class="primary" id="applyScratchpadBtn" data-i18n="btnApplyScratchpad">Apply to categories</button>
-        <button id="clearScratchpadBtn" data-i18n="btnClearScratchpad">Clear</button>
-      </div>
-    </details>
-
-    <!-- 8. Google 계정 연동 (OAuth) -->
-    <details class="settings-group" id="oauthSection">
+<details class="settings-group" id="oauthSection">
       <summary data-i18n="sectionOAuth">Google account connection (personal OAuth)</summary>
       <div class="hint" data-i18n="hintOAuth"></div>
       <div class="btn-row">
@@ -576,9 +480,162 @@
       <div class="hint" id="oauthStatusText" style="margin-top:6px;"></div>
       <div class="result-box" id="oauthResultBox"></div>
     </details>
+    </div>
 
-    <!-- 9. 백업 및 복원 -->
-    <details class="settings-group">
+    <div class="settings-cluster">
+      <div class="settings-cluster-title" data-i18n="settingsGroupRules">Classification rules</div>
+<details class="settings-group">
+      <summary data-i18n="sectionCategories">Label categories</summary>
+      <div class="hint" data-i18n="hintCategories"></div>
+      <div id="categoriesList"></div>
+      <div class="btn-row">
+        <button id="addCategoryBtn" data-i18n="btnAddCategory">+ Add category</button>
+        <button class="primary" id="saveCategoriesBtn" data-i18n="btnSaveCategories">Save</button>
+      </div>
+      <button id="resetCategoriesBtn" type="button" style="width:100%; margin-top:6px;" data-i18n="btnResetCategories">Reset to defaults</button>
+      <div class="result-box" id="categoryResultBox"></div>
+    </details>
+<details class="settings-group">
+      <summary data-i18n="sectionFilterRules">Personal filter rules</summary>
+      <div class="hint" data-i18n="hintFilterRules"></div>
+      <div id="filterRulesList"></div>
+      <div class="btn-row">
+        <button id="addFilterRuleBtn" data-i18n="btnAddFilterRule">+ Add rule</button>
+        <button class="primary" id="saveFilterRulesBtn" data-i18n="btnSaveFilterRules">Save rules</button>
+      </div>
+      <div class="result-box" id="filterRulesResultBox"></div>
+    </details>
+<details class="settings-group">
+      <summary data-i18n="sectionCriteria">Importance criteria (high/medium/low)</summary>
+      <div class="hint" data-i18n="hintCriteria"></div>
+      
+      <div class="field-row" style="flex-direction:column; align-items:stretch; margin-bottom:6px;">
+        <label for="criteriaHighInput" style="font-weight:600; color:var(--red);">🔴 <span data-i18n="dashLabelCriteriaHigh">High importance criteria</span></label>
+        <textarea id="criteriaHighInput" rows="2" style="font-size:11.5px;"></textarea>
+      </div>
+
+      <div class="field-row" style="flex-direction:column; align-items:stretch; margin-bottom:6px;">
+        <label for="criteriaMediumInput" style="font-weight:600; color:var(--amber);">🟡 <span data-i18n="dashLabelCriteriaMedium">Medium importance criteria</span></label>
+        <textarea id="criteriaMediumInput" rows="2" style="font-size:11.5px;"></textarea>
+      </div>
+
+      <div class="field-row" style="flex-direction:column; align-items:stretch; margin-bottom:6px;">
+        <label for="criteriaLowInput" style="font-weight:600; color:var(--green);">🟢 <span data-i18n="dashLabelCriteriaLow">Low importance criteria</span></label>
+        <textarea id="criteriaLowInput" rows="2" style="font-size:11.5px;"></textarea>
+      </div>
+
+      <div class="btn-row">
+        <button class="primary" id="saveCriteriaBtn" data-i18n="btnSaveCriteria">Save criteria</button>
+        <button id="resetCriteriaBtn" data-i18n="btnResetCriteria">Reset to defaults</button>
+      </div>
+      <div class="result-box" id="criteriaResultBox"></div>
+    </details>
+<details class="settings-group">
+      <summary data-i18n="sectionLabelAnalysis">Analyze label for criteria</summary>
+      <div class="hint" data-i18n="hintLabelAnalysis"></div>
+      <div id="labelAnalysisChecklist"></div>
+      <div class="btn-row">
+        <button id="labelAnalysisSelectAllBtn" type="button" data-i18n="btnSelectAll">Select all</button>
+        <button id="labelAnalysisSelectNoneBtn" type="button" data-i18n="btnSelectNone">Select none</button>
+      </div>
+      <button class="primary" id="analyzeLabelBtn" style="width:100%; margin-top:6px;" data-i18n="btnAnalyzeLabel">Analyze</button>
+      <div class="progress-wrap" id="labelAnalysisProgressWrap"><div class="progress-bar" id="labelAnalysisProgressBar"></div></div>
+      <div class="progress-text" id="labelAnalysisProgressText"></div>
+      <div class="result-box" id="labelAnalysisResultBox"></div>
+
+      <div class="hint" data-i18n="hintScratchpad" style="margin-top:10px;"></div>
+      <textarea id="criteriaScratchpad" rows="7" data-i18n-placeholder="placeholderScratchpad" style="width:100%; font-size:12px;"></textarea>
+      <div class="btn-row">
+        <button class="primary" id="applyScratchpadBtn" data-i18n="btnApplyScratchpad">Apply to categories</button>
+        <button id="clearScratchpadBtn" data-i18n="btnClearScratchpad">Clear</button>
+      </div>
+    </details>
+<details class="settings-group">
+      <summary data-i18n="sectionAutoClassify">Auto-classify & Label Colors</summary>
+      <label class="checkbox-row">
+        <input type="checkbox" id="autoClassifyCheckbox" checked>
+        <span data-i18n="checkboxAutoClassify">Automatically classify when new mail arrives</span>
+      </label>
+      <div class="field-row">
+        <label for="autoClassifyThresholdInput" data-i18n="labelAutoClassifyThreshold">Trigger threshold</label>
+        <input type="number" id="autoClassifyThresholdInput" value="1" min="1" max="37">
+      </div>
+      <button class="primary" id="applyColorsBtn" style="width:100%; margin-top:8px;" data-i18n="btnApplyColors">Apply colors to existing labels</button>
+      <div class="result-box" id="colorResultBox"></div>
+    </details>
+    </div>
+
+    <div class="settings-cluster">
+      <div class="settings-cluster-title" data-i18n="settingsGroupTools">Label cleanup tools</div>
+<details class="settings-group">
+      <summary data-i18n="sectionRelabelSplit">Relabel / split</summary>
+      <div class="hint" data-i18n="hintRelabelSplit"></div>
+      <select id="relabelSelect"></select>
+      <label class="checkbox-row">
+        <input type="checkbox" id="excludeSelfCheckbox">
+        <span data-i18n="checkboxExcludeSelf">Exclude this label from candidates (split mode)</span>
+      </label>
+      <button class="primary" id="relabelBtn" data-i18n="btnStartRelabel">Start relabeling</button>
+      <div class="result-box" id="relabelResultBox"></div>
+    </details>
+<details class="settings-group">
+      <summary data-i18n="sectionDedupe">Clean up duplicate/miss-applied labels</summary>
+      <div class="hint" data-i18n="hintDedupe"></div>
+      <button class="danger" id="dedupeBtn" style="width:100%;" data-i18n="btnDedupe">Remove labels & reclassify</button>
+      <div class="result-box" id="dedupeResultBox"></div>
+    </details>
+<details class="settings-group danger-group">
+      <summary data-i18n="sectionDeleteAllLabels">Delete all labels</summary>
+      <div class="hint" data-i18n="hintDeleteAllLabels"></div>
+      <button class="danger" id="deleteAllLabelsBtn" style="width:100%;" data-i18n="btnDeleteAllLabels">Delete all labels</button>
+      <div id="deleteAllLabelsConfirmBox" style="display:none; margin-top:8px; border:1px solid var(--red); border-radius:6px; padding:10px;">
+        <div class="hint" id="deleteAllLabelsConfirmText" style="color:var(--red);"></div>
+        <div class="btn-row">
+          <button id="deleteAllLabelsConfirmBtn" class="danger"></button>
+          <button id="deleteAllLabelsCancelBtn"></button>
+        </div>
+      </div>
+      <div class="result-box" id="deleteAllLabelsResultBox"></div>
+    </details>
+    </div>
+
+    <div class="settings-cluster">
+      <div class="settings-cluster-title" data-i18n="settingsGroupApp">Notifications and app settings</div>
+<details class="settings-group">
+      <summary data-i18n="sectionDiscordWebhook">Discord Integration (Discord Webhook)</summary>
+      <div class="hint" data-i18n="hintDiscordPopup"></div>
+      <input type="password" id="popupDiscordWebhookUrl" data-i18n-placeholder="placeholderDiscordWebhookUrl" placeholder="https://discord.com/api/webhooks/...">
+      <div class="btn-row" style="margin-top:6px;">
+        <button class="primary" id="savePopupDiscordBtn">Save Discord Webhook</button>
+      </div>
+      <div class="result-box" id="discordResultBox"></div>
+    </details>
+<details class="settings-group">
+      <summary data-i18n="sectionTheme">Theme & Language</summary>
+      <div class="theme-row" style="margin-bottom:8px;">
+        <button id="themeLightBtn" data-i18n="themeLight">Light</button>
+        <button id="themeDarkBtn" data-i18n="themeDark">Dark</button>
+        <button id="themeSystemBtn" data-i18n="themeSystem">System</button>
+      </div>
+      <div class="hint" data-i18n="hintLanguage"></div>
+      <div class="lang-row">
+        <select id="languageSelect">
+          <option value="system" data-i18n="languageSystem">Match browser</option>
+          <option value="en">English</option>
+          <option value="ko">한국어</option>
+          <option value="ja">日本語</option>
+          <option value="zh_CN">简体中文</option>
+        </select>
+      </div>
+      <div id="translateLabelsConfirmBox" style="display:none; margin-top:8px; border:1px solid var(--blue); border-radius:6px; padding:10px;">
+        <div class="hint" id="translateLabelsConfirmText"></div>
+        <div class="btn-row">
+          <button id="translateLabelsYesBtn" class="primary"></button>
+          <button id="translateLabelsNoBtn"></button>
+        </div>
+      </div>
+    </details>
+<details class="settings-group">
       <summary data-i18n="sectionBackupRestore">Backup / restore</summary>
       <div class="hint" data-i18n="hintDriveBackup"></div>
       <label class="checkbox-row">
@@ -623,49 +680,7 @@
       <div class="hint" id="driveBackupStatusText" style="margin-top:6px;"></div>
       <div class="result-box" id="driveBackupResultBox"></div>
     </details>
-
-    <!-- 10. 테마 / 언어 / 자동 분류 / 고급 -->
-    <details class="settings-group">
-      <summary data-i18n="sectionTheme">Theme & Language</summary>
-      <div class="theme-row" style="margin-bottom:8px;">
-        <button id="themeLightBtn" data-i18n="themeLight">Light</button>
-        <button id="themeDarkBtn" data-i18n="themeDark">Dark</button>
-        <button id="themeSystemBtn" data-i18n="themeSystem">System</button>
-      </div>
-      <div class="hint" data-i18n="hintLanguage"></div>
-      <div class="lang-row">
-        <select id="languageSelect">
-          <option value="system" data-i18n="languageSystem">Match browser</option>
-          <option value="en">English</option>
-          <option value="ko">한국어</option>
-          <option value="ja">日本語</option>
-          <option value="zh_CN">简体中文</option>
-        </select>
-      </div>
-      <div id="translateLabelsConfirmBox" style="display:none; margin-top:8px; border:1px solid var(--blue); border-radius:6px; padding:10px;">
-        <div class="hint" id="translateLabelsConfirmText"></div>
-        <div class="btn-row">
-          <button id="translateLabelsYesBtn" class="primary"></button>
-          <button id="translateLabelsNoBtn"></button>
-        </div>
-      </div>
-    </details>
-
-    <details class="settings-group">
-      <summary data-i18n="sectionAutoClassify">Auto-classify & Label Colors</summary>
-      <label class="checkbox-row">
-        <input type="checkbox" id="autoClassifyCheckbox" checked>
-        <span data-i18n="checkboxAutoClassify">Automatically classify when new mail arrives</span>
-      </label>
-      <div class="field-row">
-        <label for="autoClassifyThresholdInput" data-i18n="labelAutoClassifyThreshold">Trigger threshold</label>
-        <input type="number" id="autoClassifyThresholdInput" value="1" min="1" max="37">
-      </div>
-      <button class="primary" id="applyColorsBtn" style="width:100%; margin-top:8px;" data-i18n="btnApplyColors">Apply colors to existing labels</button>
-      <div class="result-box" id="colorResultBox"></div>
-    </details>
-
-    <details class="settings-group">
+<details class="settings-group">
       <summary data-i18n="sectionAdvanced">Advanced Options</summary>
       <label class="checkbox-row">
         <input type="checkbox" id="correctionLearningCheckbox">
@@ -683,27 +698,12 @@
       </label>
       <div class="hint" data-i18n="hintLightMailFetch"></div>
     </details>
-
-    <!-- 11. 위험 / 전체 삭제 / 정보 -->
-    <details class="settings-group danger-group">
-      <summary data-i18n="sectionDeleteAllLabels">Delete all labels</summary>
-      <div class="hint" data-i18n="hintDeleteAllLabels"></div>
-      <button class="danger" id="deleteAllLabelsBtn" style="width:100%;" data-i18n="btnDeleteAllLabels">Delete all labels</button>
-      <div id="deleteAllLabelsConfirmBox" style="display:none; margin-top:8px; border:1px solid var(--red); border-radius:6px; padding:10px;">
-        <div class="hint" id="deleteAllLabelsConfirmText" style="color:var(--red);"></div>
-        <div class="btn-row">
-          <button id="deleteAllLabelsConfirmBtn" class="danger"></button>
-          <button id="deleteAllLabelsCancelBtn"></button>
-        </div>
-      </div>
-      <div class="result-box" id="deleteAllLabelsResultBox"></div>
-    </details>
-
-    <details class="settings-group">
+<details class="settings-group">
       <summary data-i18n="sectionAbout">About</summary>
       <div class="hint" id="aboutCopyright">© 2026 thk7410@gmail.com. All rights reserved.</div>
       <button class="link" id="supportLinkBtn" type="button" style="padding-left:0;" data-i18n="btnSupportDeveloper">Support the developer</button>
     </details>
+    </div>
 
   </div>
 

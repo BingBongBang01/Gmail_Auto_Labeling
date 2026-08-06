@@ -2602,5 +2602,17 @@
   },
   "hintForceStop": {
     "message": "중지 요청이 아직 반영되지 않았습니다. [강제 중지]는 진행 중인 작업을 기다리지 않고 즉시 중단 처리합니다(이미 붙은 라벨은 유지됩니다)."
+  },
+  "settingsGroupEssential": {
+    "message": "필수 연결"
+  },
+  "settingsGroupRules": {
+    "message": "분류 규칙"
+  },
+  "settingsGroupTools": {
+    "message": "라벨 정리 도구"
+  },
+  "settingsGroupApp": {
+    "message": "알림 및 앱 설정"
   }
 }

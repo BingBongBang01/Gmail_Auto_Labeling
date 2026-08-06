@@ -2602,5 +2602,17 @@
   },
   "hintForceStop": {
     "message": "中止リクエストがまだ反映されていません。[強制中止]は進行中の処理を待たずに即座に終了します(すでに付いたラベルは残ります)。"
+  },
+  "settingsGroupEssential": {
+    "message": "必要な接続"
+  },
+  "settingsGroupRules": {
+    "message": "分類ルール"
+  },
+  "settingsGroupTools": {
+    "message": "ラベル整理ツール"
+  },
+  "settingsGroupApp": {
+    "message": "通知とアプリ設定"
   }
 }

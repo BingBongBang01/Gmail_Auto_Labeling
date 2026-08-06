@@ -2602,5 +2602,17 @@
   },
   "hintForceStop": {
     "message": "停止请求尚未生效。[强制停止]会立即结束任务而不再等待（已添加的标签会保留）。"
+  },
+  "settingsGroupEssential": {
+    "message": "必需连接"
+  },
+  "settingsGroupRules": {
+    "message": "分类规则"
+  },
+  "settingsGroupTools": {
+    "message": "标签整理工具"
+  },
+  "settingsGroupApp": {
+    "message": "通知与应用设置"
   }
 }
