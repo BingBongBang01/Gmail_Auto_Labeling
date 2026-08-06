@@ -78,6 +78,29 @@
   html[data-theme="dark"] .api-error-banner { background: #3a2a28; color: #ffb4ab; }
   @keyframes blink { 0%,100%{opacity:1;} 50%{opacity:0.35;} }
 
+  /* ---- 최초 설정 안내 (설정이 끝나면 자동으로 사라짐) ---- */
+  .setup-card {
+    display: none; margin: 8px 12px 0; padding: 10px 12px; border-radius: 8px;
+    background: #eef4ff; border: 1px solid #b9cdf7; color: #1b3a70;
+  }
+  .setup-card.show { display: block; }
+  html[data-theme="dark"] .setup-card { background: #16233d; border-color: #2c4a80; color: #cfe0ff; }
+  .setup-card-title { font-size: 12.5px; font-weight: 700; margin-bottom: 2px; }
+  .setup-card-desc { font-size: 11px; opacity: .85; line-height: 1.45; margin-bottom: 8px; }
+  .setup-step {
+    display: flex; align-items: center; gap: 8px; padding: 6px 0;
+    border-top: 1px solid rgba(27,58,112,.12);
+  }
+  html[data-theme="dark"] .setup-step { border-top-color: rgba(207,224,255,.15); }
+  .setup-step-mark { font-size: 13px; width: 16px; text-align: center; flex-shrink: 0; }
+  .setup-step-body { flex: 1; min-width: 0; }
+  .setup-step-name { font-size: 12px; font-weight: 600; }
+  .setup-step-hint { font-size: 10.5px; opacity: .8; line-height: 1.35; margin-top: 1px; }
+  .setup-step.done .setup-step-name { text-decoration: line-through; opacity: .6; }
+  .setup-step.done .setup-step-hint { display: none; }
+  .setup-step button { padding: 5px 9px; font-size: 11px; white-space: nowrap; flex-shrink: 0; }
+  .setup-step.done button { display: none; }
+
   /* ---- 탭 ---- */
   .tabs { display: flex; border-bottom: 1px solid var(--border); padding: 0 8px; }
   .tab-btn {
@@ -255,6 +278,48 @@
     </div>
   </div>
 
+  <!-- 최초 설정 체크리스트: 남은 단계가 있을 때만 보이고, 다 끝나면 사라진다 -->
+  <div class="setup-card" id="setupCard">
+    <div class="setup-card-title" data-i18n="setupTitle">Setup needed before first use</div>
+    <div class="setup-card-desc" data-i18n="setupDesc"></div>
+
+    <div class="setup-step" id="setupStepGuide">
+      <span class="setup-step-mark" id="setupStepGuideMark">1</span>
+      <div class="setup-step-body">
+        <div class="setup-step-name" data-i18n="setupStepGuideName">Read the Google connection guide</div>
+        <div class="setup-step-hint" data-i18n="setupStepGuideHint"></div>
+      </div>
+      <button id="setupOpenGuideBtn" data-i18n="setupBtnOpenGuide">Open guide</button>
+    </div>
+
+    <div class="setup-step" id="setupStepCredentials">
+      <span class="setup-step-mark" id="setupStepCredentialsMark">2</span>
+      <div class="setup-step-body">
+        <div class="setup-step-name" data-i18n="setupStepCredentialsName">Enter your OAuth client ID and secret</div>
+        <div class="setup-step-hint" data-i18n="setupStepCredentialsHint"></div>
+      </div>
+      <button id="setupGoCredentialsBtn" data-i18n="setupBtnGo">Go</button>
+    </div>
+
+    <div class="setup-step" id="setupStepLogin">
+      <span class="setup-step-mark" id="setupStepLoginMark">3</span>
+      <div class="setup-step-body">
+        <div class="setup-step-name" data-i18n="setupStepLoginName">Sign in with Google</div>
+        <div class="setup-step-hint" data-i18n="setupStepLoginHint"></div>
+      </div>
+      <button id="setupLoginBtn" data-i18n="setupBtnLogin">Sign in</button>
+    </div>
+
+    <div class="setup-step" id="setupStepApiKey">
+      <span class="setup-step-mark" id="setupStepApiKeyMark">4</span>
+      <div class="setup-step-body">
+        <div class="setup-step-name" data-i18n="setupStepApiKeyName">Register a Gemini API key</div>
+        <div class="setup-step-hint" data-i18n="setupStepApiKeyHint"></div>
+      </div>
+      <button id="setupGoApiKeyBtn" data-i18n="setupBtnGo">Go</button>
+    </div>
+  </div>
+
   <div class="oauth-reauth-banner" id="oauthReauthBanner">
     <span data-i18n="oauthReauthBanner">Google login is required to classify mail.</span>
     <button id="oauthReauthBtn" data-i18n="btnOAuthReauth">Sign in</button>
@@ -368,7 +433,7 @@
   <div class="tab-panel" id="panel-settings">
     
     <!-- 1. API 키 설정 -->
-    <details class="settings-group" open>
+    <details class="settings-group" id="apiKeySection" open>
       <summary data-i18n="sectionApiKey">Gemini API Key</summary>
       <div class="hint" data-i18n="hintApiKey"></div>
       <button class="link" id="openAiStudioBtn" type="button" style="padding-left:0;" data-i18n="btnGetApiKey">Get a key</button>
@@ -486,7 +551,7 @@
     </details>
 
     <!-- 8. Google 계정 연동 (OAuth) -->
-    <details class="settings-group">
+    <details class="settings-group" id="oauthSection">
       <summary data-i18n="sectionOAuth">Google account connection (personal OAuth)</summary>
       <div class="hint" data-i18n="hintOAuth"></div>
       <div class="btn-row">

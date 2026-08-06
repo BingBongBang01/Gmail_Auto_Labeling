@@ -633,6 +633,45 @@
   "oauthReauthBanner": {
     "message": "需要登录 Google 才能分类邮件。"
   },
+  "setupTitle": {
+    "message": "开始使用前需要完成以下设置"
+  },
+  "setupDesc": {
+    "message": "只需设置一次。已完成的步骤会自动打勾，全部完成后本提示会自动消失。"
+  },
+  "setupStepGuideName": {
+    "message": "阅读连接指南"
+  },
+  "setupStepGuideHint": {
+    "message": "逐步说明如何创建你自己的 Google OAuth 客户端（约10分钟）。"
+  },
+  "setupStepCredentialsName": {
+    "message": "填写 OAuth 客户端 ID / 密钥"
+  },
+  "setupStepCredentialsHint": {
+    "message": "把指南中获取的值保存到设置里。"
+  },
+  "setupStepLoginName": {
+    "message": "使用 Google 账号登录"
+  },
+  "setupStepLoginHint": {
+    "message": "授予读取邮件和添加标签的权限。"
+  },
+  "setupStepApiKeyName": {
+    "message": "注册 Gemini API 密钥"
+  },
+  "setupStepApiKeyHint": {
+    "message": "用于 AI 分类。免费密钥也可以使用。"
+  },
+  "setupBtnOpenGuide": {
+    "message": "打开指南"
+  },
+  "setupBtnGo": {
+    "message": "前往设置"
+  },
+  "setupBtnLogin": {
+    "message": "登录"
+  },
   "btnOAuthReauth": {
     "message": "登录"
   },

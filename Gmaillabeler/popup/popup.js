@@ -117,13 +117,95 @@ async function main() {
   initLanguageSelect();
 
   // ---------------- 탭 전환 ----------------
+  function activateTab(tabName) {
+    document.querySelectorAll(".tab-btn").forEach((b) => b.classList.toggle("active", b.dataset.tab === tabName));
+    document.querySelectorAll(".tab-panel").forEach((p) => p.classList.toggle("active", p.id === `panel-${tabName}`));
+  }
+
   document.querySelectorAll(".tab-btn").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      document.querySelectorAll(".tab-btn").forEach((b) => b.classList.remove("active"));
-      document.querySelectorAll(".tab-panel").forEach((p) => p.classList.remove("active"));
-      btn.classList.add("active");
-      document.getElementById(`panel-${btn.dataset.tab}`).classList.add("active");
+    btn.addEventListener("click", () => activateTab(btn.dataset.tab));
+  });
+
+  // 설정 탭의 특정 섹션을 펼치고 그 위치로 스크롤한다(체크리스트에서 "이동"을 눌렀을 때).
+  function revealSettingsSection(sectionId) {
+    activateTab("settings");
+    const section = document.getElementById(sectionId);
+    if (!section) return;
+    section.open = true;
+    // 탭이 표시된 뒤에 위치를 계산해야 스크롤이 정확하다
+    requestAnimationFrame(() => section.scrollIntoView({ behavior: "smooth", block: "start" }));
+  }
+
+  // ---------------- 최초 설정 체크리스트 ----------------
+  // 이 확장은 쓰기 전에 "OAuth 클라이언트 등록 -> 로그인 -> Gemini 키 등록"이 반드시 필요한데,
+  // 예전에는 이걸 알려주는 화면이 없어서 분류를 눌러야 비로소 오류 문구로 알 수 있었다.
+  // 남은 단계가 있을 때만 상단에 표시하고, 다 끝나면 자동으로 사라진다.
+  let setupIncomplete = false;
+
+  const setupCard = document.getElementById("setupCard");
+
+  function paintSetupStep(stepId, markId, stepNumber, done) {
+    const row = document.getElementById(stepId);
+    const mark = document.getElementById(markId);
+    if (!row || !mark) return;
+    row.classList.toggle("done", done);
+    mark.textContent = done ? "✅" : String(stepNumber);
+  }
+
+  function refreshSetupChecklist() {
+    chrome.storage.local.get(["oauthClientId", "oauthClientSecret", "geminiApiKeys", "geminiApiKey"], (stored) => {
+      chrome.runtime.sendMessage({ action: "getOAuthStatus" }, (oauth) => {
+        if (chrome.runtime.lastError) return;
+
+        const hasCredentials = !!(stored.oauthClientId || "").trim() && !!(stored.oauthClientSecret || "").trim();
+        const connected = !!(oauth && oauth.connected);
+        const hasApiKey =
+          (Array.isArray(stored.geminiApiKeys) && stored.geminiApiKeys.some((k) => k && k.key)) ||
+          !!stored.geminiApiKey;
+
+        // 안내서 단계는 읽었는지 알 수 없으므로, 클라이언트를 등록하면 완료된 것으로 본다
+        paintSetupStep("setupStepGuide", "setupStepGuideMark", 1, hasCredentials);
+        paintSetupStep("setupStepCredentials", "setupStepCredentialsMark", 2, hasCredentials);
+        paintSetupStep("setupStepLogin", "setupStepLoginMark", 3, connected);
+        paintSetupStep("setupStepApiKey", "setupStepApiKeyMark", 4, hasApiKey);
+
+        // 클라이언트와 키는 이미 등록했고 로그인만 풀린 경우(토큰 만료 등)는 "처음 설정"이 아니다.
+        // 이때는 체크리스트 대신 가벼운 "다시 로그인" 배너로 안내한다.
+        const onlyLoginMissing = hasCredentials && hasApiKey && !connected;
+        setupIncomplete = !(hasCredentials && connected && hasApiKey) && !onlyLoginMissing;
+
+        if (setupCard) setupCard.classList.toggle("show", setupIncomplete);
+        // setupIncomplete 값이 정해진 뒤에 배너 표시 여부를 다시 계산한다
+        refreshOAuthStatus();
+      });
     });
+  }
+
+  document.getElementById("setupOpenGuideBtn").addEventListener("click", () => {
+    chrome.tabs.create({ url: chrome.runtime.getURL("guide/oauth-guide.html") });
+  });
+  document.getElementById("setupGoCredentialsBtn").addEventListener("click", () => {
+    revealSettingsSection("oauthSection");
+  });
+  document.getElementById("setupLoginBtn").addEventListener("click", () => {
+    // 클라이언트 등록이 안 된 상태에서 로그인을 누르면 실패하므로, 먼저 그 칸으로 안내한다
+    const loginRow = document.getElementById("setupStepCredentials");
+    if (loginRow && !loginRow.classList.contains("done")) {
+      revealSettingsSection("oauthSection");
+      return;
+    }
+    document.getElementById("connectOAuthBtn").click();
+  });
+  document.getElementById("setupGoApiKeyBtn").addEventListener("click", () => {
+    revealSettingsSection("apiKeySection");
+  });
+
+  // 설정이 바뀌면(키 저장, 로그인 완료 등) 체크리스트를 다시 그린다
+  chrome.storage.onChanged.addListener((changes, areaName) => {
+    if (areaName !== "local") return;
+    if (changes.oauthClientId || changes.oauthClientSecret || changes.geminiApiKeys || changes.geminiApiKey || changes.oauthTokens) {
+      refreshSetupChecklist();
+    }
   });
 
   function openLogWindow() {
@@ -1177,10 +1259,13 @@ async function main() {
     chrome.runtime.sendMessage({ action: "getOAuthStatus" }, (response) => {
       if (chrome.runtime.lastError || !response) return;
       oauthStatusText.textContent = response.connected ? t("oauthStatusConnected") : t("oauthStatusNotConnected");
-      oauthReauthBanner.classList.toggle("show", !!response.requiresLogin);
+      // 최초 설정이 아직 안 끝난 상태에서는 체크리스트가 같은 얘기를 하므로 배너까지 띄우지 않는다.
+      // (설정을 마친 뒤 토큰이 만료된 "다시 로그인" 상황에서만 배너를 쓴다)
+      const showReauthBanner = !!response.requiresLogin && !setupIncomplete;
+      oauthReauthBanner.classList.toggle("show", showReauthBanner);
     });
   }
-  refreshOAuthStatus();
+  refreshSetupChecklist(); // 내부에서 refreshOAuthStatus()도 함께 호출한다
 
   document.getElementById("openOAuthGuideBtn").addEventListener("click", () => {
     chrome.tabs.create({ url: chrome.runtime.getURL("guide/oauth-guide.html") });

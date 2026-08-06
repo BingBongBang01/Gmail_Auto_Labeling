@@ -651,6 +651,45 @@
   "oauthReauthBanner": {
     "message": "Google sign-in is required to classify mail."
   },
+  "setupTitle": {
+    "message": "A few steps are needed before you start"
+  },
+  "setupDesc": {
+    "message": "One-time setup. Finished steps get checked off automatically, and this panel disappears once everything is done."
+  },
+  "setupStepGuideName": {
+    "message": "Read the connection guide"
+  },
+  "setupStepGuideHint": {
+    "message": "Walks you through creating your own Google OAuth client (about 10 minutes)."
+  },
+  "setupStepCredentialsName": {
+    "message": "Enter your OAuth client ID and secret"
+  },
+  "setupStepCredentialsHint": {
+    "message": "Save the values you got from the guide into settings."
+  },
+  "setupStepLoginName": {
+    "message": "Sign in with Google"
+  },
+  "setupStepLoginHint": {
+    "message": "Grants permission to read your mail and apply labels."
+  },
+  "setupStepApiKeyName": {
+    "message": "Register a Gemini API key"
+  },
+  "setupStepApiKeyHint": {
+    "message": "Used for AI classification. A free key works fine."
+  },
+  "setupBtnOpenGuide": {
+    "message": "Open guide"
+  },
+  "setupBtnGo": {
+    "message": "Go to settings"
+  },
+  "setupBtnLogin": {
+    "message": "Sign in"
+  },
   "btnOAuthReauth": {
     "message": "Sign in"
   },

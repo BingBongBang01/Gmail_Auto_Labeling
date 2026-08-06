@@ -633,6 +633,45 @@
   "oauthReauthBanner": {
     "message": "メール分類にはGoogleへの再ログインが必要です。"
   },
+  "setupTitle": {
+    "message": "使い始める前に以下の設定が必要です"
+  },
+  "setupDesc": {
+    "message": "最初の一度だけです。完了した手順は自動でチェックされ、すべて終わるとこの案内は消えます。"
+  },
+  "setupStepGuideName": {
+    "message": "接続方法のガイドを読む"
+  },
+  "setupStepGuideHint": {
+    "message": "自分の Google OAuth クライアントを作成する手順を説明します(約10分)。"
+  },
+  "setupStepCredentialsName": {
+    "message": "OAuth クライアント ID / シークレットを入力"
+  },
+  "setupStepCredentialsHint": {
+    "message": "ガイドで取得した値を設定に保存してください。"
+  },
+  "setupStepLoginName": {
+    "message": "Google アカウントでログイン"
+  },
+  "setupStepLoginHint": {
+    "message": "メールの読み取りとラベル付与の権限を許可します。"
+  },
+  "setupStepApiKeyName": {
+    "message": "Gemini API キーを登録"
+  },
+  "setupStepApiKeyHint": {
+    "message": "AI 分類に使用します。無料のキーでも利用できます。"
+  },
+  "setupBtnOpenGuide": {
+    "message": "ガイドを開く"
+  },
+  "setupBtnGo": {
+    "message": "設定を開く"
+  },
+  "setupBtnLogin": {
+    "message": "ログイン"
+  },
   "btnOAuthReauth": {
     "message": "ログイン"
   },

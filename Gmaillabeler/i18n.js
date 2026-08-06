@@ -63,10 +63,10 @@ function t(key, subs) {
   if (entry.placeholders) {
     Object.keys(entry.placeholders).forEach((name) => {
       const content = (entry.placeholders[name] && entry.placeholders[name].content) || "";
-      // placeholder content is "$1$". The trailing dollar must be escaped too;
-      // otherwise it is treated as a regex end-anchor and every substitution
-      // silently becomes an empty string.
-      const m = content.match(/^\$(\d+)\$$/);
+      // placeholder content은 Chrome 표준 형식인 "$1"과, 이 저장소에 함께 쓰이는 "$1$" 두 가지가 있다.
+      // 예전에는 "$1$"만 인식해서, "$1"로 적힌 61개 placeholder(오류 메시지/진행률/할당량/실행 결과 등)가
+      // 전부 빈 문자열로 치환돼 숫자와 상세 내용이 사라졌다. 두 형식을 모두 받아준다.
+      const m = content.match(/^\$(\d+)\$?$/);
       let value = "";
       if (m && subs) {
         const idx = parseInt(m[1], 10) - 1;
