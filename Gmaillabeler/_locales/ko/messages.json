@@ -336,6 +336,12 @@
   "hintQuota": {
     "message": "Gemini API는 키만으로 실시간 공식 쿼터를 조회하는 방법이 없어서, 이 확장이 실제로 보낸 요청 수를 자정 기준으로 직접 세어 보여주는 추정치입니다. Google 콘솔의 실제 값과 약간 다를 수 있습니다."
   },
+  "checkboxLightMailFetch": {
+    "message": "빠른 모드: 메일 본문 대신 헤더와 미리보기만 읽기"
+  },
+  "hintLightMailFetch": {
+    "message": "본문 전체를 받지 않고 제목/발신자/날짜와 Gmail 미리보기(약 100자)만 가져옵니다. 전송량이 크게 줄지만, 본문 하단의 수신거부/프로모션 문구를 볼 수 없어 광고 판별 정확도가 떨어질 수 있습니다. 기본값은 꺼짐입니다."
+  },
   "quotaText": {
     "message": "오늘 Gemini 요청(추정): $TODAY$ / $RPD$ (RPD 기준, 자정 초기화)",
     "placeholders": {

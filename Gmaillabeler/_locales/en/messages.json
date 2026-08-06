@@ -336,6 +336,12 @@
   "hintQuota": {
     "message": "Gemini's API-key auth has no official endpoint to check real-time quota, so this is our own count of requests we've sent, reset at midnight. It may differ slightly from Google's console."
   },
+  "checkboxLightMailFetch": {
+    "message": "Fast mode: read only mail headers and preview"
+  },
+  "hintLightMailFetch": {
+    "message": "Downloads only the subject, sender, date and Gmail's short preview instead of the full body. Much less data to transfer, but promotional signals in the mail footer are no longer visible, so ad detection can get less accurate. Off by default."
+  },
   "quotaText": {
     "message": "Gemini requests today (estimate): $TODAY$ / $RPD$ (resets at midnight)",
     "placeholders": {

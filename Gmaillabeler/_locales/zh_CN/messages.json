@@ -318,6 +318,12 @@
   "hintQuota": {
     "message": "Gemini 的 API 密钥认证没有官方的实时配额查询接口，这只是本扩展自行统计的、每天午夜重置的请求次数估算值，可能与 Google 控制台的实际数值略有出入。"
   },
+  "checkboxLightMailFetch": {
+    "message": "快速模式：只读取邮件头和预览，不读取正文"
+  },
+  "hintLightMailFetch": {
+    "message": "不获取完整正文，只获取主题、发件人、日期和 Gmail 预览（约100字）。传输量大幅减少，但无法看到正文底部的退订/促销字样，广告识别准确度可能下降。默认关闭。"
+  },
   "quotaText": {
     "message": "今日 Gemini 请求(估算)：$TODAY$ / $RPD$ (按 RPD 计算，午夜重置)",
     "placeholders": {

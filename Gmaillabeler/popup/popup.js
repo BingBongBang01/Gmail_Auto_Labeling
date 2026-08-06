@@ -1277,6 +1277,15 @@ async function main() {
     chrome.storage.local.set({ correctionLearningEnabled: correctionLearningCheckbox.checked });
   });
 
+  // ---- 고급 옵션: 본문 대신 헤더+미리보기만 읽는 빠른 모드 ----
+  const lightMailFetchCheckbox = document.getElementById("lightMailFetchCheckbox");
+  chrome.storage.local.get(["lightMailFetchEnabled"], (result) => {
+    lightMailFetchCheckbox.checked = result.lightMailFetchEnabled === true; // 기본값 꺼짐
+  });
+  lightMailFetchCheckbox.addEventListener("change", () => {
+    chrome.storage.local.set({ lightMailFetchEnabled: lightMailFetchCheckbox.checked });
+  });
+
   // ---- 고급 옵션: API 할당량 표시 ----
   const showQuotaCheckbox = document.getElementById("showQuotaCheckbox");
   const quotaText = document.getElementById("quotaText");
@@ -1390,6 +1399,7 @@ async function main() {
     "uiLanguage",
     "showQuotaOnMain",
     "correctionLearningEnabled",
+    "lightMailFetchEnabled",
     "importanceCriteria",
     "discordWebhookUrl",
     "discordWebhookUrlHigh",

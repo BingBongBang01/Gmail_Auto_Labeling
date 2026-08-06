@@ -154,6 +154,11 @@ function sleep(ms) {
 // 사용자당 초당 할당량(250 quota units/s, messages.get = 5 units) 안에서 안전한 수준으로만 동시에 보낸다.
 const GMAIL_FETCH_CONCURRENCY = 8;
 
+// Gemini 분류 배치를 몇 개까지 겹쳐서 진행할지.
+// 분당 요청 수 상한은 throttleGeminiCall()이 따로 지키므로, 이 값은 "응답 대기 시간을 얼마나
+// 겹쳐서 감출지"만 결정한다(값을 올려도 RPM을 더 쓰지는 않는다).
+const GEMINI_BATCH_CONCURRENCY = 3;
+
 // items를 최대 concurrency개씩 동시에 worker에 넘긴다. 결과는 입력 순서를 그대로 유지한다.
 // worker는 스스로 예외를 처리해야 한다(여기서는 개별 실패를 삼키지 않고 그대로 전파).
 async function mapWithConcurrency(items, concurrency, worker) {
@@ -830,10 +835,36 @@ function extractEmailText(payload) {
 const PROMO_FOOTER_PATTERN = /(수신\s*거부|구독\s*취소|프로모션\s*이메일|마케팅\s*(이메일|메일)|marketing\s*emails?|unsubscribe)/i;
 const MAX_BODY_CHARS_FOR_AI = 350;
 
+// 빠른 모드: 본문 전체(format=full)를 받지 않고 필요한 헤더 3개 + Gmail 자동 미리보기(snippet)만 받는다.
+// 전송량이 메일당 수십 KB에서 1KB 안쪽으로 줄지만, 본문 하단의 "수신거부/프로모션" 신호를 못 보므로
+// 광고성 메일 판별 정확도가 떨어질 수 있다. 그래서 기본값은 꺼짐이고 사용자가 직접 켜야 한다.
+const LIGHT_FETCH_METADATA_HEADERS = ["Subject", "From", "Date"];
+let lightMailFetchCache = null;
+
+async function isLightMailFetchEnabled() {
+  if (lightMailFetchCache !== null) return lightMailFetchCache;
+  const stored = await chrome.storage.local.get(["lightMailFetchEnabled"]);
+  lightMailFetchCache = stored.lightMailFetchEnabled === true;
+  return lightMailFetchCache;
+}
+
+// 설정이 바뀌면 캐시를 버려서 다음 작업에 바로 반영되게 한다
+chrome.storage.onChanged.addListener((changes, areaName) => {
+  if (areaName === "local" && changes.lightMailFetchEnabled) lightMailFetchCache = null;
+});
+
+function buildEmailContentUrl(messageId, lightMode) {
+  const base = `https://gmail.googleapis.com/gmail/v1/users/me/messages/${messageId}`;
+  if (lightMode) {
+    const headerParams = LIGHT_FETCH_METADATA_HEADERS.map((h) => `metadataHeaders=${h}`).join("&");
+    return `${base}?format=metadata&${headerParams}`;
+  }
+  return `${base}?format=full`;
+}
+
 async function getEmailContent(token, messageId) {
-  const response = await gmailFetch(
-    `https://gmail.googleapis.com/gmail/v1/users/me/messages/${messageId}?format=full`
-  );
+  const lightMode = await isLightMailFetchEnabled();
+  const response = await gmailFetch(buildEmailContentUrl(messageId, lightMode));
   if (!response.ok) throw new Error(t("errMessageContentFailed", [response.status]));
   const data = await response.json();
 
@@ -1088,12 +1119,25 @@ const INTERVAL_BACKOFF_MULTIPLIER = 1.6;
 const INTERVAL_RECOVERY_MULTIPLIER = 0.92;
 const DAILY_QUOTA_TEXT_PATTERN = /(per\s*day|daily|quota[^"]*day)/i;
 
+// RPM 슬롯 확보는 반드시 한 번에 하나씩 순서대로 이뤄져야 한다.
+// (예전 구현은 동시 호출이 모두 같은 lastGeminiCallAt을 읽어서, 병렬로 부르면 간격 제한이 무력화됐다)
+let geminiThrottleQueue = Promise.resolve();
+
 async function throttleGeminiCall() {
-  const now = Date.now();
-  const wait = lastGeminiCallAt + currentCallIntervalMs - now;
-  if (wait > 0) await sleep(wait);
+  const myTurn = geminiThrottleQueue.then(async () => {
+    const wait = lastGeminiCallAt + currentCallIntervalMs - Date.now();
+    if (wait > 0) await sleep(wait);
+    // 슬롯을 잡은 시각을 기록 - 응답을 기다리는 시간은 포함되지 않으므로,
+    // 다음 요청은 앞 요청의 응답을 기다리는 동안 출발할 수 있다(파이프라이닝).
+    lastGeminiCallAt = Date.now();
+  });
+  // 실패해도 뒤에 줄 선 호출이 막히지 않게 체인은 항상 성공으로 이어붙인다
+  geminiThrottleQueue = myTurn.then(
+    () => {},
+    () => {}
+  );
+  await myTurn;
   if (isCancelled()) throw new JobCancelledError();
-  lastGeminiCallAt = Date.now();
 }
 
 function increaseThrottleInterval() {
@@ -2668,14 +2712,22 @@ async function classifyAndLabelMessages(token, categoryDefs, labelCache, message
   if (excludeLabel) await addLog(t("logSplitModeExclude", [excludeLabel]));
   await reportProgress(1, 3);
 
-  classifyLoop: for (let b = 0; b < batches.length; b += 1) {
+  // 배치끼리는 서로 의존하지 않으므로 겹쳐서 보낸다.
+  // RPM 상한은 throttleGeminiCall()이 지키고, 이렇게 하면 앞 요청의 응답 대기 시간 동안
+  // 다음 요청이 출발해서 "간격 + 응답지연"이 배치마다 누적되던 것을 없앨 수 있다.
+  let stopClassifying = false;
+  let fatalClassifyError = null;
+  let batchesDone = 0;
+
+  await mapWithConcurrency(batches, GEMINI_BATCH_CONCURRENCY, async (batch, b) => {
+    if (stopClassifying) return;
     if (isCancelled()) {
       await addLog(t("logCancelledBeforeBatch", [b + 1, totalBatches]), "warn");
       cancelled = true;
-      break;
+      stopClassifying = true;
+      return;
     }
 
-    const batch = batches[b];
     const items = batch.map((d, i) => ({ idx: i, subject: d.subject, from: d.from, snippet: d.snippet }));
 
     await addLog(t("logBatchRequesting", [b + 1, totalBatches, batch.length]));
@@ -2684,16 +2736,22 @@ async function classifyAndLabelMessages(token, categoryDefs, labelCache, message
     try {
       rawEntries = await classifyTopLevelBatch(items, candidateDefs, correctionHint);
       requestsUsed += 1;
+      batchesDone += 1;
       await addLog(t("logBatchDone", [b + 1, totalBatches]));
     } catch (err) {
       if (isCancelled() || isCancellationError(err)) {
         await addLog(t("logCancelledAfterBatch", [b + 1, totalBatches]), "warn");
         cancelled = true;
-        break classifyLoop;
+        stopClassifying = true;
+        return;
       }
       // A hung Gemini request is not a mail-specific classification failure.
       // End the job and surface it instead of spending another timeout per batch.
-      if (err && err.isRequestTimeout) throw err;
+      if (err && err.isRequestTimeout) {
+        fatalClassifyError = err;
+        stopClassifying = true;
+        return;
+      }
       const msgText = String(err.message || err);
       await addLog(t("logBatchFailed", [b + 1, totalBatches, msgText]), "error");
       batch.forEach((d) => {
@@ -2703,11 +2761,13 @@ async function classifyAndLabelMessages(token, categoryDefs, labelCache, message
       if (err.isQuotaExhausted) {
         await addLog(t("logQuotaExhaustedStop"), "error");
         quotaExhausted = true;
-        break classifyLoop;
+        stopClassifying = true;
+        return;
       }
       classifyDone += batch.length;
-      await reportProgress(b + 1, totalBatches);
-      continue;
+      batchesDone += 1;
+      await reportProgress(batchesDone, totalBatches);
+      return;
     }
 
     const entryByIdx = new Map(rawEntries.map((e) => [e.idx, e]));
@@ -2720,14 +2780,17 @@ async function classifyAndLabelMessages(token, categoryDefs, labelCache, message
     }
 
     classifyDone += batch.length;
-    await reportProgress(b + 1, totalBatches);
+    await reportProgress(batchesDone, totalBatches);
 
     if (isCancelled()) {
       await addLog(t("logCancelledAfterBatch", [b + 1, totalBatches]), "warn");
       cancelled = true;
-      break;
+      stopClassifying = true;
     }
-  }
+  });
+
+  // 응답이 오지 않아 타임아웃된 경우는 메일별 실패가 아니라 작업 자체의 실패로 올린다.
+  if (fatalClassifyError) throw fatalClassifyError;
 
   // 취소/오류로 분류를 못 거친 메일은 최종 라벨에서 제외(적용 대상에서 빠짐)
   await addLog(t("logClassifyDoneApplyStart", [finalLabelById.size]));
