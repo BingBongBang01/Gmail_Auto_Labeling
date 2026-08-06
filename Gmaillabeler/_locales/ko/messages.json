@@ -32,6 +32,60 @@
   "tabManage": {
     "message": "라벨 관리"
   },
+  "tabSummary": {
+    "message": "요약"
+  },
+  "sectionLabelSummary": {
+    "message": "선택 라벨 메일 요약"
+  },
+  "labelSelectSummaryLabel": {
+    "message": "요약할 라벨"
+  },
+  "labelSummaryEmailCount": {
+    "message": "가져올 메일 개수"
+  },
+  "labelSummaryCriteria": {
+    "message": "선별 조건 (필터)"
+  },
+  "placeholderSummaryCriteria": {
+    "message": "예: 중요한 업무 공지 및 결제 내역만 선별"
+  },
+  "btnStartSummary": {
+    "message": "한국어 요약 생성"
+  },
+  "btnCopySummary": {
+    "message": "요약 복사"
+  },
+  "summaryCopied": {
+    "message": "복사되었습니다!"
+  },
+  "summaryRequesting": {
+    "message": "라벨 메일을 요약하는 중입니다..."
+  },
+  "notifyTitleSummary": {
+    "message": "메일 요약 완료"
+  },
+  "errorSelectSummaryLabel": {
+    "message": "요약할 라벨을 선택해 주세요."
+  },
+  "sectionDiscordWebhook": {
+    "message": "디스코드 연동 설정 (Discord Webhook)"
+  },
+  "labelDiscordWebhookUrl": {
+    "message": "디스코드 웹훅 URL"
+  },
+  "placeholderDiscordWebhookUrl": {
+    "message": "https://discord.com/api/webhooks/..."
+  },
+  "btnSendDiscord": {
+    "message": "💬 디스코드로 요약 전송"
+  },
+  "msgDiscordSent": {
+    "message": "디스코드 채널로 전송되었습니다!"
+  },
+  "errDiscordWebhookMissing": {
+    "message": "디스코드 웹훅 URL을 먼저 설정해 주세요."
+  },
   "tabSettings": {
     "message": "설정"
   },
@@ -587,6 +641,15 @@
   },
   "oauthStatusNotConnected": {
     "message": "연결 안 됨"
+  },
+  "oauthReauthBanner": {
+    "message": "Google 로그인이 필요합니다. 메일 자동 분류는 로그인 후 사용할 수 있습니다."
+  },
+  "btnOAuthReauth": {
+    "message": "로그인"
+  },
+  "apiErrorPrefix": {
+    "message": "오류"
   },
   "msgOAuthSaved": {
     "message": "저장됨."

@@ -38,6 +38,7 @@ function initTheme() {
   });
 }
 
+
 function setTheme(mode) {
   chrome.storage.local.set({ themeMode: mode });
   applyTheme(mode);
@@ -136,26 +137,45 @@ async function main() {
     }
   }
 
-  document.getElementById("logBtn").addEventListener("click", openLogWindow);
-  document.getElementById("advancedOptionsLink").addEventListener("click", () => {
+  const logBtn = document.getElementById("logBtn"); if (logBtn) logBtn.addEventListener("click", openLogWindow);
+  const advancedOptLink = document.getElementById("advancedOptionsLink"); if (advancedOptLink) advancedOptLink.addEventListener("click", () => {
     chrome.runtime.openOptionsPage();
   });
 
-  document.getElementById("supportLinkBtn").addEventListener("click", () => {
+  const openDashboard = () => {
+    chrome.tabs.create({ url: chrome.runtime.getURL("dashboard/dashboard.html") });
+  };
+  const openDashboardTabBtn = document.getElementById("openDashboardTabBtn");
+  if (openDashboardTabBtn) openDashboardTabBtn.addEventListener("click", openDashboard);
+  const openDashboardLink = document.getElementById("openDashboardLink");
+  if (openDashboardLink) openDashboardLink.addEventListener("click", openDashboard);
+
+  const supportBtn = document.getElementById("supportLinkBtn"); if (supportBtn) supportBtn.addEventListener("click", () => {
     chrome.tabs.create({ url: "https://ko-fi.com/thk7410" });
   });
 
-  document.getElementById("headerDonateBtn").addEventListener("click", () => {
+  const headerDonateBtn = document.getElementById("headerDonateBtn"); if (headerDonateBtn) headerDonateBtn.addEventListener("click", () => {
     chrome.tabs.create({ url: "https://ko-fi.com/thk7410" });
   });
 
-  document.getElementById("themeLightBtn").addEventListener("click", () => setTheme("light"));
-  document.getElementById("themeDarkBtn").addEventListener("click", () => setTheme("dark"));
-  document.getElementById("themeSystemBtn").addEventListener("click", () => setTheme("system"));
+  const themeLightBtn = document.getElementById("themeLightBtn"); if (themeLightBtn) themeLightBtn.addEventListener("click", () => setTheme("light"));
+  const themeDarkBtn = document.getElementById("themeDarkBtn"); if (themeDarkBtn) themeDarkBtn.addEventListener("click", () => setTheme("dark"));
+  const themeSystemBtn = document.getElementById("themeSystemBtn"); if (themeSystemBtn) themeSystemBtn.addEventListener("click", () => setTheme("system"));
 
   // ---------------- 상단 상태 표시 ----------------
   const statusPill = document.getElementById("statusPill");
   const statusPillText = document.getElementById("statusPillText");
+  const apiErrorBanner = document.getElementById("apiErrorBanner");
+
+  function renderApiError(error) {
+    if (!error || !error.message) {
+      apiErrorBanner.classList.remove("show");
+      apiErrorBanner.textContent = "";
+      return;
+    }
+    apiErrorBanner.textContent = `${error.service || "API"} ${t("apiErrorPrefix")}: ${error.message}`;
+    apiErrorBanner.classList.add("show");
+  }
 
   function renderStatusPill(jobStatus) {
     statusPill.className = "status-pill";
@@ -297,11 +317,61 @@ async function main() {
     return response.status || "";
   }
 
+  function renderGlobalProgressBanner(result) {
+    const banner = document.getElementById("globalProgressBanner");
+    const titleEl = document.getElementById("globalProgressTitle");
+    const barEl = document.getElementById("globalProgressBarInner");
+    const textEl = document.getElementById("globalProgressText");
+    const cancelBtn = document.getElementById("globalCancelBtn");
+
+    if (!banner) return;
+
+    if (result && result.jobStatus === "running") {
+      banner.style.display = "block";
+
+      const kindNames = {
+        classify: "⚡ 이메일 자동 분류 진행 중...",
+        repeat: "🔄 반복 분류 진행 중...",
+        labelSummary: "📋 라벨 한국어 요약 생성 중...",
+        relabel: "🏷️ 라벨 재분류 진행 중...",
+        dedupe: "🧹 중복/오분류 라벨 정리 중...",
+        analyze: "🔍 라벨 분석 진행 중...",
+        deleteLabels: "🗑️ 모든 라벨 삭제 진행 중..."
+      };
+
+      const titleText = kindNames[result.jobKind] || "⚡ 작업 진행 중...";
+      if (titleEl) titleEl.textContent = titleText;
+
+      let pct = 0;
+      let text = "진행 중...";
+      if (result.jobProgress && result.jobProgress.total) {
+        pct = Math.min(100, Math.round((result.jobProgress.processed / result.jobProgress.total) * 100));
+        text = `${result.jobProgress.processed} / ${result.jobProgress.total} 메일 처리 완료 (${pct}%)`;
+      } else if (result.jobProgress && typeof result.jobProgress.pct === "number") {
+        pct = result.jobProgress.pct;
+        text = `${pct}% 진행됨`;
+      }
+
+      if (barEl) barEl.style.width = `${pct}%`;
+      if (textEl) textEl.textContent = text;
+
+      if (cancelBtn) {
+        cancelBtn.onclick = () => {
+          chrome.runtime.sendMessage({ action: "cancelJob" });
+        };
+      }
+    } else {
+      banner.style.display = "none";
+    }
+  }
+
   function pollStatus() {
     chrome.runtime.sendMessage({ action: "getJobStatus" }, (result) => {
       if (chrome.runtime.lastError || !result) return;
 
+      renderGlobalProgressBanner(result);
       renderStatusPill(result.jobStatus);
+      renderApiError(result.lastApiError);
       renderProgress(result.jobProgress, result.jobStatus, result.jobKind);
       dedupeBtn.disabled = result.jobStatus === "running";
       deleteAllLabelsBtn.disabled = result.jobStatus === "running";
@@ -340,6 +410,50 @@ async function main() {
       backupToDriveBtn.disabled = result.jobStatus === "running";
       restoreFromDriveBtn.disabled = result.jobStatus === "running";
       analyzeLabelBtn.disabled = result.jobStatus === "running";
+
+      const startSummaryBtn = document.getElementById("startSummaryBtn");
+      const summaryProgressWrap = document.getElementById("summaryProgressWrap");
+      const summaryProgressBar = document.getElementById("summaryProgressBar");
+      const summaryProgressText = document.getElementById("summaryProgressText");
+      const summaryResultBox = document.getElementById("summaryResultBox");
+      const summaryActionRow = document.getElementById("summaryActionRow");
+
+      if (startSummaryBtn) startSummaryBtn.disabled = result.jobStatus === "running";
+
+      if (result.jobKind === "labelSummary") {
+        if (summaryProgressWrap && summaryProgressBar && summaryProgressText) {
+          summaryProgressWrap.style.display = "block";
+          summaryProgressText.style.display = "block";
+          if (result.jobStatus === "running" && result.jobProgress && result.jobProgress.total) {
+            const pct = Math.min(100, Math.round((result.jobProgress.processed / result.jobProgress.total) * 100));
+            summaryProgressBar.style.width = `${pct}%`;
+            summaryProgressText.textContent = t("progressRunning", [
+              result.jobProgress.processed,
+              result.jobProgress.total,
+              result.jobProgress.batchIndex || 1,
+              result.jobProgress.batchTotal || 1,
+              pct,
+            ]);
+          } else if (result.jobStatus === "done" || result.jobStatus === "error" || result.jobStatus === "cancelled") {
+            summaryProgressBar.style.width = result.jobStatus === "done" ? "100%" : "0%";
+            summaryProgressText.textContent = "";
+          }
+        }
+
+        if (result.jobStatus === "running") {
+          showResult(summaryResultBox, t("statusRunning"));
+          if (summaryActionRow) summaryActionRow.style.display = "none";
+        } else if (result.jobStatus === "done") {
+          chrome.storage.local.get(["lastLabelSummary"], (stored) => {
+            if (stored.lastLabelSummary) {
+              displaySummaryReport(stored.lastLabelSummary);
+            }
+          });
+        } else if (result.jobStatus === "error") {
+          showResult(summaryResultBox, t("resultLastError", [result.jobError]));
+          if (summaryActionRow) summaryActionRow.style.display = "none";
+        }
+      }
 
       if (result.jobKind === "oauthConnect") {
         if (result.jobStatus === "running") {
@@ -620,6 +734,10 @@ async function main() {
       .map((c) => `<option value="${escapeHtml(c.name)}">${escapeHtml(c.name)}</option>`)
       .join("");
     relabelSelect.innerHTML = optionsHtml;
+    const summaryLabelSelect = document.getElementById("summaryLabelSelect");
+    if (summaryLabelSelect) {
+      summaryLabelSelect.innerHTML = optionsHtml;
+    }
     renderLabelAnalysisChecklist();
   }
 
@@ -675,6 +793,8 @@ async function main() {
   let filterRules = [];
 
   function renderFilterRules() {
+    const filterRulesList = document.getElementById("filterRulesList");
+    if (!filterRulesList) return;
     filterRulesList.innerHTML = filterRules
       .map(
         (rule, idx) => `
@@ -1019,6 +1139,8 @@ async function main() {
   const oauthClientSecretInput = document.getElementById("oauthClientSecretInput");
   const oauthStatusText = document.getElementById("oauthStatusText");
   const oauthResultBox = document.getElementById("oauthResultBox");
+  const oauthReauthBanner = document.getElementById("oauthReauthBanner");
+  const oauthReauthBtn = document.getElementById("oauthReauthBtn");
 
   function loadOAuthFields() {
     chrome.storage.local.get(["oauthClientId", "oauthClientSecret"], (result) => {
@@ -1032,6 +1154,7 @@ async function main() {
     chrome.runtime.sendMessage({ action: "getOAuthStatus" }, (response) => {
       if (chrome.runtime.lastError || !response) return;
       oauthStatusText.textContent = response.connected ? t("oauthStatusConnected") : t("oauthStatusNotConnected");
+      oauthReauthBanner.classList.toggle("show", !!response.requiresLogin);
     });
   }
   refreshOAuthStatus();
@@ -1068,6 +1191,10 @@ async function main() {
         showResult(oauthResultBox, t("errorGenericPrefix", [(response && response.error) || ""]));
       }
     });
+  });
+
+  oauthReauthBtn.addEventListener("click", () => {
+    document.getElementById("connectOAuthBtn").click();
   });
 
   document.getElementById("disconnectOAuthBtn").addEventListener("click", () => {
@@ -1263,6 +1390,13 @@ async function main() {
     "uiLanguage",
     "showQuotaOnMain",
     "correctionLearningEnabled",
+    "importanceCriteria",
+    "discordWebhookUrl",
+    "discordWebhookUrlHigh",
+    "discordWebhookUrlMedium",
+    "discordWebhookUrlLow",
+    "lastLabelSummary",
+    "criteriaScratchpad"
   ];
   const LOCAL_BACKUP_CREDENTIAL_KEYS = ["geminiApiKeys", "oauthClientId", "oauthClientSecret"];
   const backupPassphraseInput = document.getElementById("backupPassphraseInput");
@@ -1382,6 +1516,245 @@ async function main() {
       );
     });
   }
+  // ---------------- 메일 요약 / 디스코드 / 중요도 기준 탭 ----------------
+  // 이 블록은 main() 내부 함수(escapeHtml, showResult, pollStatus, pollTimer)를 사용하므로
+  // 반드시 main() 스코프 안에 있어야 한다(예전에는 최상위에 있어 ReferenceError가 났음).
+  // ---------------- 메일 요약 탭 ----------------
+  const summaryLabelSelect = document.getElementById("summaryLabelSelect");
+  const summaryEmailCountInput = document.getElementById("summaryEmailCountInput");
+  const summaryCriteriaInput = document.getElementById("summaryCriteriaInput");
+  const startSummaryBtn = document.getElementById("startSummaryBtn");
+  const summaryProgressWrap = document.getElementById("summaryProgressWrap");
+  const summaryProgressBar = document.getElementById("summaryProgressBar");
+  const summaryProgressText = document.getElementById("summaryProgressText");
+  const summaryResultBox = document.getElementById("summaryResultBox");
+  const summaryActionRow = document.getElementById("summaryActionRow");
+  const copySummaryBtn = document.getElementById("copySummaryBtn");
+
+  let lastSummaryPlainText = "";
+
+  function renderSummaryReportHTML(report) {
+    if (!report) return "";
+    let html = `<div style="font-family: inherit; font-size: 12px; line-height: 1.5;">`;
+    html += `<div style="font-weight: 700; font-size: 13px; color: var(--blue); margin-bottom: 6px;">📋 '${escapeHtml(report.labelName)}' 라벨 요약 리포트</div>`;
+
+    if (report.overallSummary) {
+      html += `<div style="background: var(--surface-2); border-left: 3px solid var(--blue); padding: 8px 10px; border-radius: 4px; margin-bottom: 10px; font-size: 12px; white-space: pre-wrap;">${escapeHtml(report.overallSummary)}</div>`;
+    }
+
+    html += `<div style="font-size: 11px; color: var(--text-secondary); margin-bottom: 8px;">전체 ${report.totalAnalyzed || 0}개 메일 중 ${report.selectedCount || 0}개 주요 메일 선별</div>`;
+
+    let plainText = `[${report.labelName} 라벨 요약 리포트]\n\n● 전체 요약:\n${report.overallSummary || ""}\n\n● 주요 선별 메일 목록 (${report.selectedCount || 0}/${report.totalAnalyzed || 0}):\n`;
+
+    if (Array.isArray(report.selectedEmails) && report.selectedEmails.length) {
+      report.selectedEmails.forEach((item, idx) => {
+        const imp = item.importance || "중";
+        const badgeColor = imp === "상" ? "#d93025" : imp === "중" ? "#f9a825" : "#188038";
+        const mailUrl = item.id ? `https://mail.google.com/mail/u/0/#inbox/${item.id}` : null;
+
+        html += `<div style="border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px; margin-bottom: 8px; background: var(--bg);">`;
+        html += `<div style="display: flex; align-items: center; justify-content: space-between; gap: 6px; margin-bottom: 4px;">`;
+        html += `<span style="font-weight: 600; font-size: 12.5px;">${idx + 1}. ${escapeHtml(item.subject)}</span>`;
+        html += `<span style="font-size: 10px; font-weight: 700; color: #fff; background: ${badgeColor}; padding: 1px 6px; border-radius: 10px; white-space: nowrap;">중요도: ${escapeHtml(imp)}</span>`;
+        html += `</div>`;
+
+        html += `<div style="font-size: 11px; color: var(--text-secondary); margin-bottom: 4px;">발신자: ${escapeHtml(item.sender || "")}</div>`;
+
+        if (Array.isArray(item.summaryPoints) && item.summaryPoints.length) {
+          html += `<ul style="margin: 4px 0 6px 16px; padding: 0; font-size: 11.5px;">`;
+          item.summaryPoints.forEach((pt) => {
+            html += `<li>${escapeHtml(pt)}</li>`;
+          });
+          html += `</ul>`;
+        }
+
+        if (item.actionRequired && item.actionRequired !== "없음") {
+          html += `<div style="font-size: 11px; color: var(--red); font-weight: 600; margin-top: 4px;">⚡ 조치 사항: ${escapeHtml(item.actionRequired)}</div>`;
+        }
+
+        if (mailUrl) {
+          html += `<div style="margin-top: 6px; text-align: right;"><a href="${mailUrl}" target="_blank" style="font-size: 11px; color: var(--blue); text-decoration: none;">메일 보기 ↗</a></div>`;
+        }
+        html += `</div>`;
+
+        plainText += `\n${idx + 1}. [중요도: ${imp}] ${item.subject}\n   - 발신자: ${item.sender || ""}\n`;
+        if (Array.isArray(item.summaryPoints)) {
+          item.summaryPoints.forEach((pt) => {
+            plainText += `   - ${pt}\n`;
+          });
+        }
+        if (item.actionRequired && item.actionRequired !== "없음") {
+          plainText += `   - 조치 사항: ${item.actionRequired}\n`;
+        }
+      });
+    } else {
+      html += `<div style="font-size: 12px; color: var(--text-secondary);">선별된 중요 메일이 없습니다.</div>`;
+    }
+
+    html += `</div>`;
+    lastSummaryPlainText = plainText;
+    return html;
+  }
+
+  function displaySummaryReport(report) {
+    if (!summaryResultBox || !report) return;
+    const html = renderSummaryReportHTML(report);
+    summaryResultBox.innerHTML = html;
+    summaryResultBox.classList.add("show");
+    if (summaryActionRow) summaryActionRow.style.display = "flex";
+  }
+
+  if (startSummaryBtn) {
+    startSummaryBtn.addEventListener("click", () => {
+      const labelName = summaryLabelSelect ? summaryLabelSelect.value : "";
+      const count = parseInt(summaryEmailCountInput ? summaryEmailCountInput.value : "20", 10) || 20;
+      const filterCriteria = summaryCriteriaInput ? summaryCriteriaInput.value : "";
+
+      if (!labelName) {
+        showResult(summaryResultBox, t("errorSelectSummaryLabel"));
+        return;
+      }
+
+      if (summaryActionRow) summaryActionRow.style.display = "none";
+      showResult(summaryResultBox, t("summaryRequesting"));
+      chrome.runtime.sendMessage(
+        { action: "startLabelSummary", labelName, count, filterCriteria },
+        (response) => {
+          if (chrome.runtime.lastError) {
+            showResult(summaryResultBox, t("errorGenericPrefix", [chrome.runtime.lastError.message]));
+            return;
+          }
+          if (response && !response.ok) {
+            showResult(summaryResultBox, translateResponse(response));
+          } else if (response && response.ok) {
+            if (!pollTimer) pollTimer = setInterval(pollStatus, 1000);
+            pollStatus();
+          }
+        }
+      );
+    });
+  }
+
+  if (copySummaryBtn) {
+    copySummaryBtn.addEventListener("click", () => {
+      if (!lastSummaryPlainText) return;
+      navigator.clipboard.writeText(lastSummaryPlainText).then(() => {
+        const origText = copySummaryBtn.textContent;
+        copySummaryBtn.textContent = t("summaryCopied");
+        setTimeout(() => {
+          copySummaryBtn.textContent = origText;
+        }, 1800);
+      });
+    });
+  }
+
+  const sendDiscordBtn = document.getElementById("sendDiscordBtn");
+  if (sendDiscordBtn) {
+    sendDiscordBtn.addEventListener("click", () => {
+      chrome.storage.local.get(["lastLabelSummary", "discordWebhookUrl", "discordWebhookUrlHigh", "discordWebhookUrlMedium", "discordWebhookUrlLow"], (stored) => {
+        if (!stored.lastLabelSummary) {
+          showResult(summaryResultBox, "전송할 요약 리포트가 없습니다.");
+          return;
+        }
+        const webhookInput = {
+          defaultUrl: stored.discordWebhookUrl || "",
+          highUrl: stored.discordWebhookUrlHigh || "",
+          mediumUrl: stored.discordWebhookUrlMedium || "",
+          lowUrl: stored.discordWebhookUrlLow || "",
+        };
+        if (!webhookInput.defaultUrl && !webhookInput.highUrl && !webhookInput.mediumUrl && !webhookInput.lowUrl) {
+          showResult(summaryResultBox, t("errDiscordWebhookMissing"));
+          return;
+        }
+        chrome.runtime.sendMessage(
+          { action: "sendDiscordNotification", webhookUrl: webhookInput, summaryReport: stored.lastLabelSummary },
+          (res) => {
+            if (chrome.runtime.lastError || (res && !res.ok)) {
+              showResult(summaryResultBox, t("errorGenericPrefix", [(res && res.error) || (chrome.runtime.lastError && chrome.runtime.lastError.message)]));
+            } else {
+              showResult(summaryResultBox, t("msgDiscordSent"));
+            }
+          }
+        );
+      });
+    });
+  }
+
+  const popupDiscordWebhookUrl = document.getElementById("popupDiscordWebhookUrl");
+  const savePopupDiscordBtn = document.getElementById("savePopupDiscordBtn");
+  const discordResultBox = document.getElementById("discordResultBox");
+
+  if (popupDiscordWebhookUrl) {
+    chrome.storage.local.get(["discordWebhookUrl"], (stored) => {
+      if (stored.discordWebhookUrl) popupDiscordWebhookUrl.value = stored.discordWebhookUrl;
+    });
+  }
+
+  if (savePopupDiscordBtn && popupDiscordWebhookUrl) {
+    savePopupDiscordBtn.addEventListener("click", () => {
+      const url = popupDiscordWebhookUrl.value.trim();
+      chrome.storage.local.set({ discordWebhookUrl: url }, () => {
+        showResult(discordResultBox, "디스코드 웹훅 URL이 저장되었습니다.");
+      });
+    });
+  }
+
+  // ---------------- 중요도 분류 기준 설정 ----------------
+  const DEFAULT_IMPORTANCE_CRITERIA = {
+    high: "24시간 이내 마감/회신 요구, 결제 실패/서버 오류/계정 보안 경고, 상사의 직접 승인 요청, 법적/비용적 이슈 메일",
+    medium: "일주일 이내 미팅/회의 일정, 프로젝트 진행상황 공유, 일반 업무 요청, 주요 회사/서비스 공지사항",
+    low: "뉴스레터, 정기 보고서, 마케팅/프로모션 참고용, 회신이나 조치가 필요 없는 순수 정보성 알림"
+  };
+
+  const criteriaHighInput = document.getElementById("criteriaHighInput");
+  const criteriaMediumInput = document.getElementById("criteriaMediumInput");
+  const criteriaLowInput = document.getElementById("criteriaLowInput");
+  const saveCriteriaBtn = document.getElementById("saveCriteriaBtn");
+  const resetCriteriaBtn = document.getElementById("resetCriteriaBtn");
+  const criteriaResultBox = document.getElementById("criteriaResultBox");
+
+  function loadCriteriaFields() {
+    chrome.storage.local.get(["importanceCriteria"], (stored) => {
+      const c = stored.importanceCriteria || DEFAULT_IMPORTANCE_CRITERIA;
+      if (criteriaHighInput) criteriaHighInput.value = c.high || DEFAULT_IMPORTANCE_CRITERIA.high;
+      if (criteriaMediumInput) criteriaMediumInput.value = c.medium || DEFAULT_IMPORTANCE_CRITERIA.medium;
+      if (criteriaLowInput) criteriaLowInput.value = c.low || DEFAULT_IMPORTANCE_CRITERIA.low;
+    });
+  }
+
+  if (saveCriteriaBtn) {
+    saveCriteriaBtn.addEventListener("click", () => {
+      const importanceCriteria = {
+        high: criteriaHighInput.value.trim(),
+        medium: criteriaMediumInput.value.trim(),
+        low: criteriaLowInput.value.trim()
+      };
+      chrome.storage.local.set({ importanceCriteria }, () => {
+        showResult(criteriaResultBox, "중요도 분류 기준이 저장되었습니다.");
+      });
+    });
+  }
+
+  if (resetCriteriaBtn) {
+    resetCriteriaBtn.addEventListener("click", () => {
+      chrome.storage.local.set({ importanceCriteria: DEFAULT_IMPORTANCE_CRITERIA }, () => {
+        loadCriteriaFields();
+        showResult(criteriaResultBox, "기본 분류 기준으로 복원되었습니다.");
+      });
+    });
+  }
+
+  loadCriteriaFields();
+
+  chrome.storage.local.get(["lastLabelSummary"], (stored) => {
+    if (stored.lastLabelSummary) {
+      displaySummaryReport(stored.lastLabelSummary);
+    }
+  });
 }
 
-main();
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", main);
+} else {
+  main();
+}

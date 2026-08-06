@@ -32,6 +32,42 @@
   "tabManage": {
     "message": "ラベル管理"
   },
+  "tabSummary": {
+    "message": "要約"
+  },
+  "sectionLabelSummary": {
+    "message": "選択ラベルメールの要約"
+  },
+  "labelSelectSummaryLabel": {
+    "message": "要約するラベル"
+  },
+  "labelSummaryEmailCount": {
+    "message": "取得するメール件数"
+  },
+  "labelSummaryCriteria": {
+    "message": "絞り込み条件（フィルター）"
+  },
+  "placeholderSummaryCriteria": {
+    "message": "例：重要な連絡や支払い通知のみ選別"
+  },
+  "btnStartSummary": {
+    "message": "韓国語要約を生成"
+  },
+  "btnCopySummary": {
+    "message": "要約をコピー"
+  },
+  "summaryCopied": {
+    "message": "コピーしました！"
+  },
+  "summaryRequesting": {
+    "message": "ラベルメールを要約中..."
+  },
+  "notifyTitleSummary": {
+    "message": "メール要約完了"
+  },
+  "errorSelectSummaryLabel": {
+    "message": "要約するラベルを選択してください。"
+  },
   "tabSettings": {
     "message": "設定"
   },
@@ -587,6 +623,15 @@
   },
   "oauthStatusNotConnected": {
     "message": "未連携"
+  },
+  "oauthReauthBanner": {
+    "message": "メール分類にはGoogleへの再ログインが必要です。"
+  },
+  "btnOAuthReauth": {
+    "message": "ログイン"
+  },
+  "apiErrorPrefix": {
+    "message": "エラー"
   },
   "msgOAuthSaved": {
     "message": "保存しました。"
@@ -1927,5 +1972,11 @@
         "content": "$1$"
       }
     }
+  },
+  "errDiscordWebhookMissing": {
+    "message": "Discord Webhook URLを先に入力してください。"
+  },
+  "msgDiscordSent": {
+    "message": "Discordに要約レポートを送信しました。"
   }
 }

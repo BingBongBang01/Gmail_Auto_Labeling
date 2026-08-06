@@ -20,11 +20,11 @@ async function injectDetailCard(aiDataList) {
   const card = document.createElement("div");
   card.className = "ai-detail-card";
 
-  card.innerHTML = `
-    <span style="font-size: 14px;">
-      ${t("detailCardText", [match.labelName])}
-    </span>
-  `;
+  // 라벨 이름은 AI/사용자가 만든 값이라 innerHTML로 넣으면 HTML이 주입될 수 있다 - textContent로 안전하게 삽입
+  const cardText = document.createElement("span");
+  cardText.style.fontSize = "14px";
+  cardText.textContent = t("detailCardText", [match.labelName]);
+  card.appendChild(cardText);
 
   card.style.cssText = `
     background-color: ${match.bgColor};

@@ -32,6 +32,60 @@
   "tabManage": {
     "message": "Labels"
   },
+  "tabSummary": {
+    "message": "Summary"
+  },
+  "sectionLabelSummary": {
+    "message": "Summarize label emails"
+  },
+  "labelSelectSummaryLabel": {
+    "message": "Label to summarize"
+  },
+  "labelSummaryEmailCount": {
+    "message": "Emails to fetch"
+  },
+  "labelSummaryCriteria": {
+    "message": "Filter criteria (optional)"
+  },
+  "placeholderSummaryCriteria": {
+    "message": "e.g., Filter important work notices & payment details"
+  },
+  "btnStartSummary": {
+    "message": "Generate Korean Summary"
+  },
+  "btnCopySummary": {
+    "message": "Copy summary"
+  },
+  "summaryCopied": {
+    "message": "Copied!"
+  },
+  "summaryRequesting": {
+    "message": "Summarizing label emails..."
+  },
+  "notifyTitleSummary": {
+    "message": "Email Summary Complete"
+  },
+  "errorSelectSummaryLabel": {
+    "message": "Please select a label to summarize."
+  },
+  "sectionDiscordWebhook": {
+    "message": "Discord Integration (Discord Webhook)"
+  },
+  "labelDiscordWebhookUrl": {
+    "message": "Discord Webhook URL"
+  },
+  "placeholderDiscordWebhookUrl": {
+    "message": "https://discord.com/api/webhooks/..."
+  },
+  "btnSendDiscord": {
+    "message": "💬 Send summary to Discord"
+  },
+  "msgDiscordSent": {
+    "message": "Sent to Discord channel!"
+  },
+  "errDiscordWebhookMissing": {
+    "message": "Please configure your Discord Webhook URL first."
+  },
   "tabSettings": {
     "message": "Settings"
   },
@@ -587,6 +641,15 @@
   },
   "oauthStatusNotConnected": {
     "message": "Not connected"
+  },
+  "oauthReauthBanner": {
+    "message": "Google sign-in is required to classify mail."
+  },
+  "btnOAuthReauth": {
+    "message": "Sign in"
+  },
+  "apiErrorPrefix": {
+    "message": "error"
   },
   "msgOAuthSaved": {
     "message": "Saved."

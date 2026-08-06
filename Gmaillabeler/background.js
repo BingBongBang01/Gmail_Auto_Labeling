@@ -3,6 +3,89 @@
 // See LICENSE file at the extension root for terms. Unauthorized redistribution or resale is prohibited.
 importScripts("i18n.js", "crypto-helper.js");
 
+// ---------------- 투명 배경 고시인성 왕 편지봉투 + AI Sparkle 아이콘 드로잉 ----------------
+function drawIconCodeData(size) {
+  const canvas = new OffscreenCanvas(size, size);
+  const ctx = canvas.getContext("2d");
+  ctx.clearRect(0, 0, size, size); // 배경 투명 처리!
+
+  // 1. 대형 이메일 편지봉투 드로잉 (전체 캔버스 영역 85% 대형 렌더링)
+  const envW = size * 0.84;
+  const envH = size * 0.56;
+  const envX = (size - envW) / 2;
+  const envY = size * 0.32;
+
+  // 봉투 테두리 및 그림자 (다크 네이비 테두리로 시인성 극대화)
+  ctx.fillStyle = "#1e293b";
+  ctx.beginPath();
+  ctx.roundRect(envX - size * 0.03, envY - size * 0.03, envW + size * 0.06, envH + size * 0.06, size * 0.05);
+  ctx.fill();
+
+  // 봉투 본체 (화이트)
+  ctx.fillStyle = "#ffffff";
+  ctx.beginPath();
+  ctx.roundRect(envX, envY, envW, envH, size * 0.04);
+  ctx.fill();
+
+  // Gmail 시그니처 Red V-Shape Flap
+  ctx.strokeStyle = "#ea4335";
+  ctx.lineWidth = Math.max(1.5, size * 0.08);
+  ctx.beginPath();
+  ctx.moveTo(envX, envY);
+  ctx.lineTo(envX + envW / 2, envY + envH * 0.65);
+  ctx.lineTo(envX + envW, envY);
+  ctx.stroke();
+
+  // 2. 우측 상단 대형 AI Glowing Sparkle Badge (cx: 0.74, cy: 0.26, r: 0.25)
+  const sparkX = size * 0.74;
+  const sparkY = size * 0.26;
+  const sparkR = size * 0.25;
+
+  // AI 뱃지 테두리
+  ctx.fillStyle = "#0f172a";
+  ctx.beginPath();
+  ctx.arc(sparkX, sparkY, sparkR + size * 0.03, 0, Math.PI * 2);
+  ctx.fill();
+
+  // AI 뱃지 바디 (Vivid Cyan -> Violet)
+  const sparkGrad = ctx.createLinearGradient(sparkX - sparkR, sparkY - sparkR, sparkX + sparkR, sparkY + sparkR);
+  sparkGrad.addColorStop(0, "#06b6d4");
+  sparkGrad.addColorStop(1, "#7c3aed");
+
+  ctx.fillStyle = sparkGrad;
+  ctx.beginPath();
+  ctx.arc(sparkX, sparkY, sparkR, 0, Math.PI * 2);
+  ctx.fill();
+
+  // ✦ AI 별빛 (화이트)
+  ctx.fillStyle = "#ffffff";
+  ctx.font = `bold ${Math.round(size * 0.3)}px sans-serif`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText("✦", sparkX, sparkY);
+
+  return ctx.getImageData(0, 0, size, size);
+}
+
+function updateDynamicIconFromCode() {
+  try {
+    const imageData = {
+      16: drawIconCodeData(16),
+      32: drawIconCodeData(32),
+      48: drawIconCodeData(48),
+      128: drawIconCodeData(128),
+    };
+    chrome.action.setIcon({ imageData });
+  } catch (e) {
+    console.warn("코드 기반 동적 아이콘 드로잉 예외:", e);
+  }
+}
+
+// 서비스 워커 구동 시 순수 코드로 아이콘 즉시 렌더링 및 적용
+try {
+  updateDynamicIconFromCode();
+} catch (e) {}
+
 // 파이프라인: 인증 -> 메일 수집 -> (배치 단위) AI 분석(필요시 신규 카테고리 생성) -> 라벨 확인/생성 -> 라벨 즉시 적용(배타적) -> 진행도/로그 기록
 
 const GEMINI_MODEL = "gemini-3.1-flash-lite";
@@ -152,6 +235,7 @@ function matchesFilterRule(detail, rule) {
 // 이후 사용자가 설정에서 언어를 바꾸더라도, 이미 만들어둔 라벨 이름까지 자동으로 바뀌진 않는다(의도된 동작).
 chrome.runtime.onInstalled.addListener(async (details) => {
   registerAutoClassifyAlarm();
+  delayInitialAutoClassifyCheck();
   if (details.reason !== "install") return;
   await i18nInit(true);
   await chrome.storage.local.set({
@@ -220,6 +304,19 @@ async function saveStoredOAuthTokens(tokens) {
 
 async function clearStoredOAuthTokens() {
   await chrome.storage.local.remove(["oauthTokens"]);
+}
+
+function createOAuthReauthRequiredError() {
+  const err = new Error("Google sign-in is required. Open the extension and connect your Google account again.");
+  err.isOAuthReauthRequired = true;
+  return err;
+}
+
+async function markOAuthReauthRequired() {
+  // Keep OAuth client settings; only remove the expired or revoked login token.
+  await clearStoredOAuthTokens();
+  await chrome.storage.local.set({ oauthReauthRequired: true });
+  throw createOAuthReauthRequiredError();
 }
 
 // PKCE(Proof Key for Code Exchange): client_secret 없이도(공개 클라이언트) 안전하게 인증코드를 교환하기 위한
@@ -307,15 +404,14 @@ async function launchOAuthFlow() {
     expiresAt: Date.now() + Math.max(60, (tokenData.expires_in || 3600) - 60) * 1000,
   };
   await saveStoredOAuthTokens(tokens);
+  await chrome.storage.local.set({ oauthReauthRequired: false });
   return tokens.accessToken;
 }
 
 async function refreshAccessTokenViaRefreshToken() {
   const { clientId, clientSecret } = await getOAuthCredentials();
   const stored = await getStoredOAuthTokens();
-  if (!stored || !stored.refreshToken || !clientId) {
-    return await launchOAuthFlow();
-  }
+  if (!stored || !stored.refreshToken || !clientId) throw createOAuthReauthRequiredError();
 
   const tokenParams = {
     refresh_token: stored.refreshToken,
@@ -332,7 +428,7 @@ async function refreshAccessTokenViaRefreshToken() {
 
   if (!tokenResponse.ok) {
     // refresh_token 자체가 무효화된 경우(예: 사용자가 접근권한 해제) -> 처음부터 재인증
-    return await launchOAuthFlow();
+    return await markOAuthReauthRequired();
   }
 
   const tokenData = await tokenResponse.json();
@@ -342,6 +438,7 @@ async function refreshAccessTokenViaRefreshToken() {
     expiresAt: Date.now() + Math.max(60, (tokenData.expires_in || 3600) - 60) * 1000,
   };
   await saveStoredOAuthTokens(tokens);
+  await chrome.storage.local.set({ oauthReauthRequired: false });
   return tokens.accessToken;
 }
 
@@ -354,7 +451,7 @@ async function getValidAccessToken(forceRefresh) {
   if (stored && stored.refreshToken) {
     return await refreshAccessTokenViaRefreshToken();
   }
-  return await launchOAuthFlow();
+  throw createOAuthReauthRequiredError();
 }
 
 // Gmail API 호출 공용 래퍼. 401(토큰 만료/무효)이 오면 토큰을 강제로 새로 받아 한 번 재시도한다.
@@ -419,7 +516,7 @@ async function gmailFetch(url, options) {
 // 백업 파일은 사용자 드라이브 최상위에 평범한 보이는 파일로 저장돼서, 사용자가 직접 열어보거나 지울 수도 있다.
 const DRIVE_BACKUP_FILENAME = "gmail-ai-labeler-backup.json";
 
-// 백업에 포함할 설정 키 목록 (API 키/OAuth 자격증명은 민감정보라 기본적으로 제외 - 필요시 별도 옵션으로 포함)
+// 백업에 포함할 전체 사용자 설정 및 데이터 키 목록
 const BACKUP_SETTING_KEYS = [
   "categoryDefinitions",
   "filterRules",
@@ -429,6 +526,13 @@ const BACKUP_SETTING_KEYS = [
   "uiLanguage",
   "showQuotaOnMain",
   "correctionLearningEnabled",
+  "importanceCriteria",
+  "discordWebhookUrl",
+  "discordWebhookUrlHigh",
+  "discordWebhookUrlMedium",
+  "discordWebhookUrlLow",
+  "lastLabelSummary",
+  "criteriaScratchpad"
 ];
 const BACKUP_CREDENTIAL_KEYS = ["geminiApiKeys", "oauthClientId", "oauthClientSecret"];
 
@@ -685,6 +789,7 @@ async function getEmailContent(token, messageId) {
   const headers = (data.payload && data.payload.headers) || [];
   const subject = headers.find((h) => h.name === "Subject")?.value || "(제목 없음)";
   const from = headers.find((h) => h.name === "From")?.value || "";
+  const date = headers.find((h) => h.name === "Date")?.value || null;
 
   let bodyText = "";
   try {
@@ -706,6 +811,7 @@ async function getEmailContent(token, messageId) {
     snippet: contentForAI || "",
     subject,
     from,
+    date, // 요약 리포트가 메일 날짜를 표시할 수 있도록 함께 반환 (예전에는 누락돼 항상 null이었음)
     labelIds: data.labelIds || [],
   };
 }
@@ -751,14 +857,34 @@ async function syncNewTopLevelLabels(categoryDefs, labelCache) {
 // 사용자가 Gmail에서 직접 지운 라벨을 감지해서 카테고리 목록에서도 함께 제거한다.
 // labelCache가 비정상적으로 비어있는 경우(일시적 API 오류 등)까지 전부 지워버리는 사고를 막기 위해,
 // labelCache에 아무 라벨도 없으면(시스템 라벨조차 없으면) 안전하게 건너뛴다.
+//
+// 중요: "아직 Gmail 라벨이 만들어지지 않은 카테고리"와 "사용자가 Gmail에서 직접 지운 라벨"은
+// 둘 다 labelCache에 없어서 구분이 안 된다. 그래서 지난번 조회 때 실제로 존재하는 것을 확인했던
+// 라벨 이름 목록(seenGmailLabelNames)을 저장해두고, "예전엔 있었는데 지금은 없는" 것만 삭제로 판단한다.
+// 이 구분이 없으면 설치 직후 첫 실행 때(라벨이 하나도 없는 상태) 기본 카테고리 전체가 지워진다.
+const SEEN_LABEL_NAMES_KEY = "seenGmailLabelNames";
+
+async function getSeenGmailLabelNames() {
+  const stored = await new Promise((resolve) => chrome.storage.local.get([SEEN_LABEL_NAMES_KEY], resolve));
+  return new Set(Array.isArray(stored[SEEN_LABEL_NAMES_KEY]) ? stored[SEEN_LABEL_NAMES_KEY] : []);
+}
+
+async function saveSeenGmailLabelNames(labelCache) {
+  await chrome.storage.local.set({ [SEEN_LABEL_NAMES_KEY]: [...labelCache.exact.keys()] });
+}
+
 async function pruneDeletedTopLevelLabels(categoryDefs, labelCache) {
   if (!labelCache.exact || labelCache.exact.size === 0) return categoryDefs;
 
   const existingNames = new Set(labelCache.exact.keys());
-  const kept = categoryDefs.filter((c) => existingNames.has(c.name));
-  if (kept.length === categoryDefs.length) return categoryDefs;
+  const seenBefore = await getSeenGmailLabelNames();
 
-  const removed = categoryDefs.filter((c) => !existingNames.has(c.name)).map((c) => c.name);
+  // 지금 없고 + 예전에 있었던 것만 "사용자가 지운 라벨"로 본다.
+  const isUserDeleted = (c) => !existingNames.has(c.name) && seenBefore.has(c.name);
+  const removed = categoryDefs.filter(isUserDeleted).map((c) => c.name);
+  if (!removed.length) return categoryDefs;
+
+  const kept = categoryDefs.filter((c) => !isUserDeleted(c));
   await saveCategoryDefinitions(kept);
   await addLog(t("logDeletedLabelsDetected", [removed.join(", ")]), "warn");
   return kept;
@@ -777,8 +903,19 @@ async function initGeminiAndGmailContext() {
   }
   let categoryDefs = await getCategoryDefinitions();
   const { token, labelCache } = await initGmailOnlyContext();
-  categoryDefs = await pruneDeletedTopLevelLabels(categoryDefs, labelCache);
+  // 사용자가 새로 만든 라벨을 먼저 편입한 뒤에 삭제 감지를 돌린다(순서가 반대면 방금 편입한 라벨이 바로 지워질 수 있음).
   categoryDefs = await syncNewTopLevelLabels(categoryDefs, labelCache);
+  categoryDefs = await pruneDeletedTopLevelLabels(categoryDefs, labelCache);
+  await saveSeenGmailLabelNames(labelCache); // 다음 실행의 삭제 감지 기준점 갱신
+
+  // 안전망: 카테고리가 하나도 없으면 분류가 성립하지 않는다(빈 enum으로 Gemini 400, fallback 라벨이 undefined).
+  // 이 경우 기본 카테고리로 되살려서 작업이 조용히 망가지는 대신 정상 동작하게 한다.
+  if (!categoryDefs.length) {
+    categoryDefs = getLocalizedDefaultCategoryDefs();
+    await saveCategoryDefinitions(categoryDefs);
+    await addLog("분류 카테고리가 비어 있어 기본 카테고리로 복원했습니다.", "warn");
+  }
+
   const categories = getCategoryNames(categoryDefs); // 이름만 필요한 기존 로직과의 호환용
   return { categoryDefs, categories, token, labelCache };
 }
@@ -1182,8 +1319,51 @@ async function clearLogs() {
   }
 }
 
+async function getRecentLogs(limit = 100) {
+  try {
+    const db = await openLogDb();
+    return await new Promise((resolve) => {
+      const tx = db.transaction(LOG_STORE_NAME, "readonly");
+      const store = tx.objectStore(LOG_STORE_NAME);
+      const req = store.getAll();
+      req.onsuccess = () => {
+        const logs = req.result || [];
+        const mapped = logs.map((item) => ({
+          timestamp: item.t || Date.now(),
+          level: item.level || "info",
+          message: item.message || "",
+          detail: item.detail || false,
+        }));
+        resolve(mapped.slice(-limit));
+      };
+      req.onerror = () => resolve([]);
+    });
+  } catch (e) {
+    return [];
+  }
+}
+
 async function updateProgress(progress) {
   await chrome.storage.local.set({ jobProgress: progress });
+
+  try {
+    if (progress && progress.total) {
+      const pct = Math.min(100, Math.round((progress.processed / progress.total) * 100));
+      chrome.action.setBadgeText({ text: `${pct}%` });
+      chrome.action.setBadgeBackgroundColor({ color: "#2563eb" });
+    } else if (progress && typeof progress.pct === "number") {
+      chrome.action.setBadgeText({ text: `${progress.pct}%` });
+      chrome.action.setBadgeBackgroundColor({ color: "#2563eb" });
+    }
+  } catch (e) {
+    // Ignore badge error
+  }
+}
+
+function clearProgressBadge() {
+  try {
+    chrome.action.setBadgeText({ text: "" });
+  } catch (e) {}
 }
 
 function isCancelled() {
@@ -1646,6 +1826,319 @@ async function processAnalyzeMultipleLabelsCriteria(labelNames) {
     quotaExhausted: false,
     suggestions,
   };
+}
+
+// 선택한 라벨의 메일 목록을 수집하여 Gemini AI로 한국어 요약 및 중요 메일 선별 리포트를 생성한다.
+async function processSummarizeLabelEmails(labelName, maxEmails, filterCriteria) {
+  const { categoryDefs, categories, token } = await initGeminiAndGmailContext();
+  const emailLimit = Math.max(1, Math.min(100, parseInt(maxEmails, 10) || 20));
+
+  await addLog(`[요약] '${labelName}' 라벨 메일 수집 중 (최대 ${emailLimit}개)...`);
+  const messages = await getMessagesByLabelName(token, labelName, emailLimit);
+
+  if (!messages || messages.length === 0) {
+    const emptyReport = {
+      labelName,
+      overallSummary: `'${labelName}' 라벨에 수집된 메일이 없습니다.`,
+      totalAnalyzed: 0,
+      selectedCount: 0,
+      selectedEmails: [],
+      createdAt: Date.now(),
+    };
+    await chrome.storage.local.set({ lastLabelSummary: emptyReport });
+    return {
+      total: 0,
+      success: 0,
+      failMessages: [],
+      requestsUsed: 0,
+      summaryReport: emptyReport,
+      cancelled: isCancelled(),
+      quotaExhausted: false,
+    };
+  }
+
+  await updateProgress({ processed: 0, total: messages.length, batchIndex: 1, batchTotal: 1 });
+
+  const emailDetails = [];
+  for (let i = 0; i < messages.length; i += 1) {
+    if (isCancelled()) throw new JobCancelledError();
+    try {
+      const detail = await getEmailContent(token, messages[i].id);
+      emailDetails.push({
+        id: detail.id,
+        threadId: detail.threadId,
+        idx: i + 1,
+        from: detail.from,
+        subject: detail.subject,
+        date: detail.date,
+        snippet: detail.snippet,
+      });
+    } catch (e) {
+      await addLog(`메일 본문 읽기 실패 (${messages[i].id}): ${e.message}`, "warn");
+    }
+    await updateProgress({ processed: i + 1, total: messages.length, batchIndex: 1, batchTotal: 1 });
+  }
+
+  if (emailDetails.length === 0) {
+    throw new Error("메일 본문을 읽어오지 못했습니다.");
+  }
+
+  await addLog(`[요약] Gemini AI를 통해 한국어 메일 요약 및 선별 수행 중 (${emailDetails.length}개)...`);
+
+  const emailListText = emailDetails
+    .map((item) => `[idx=${item.idx}] 발신자: ${item.from} / 제목: ${item.subject} / 내용: ${item.snippet}`)
+    .join("\n");
+
+  const filterInstruction = filterCriteria && filterCriteria.trim()
+    ? `사용자 특별 필터링 조건: "${filterCriteria.trim()}" (이 조건에 맞는 메일을 최우선으로 선별해라.)\n`
+    : "";
+
+  const storedCriteria = await new Promise((resolve) => chrome.storage.local.get(["importanceCriteria"], resolve));
+  const criteria = storedCriteria.importanceCriteria || {
+    high: "24시간 이내 마감/회신 요구, 결제 실패/서버 오류/계정 보안 경고, 상사의 직접 승인 요청, 법적/비용적 이슈 메일",
+    medium: "일주일 이내 미팅/회의 일정, 프로젝트 진행상황 공유, 일반 업무 요청, 주요 회사/서비스 공지사항",
+    low: "뉴스레터, 정기 보고서, 마케팅/프로모션 참고용, 회신이나 조치가 필요 없는 순수 정보성 알림"
+  };
+
+  const importanceCriteriaInstruction =
+    `[중요도(importance) 분류 사용자 정의 기준]\n` +
+    `- "상" (긴급/조치 필요): ${criteria.high}\n` +
+    `- "중" (공지/일정/업무): ${criteria.medium}\n` +
+    `- "하" (정보/참고): ${criteria.low}\n\n`;
+
+  const prompt =
+    `아래는 '${labelName}' 라벨에 정리된 이메일 목록이다. 이 이메일들 중 중요하거나 사용자에게 필요한 메일만 선별하여 반드시 한국어(Korean)로 깔끔하게 요약해라.\n\n` +
+    filterInstruction +
+    importanceCriteriaInstruction +
+    `[지침]\n` +
+    `1. 스팸, 단순 반복 알림, 불필요한 홍보성 메일은 선별 대상에서 제외해라.\n` +
+    `2. 중요하거나 선별된 메일에 대해 핵심 내용 요약, 중요도(상/중/하 - 위 정밀 기준 준수), 그리고 발신자가 요구하거나 사용자가 해야 할 조치 사항(Action Item)을 한국어로 작성해라.\n` +
+    `3. 각 메일별로 디스코드(Discord) 채널 알림 전송 필요 여부('discordNotificationNeeded': true/false - 단순 뉴스레터는 false, 중요/긴급/조치 필요 메일은 true)와 디스코드 카테고리('discordCategory': "긴급/조치필요" | "공지/일정" | "일반/리포트"), 및 디스코드 채널 전용 한 줄 핵심 브리핑('discordSummaryText')을 AI 판단으로 자동 분류해라.\n` +
+    `4. 전체 메일을 종합한 'overallSummary'(전체 요약 브리핑, 한국어 2~4문장)를 작성해라.\n` +
+    `5. 선별된 메일 목록 'selectedEmails' 배열에 정보를 담아 반환해라.\n\n` +
+    `[이메일 목록]\n` +
+    emailListText;
+
+  const requestBody = {
+    contents: [{ parts: [{ text: prompt }] }],
+    generationConfig: {
+      responseMimeType: "application/json",
+      responseSchema: {
+        type: "OBJECT",
+        properties: {
+          overallSummary: { type: "STRING" },
+          selectedEmails: {
+            type: "ARRAY",
+            items: {
+              type: "OBJECT",
+              properties: {
+                idx: { type: "INTEGER" },
+                subject: { type: "STRING" },
+                sender: { type: "STRING" },
+                importance: { type: "STRING", enum: ["상", "중", "하"] },
+                summaryPoints: {
+                  type: "ARRAY",
+                  items: { type: "STRING" },
+                },
+                actionRequired: { type: "STRING" },
+                discordNotificationNeeded: { type: "BOOLEAN" },
+                discordCategory: { type: "STRING", enum: ["긴급/조치필요", "공지/일정", "일반/리포트"] },
+                discordSummaryText: { type: "STRING" },
+              },
+              required: [
+                "idx",
+                "subject",
+                "sender",
+                "importance",
+                "summaryPoints",
+                "actionRequired",
+                "discordNotificationNeeded",
+                "discordCategory",
+                "discordSummaryText"
+              ],
+            },
+          },
+        },
+        required: ["overallSummary", "selectedEmails"],
+      },
+    },
+  };
+
+  const parsedResult = await callGeminiForJson(requestBody);
+
+  const enrichedSelectedEmails = (parsedResult.selectedEmails || []).map((item) => {
+    const orig = emailDetails.find((e) => e.idx === item.idx);
+    return {
+      ...item,
+      id: orig ? orig.id : null,
+      threadId: orig ? orig.threadId : null,
+      date: orig ? orig.date : null,
+    };
+  });
+
+  const summaryReport = {
+    labelName,
+    overallSummary: parsedResult.overallSummary || "",
+    totalAnalyzed: emailDetails.length,
+    selectedCount: enrichedSelectedEmails.length,
+    selectedEmails: enrichedSelectedEmails,
+    createdAt: Date.now(),
+  };
+
+  await chrome.storage.local.set({ lastLabelSummary: summaryReport });
+  await addLog(`[요약 완료] ${emailDetails.length}개 중 ${enrichedSelectedEmails.length}개 메일 선별 및 한국어 요약 완료.`);
+
+  return {
+    total: emailDetails.length,
+    success: enrichedSelectedEmails.length,
+    failMessages: [],
+    requestsUsed: 1,
+    batchSize: 1,
+    cancelled: isCancelled(),
+    quotaExhausted: false,
+    summaryReport,
+  };
+}
+
+async function sendSingleDiscordEmbed(url, title, description, color, fields) {
+  if (!url || !url.startsWith("http")) return;
+  const payload = {
+    username: "Gmail AI Labeler",
+    avatar_url: "https://mail.google.com/favicon.ico",
+    embeds: [
+      {
+        title,
+        description,
+        color,
+        fields,
+        footer: { text: "Gmail AI Labeler v1.9 • Discord Routing Sync" },
+        timestamp: new Date().toISOString(),
+      },
+    ],
+  };
+  const response = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  if (!response.ok) {
+    const errText = await response.text();
+    throw new Error(`Discord Webhook (${title}) 전송 실패: ${errText.slice(0, 100)}`);
+  }
+}
+
+// 요약 리포트를 지정한 Discord Webhook URL(또는 중요도별 분리 채널)로 전송한다.
+async function sendSummaryToDiscord(webhookInput, summaryReport) {
+  if (!summaryReport) throw new Error("전송할 요약 리포트 데이터가 없습니다.");
+
+  let webhooks = {};
+  if (typeof webhookInput === "string") {
+    webhooks = { defaultUrl: webhookInput };
+  } else if (webhookInput && typeof webhookInput === "object") {
+    webhooks = webhookInput;
+  }
+
+  const hasSpecificChannel = webhooks.highUrl || webhooks.mediumUrl || webhooks.lowUrl;
+
+  if (!hasSpecificChannel && (!webhooks.defaultUrl || !webhooks.defaultUrl.startsWith("http"))) {
+    throw new Error(t("errDiscordWebhookMissing"));
+  }
+
+  // 중요도별/AI카테고리별 웹훅이 설정되어 있으면 해당 디스코드 채널로 자동 분기 전송!
+  if (hasSpecificChannel) {
+    const highEmails = (summaryReport.selectedEmails || []).filter((e) => e.importance === "상" || e.discordCategory === "긴급/조치필요");
+    const medEmails = (summaryReport.selectedEmails || []).filter((e) => (e.importance === "중" || e.discordCategory === "공지/일정") && e.importance !== "상");
+    const lowEmails = (summaryReport.selectedEmails || []).filter((e) => (e.importance === "하" || e.discordCategory === "일반/리포트") && e.importance !== "상" && e.importance !== "중");
+
+    let sentCount = 0;
+
+    if (webhooks.highUrl && highEmails.length) {
+      const fields = highEmails.map((item, idx) => ({
+        name: `${idx + 1}. 🔴 [긴급/조치] ${item.subject.slice(0, 200)}`,
+        value: `${item.discordSummaryText ? `💬 **AI 브리핑**: ${item.discordSummaryText}\n` : ""}**발신자**: ${item.sender || ""}\n${(item.summaryPoints || []).map(p => `• ${p}`).join("\n")}\n⚡ **조치**: ${item.actionRequired || "필요"}${item.id ? `\n🔗 [Gmail에서 메일 보기](https://mail.google.com/mail/u/0/#inbox/${item.id})` : ""}`.slice(0, 1024),
+        inline: false,
+      }));
+      await sendSingleDiscordEmbed(webhooks.highUrl, `🚨 [${summaryReport.labelName}] 긴급/상 메일 알림 (${highEmails.length}건)`, summaryReport.overallSummary || "", 0xf43f5e, fields);
+      sentCount += 1;
+    }
+
+    if (webhooks.mediumUrl && medEmails.length) {
+      const fields = medEmails.map((item, idx) => ({
+        name: `${idx + 1}. 🟡 [공지/일정] ${item.subject.slice(0, 200)}`,
+        value: `${item.discordSummaryText ? `💬 **AI 브리핑**: ${item.discordSummaryText}\n` : ""}**발신자**: ${item.sender || ""}\n${(item.summaryPoints || []).map(p => `• ${p}`).join("\n")}${item.actionRequired && item.actionRequired !== "없음" ? `\n⚡ **조치**: ${item.actionRequired}` : ""}${item.id ? `\n🔗 [Gmail에서 메일 보기](https://mail.google.com/mail/u/0/#inbox/${item.id})` : ""}`.slice(0, 1024),
+        inline: false,
+      }));
+      await sendSingleDiscordEmbed(webhooks.mediumUrl, `📢 [${summaryReport.labelName}] 공지/일정(중) 메일 리포트 (${medEmails.length}건)`, summaryReport.overallSummary || "", 0xf59e0b, fields);
+      sentCount += 1;
+    }
+
+    if (webhooks.lowUrl && lowEmails.length) {
+      const fields = lowEmails.map((item, idx) => ({
+        name: `${idx + 1}. 🟢 [정보/리포트] ${item.subject.slice(0, 200)}`,
+        value: `${item.discordSummaryText ? `💬 **AI 브리핑**: ${item.discordSummaryText}\n` : ""}**발신자**: ${item.sender || ""}\n${(item.summaryPoints || []).map(p => `• ${p}`).join("\n")}${item.id ? `\n🔗 [Gmail에서 메일 보기](https://mail.google.com/mail/u/0/#inbox/${item.id})` : ""}`.slice(0, 1024),
+        inline: false,
+      }));
+      await sendSingleDiscordEmbed(webhooks.lowUrl, `ℹ️ [${summaryReport.labelName}] 정보성(하) 메일 요약 (${lowEmails.length}건)`, summaryReport.overallSummary || "", 0x10b981, fields);
+      sentCount += 1;
+    }
+
+    if (sentCount === 0 && webhooks.defaultUrl) {
+      return await sendSummaryToDiscord(webhooks.defaultUrl, summaryReport);
+    }
+
+    return { ok: true };
+  }
+
+  // 기본 단일 채널 전송
+  const fields = [];
+  if (summaryReport.overallSummary) {
+    fields.push({ name: "💡 AI 종합 브리핑", value: summaryReport.overallSummary.slice(0, 1024), inline: false });
+  }
+
+  const hasHigh = (summaryReport.selectedEmails || []).some((e) => e.importance === "상");
+  const hasMedium = (summaryReport.selectedEmails || []).some((e) => e.importance === "중");
+  const embedColor = hasHigh ? 0xf43f5e : hasMedium ? 0xf59e0b : 0x10b981;
+
+  if (Array.isArray(summaryReport.selectedEmails) && summaryReport.selectedEmails.length) {
+    const list = summaryReport.selectedEmails.slice(0, 5);
+    list.forEach((item, idx) => {
+      const imp = item.importance || "중";
+      const impIcon = imp === "상" ? "🔴" : imp === "중" ? "🟡" : "🟢";
+
+      // 디스코드 문법 코드블록을 활용한 색상 박스 및 AI 한줄 브리핑 연출
+      const colorBox = imp === "상"
+        ? "```diff\n- 🔴 [AI 판단: 긴급 조치 필요]\n```"
+        : imp === "중"
+        ? "```yaml\n🟡 [AI 판단: 주요 공지 및 일정]\n```"
+        : "```bash\n🟢 [AI 판단: 일반 참고 알림]\n```";
+
+      let val = `${colorBox}\n${item.discordSummaryText ? `💬 **AI 요약**: ${item.discordSummaryText}\n` : ""}**발신자**: ${item.sender || "정보 없음"}\n`;
+      if (Array.isArray(item.summaryPoints)) {
+        item.summaryPoints.forEach((pt) => { val += `• ${pt}\n`; });
+      }
+      if (item.actionRequired && item.actionRequired !== "없음") {
+        val += `⚡ **조치 사항**: ${item.actionRequired}\n`;
+      }
+      if (item.id) {
+        val += `🔗 [Gmail에서 메일 보기](https://mail.google.com/mail/u/0/#inbox/${item.id})`;
+      }
+      fields.push({
+        name: `${idx + 1}. ${impIcon} [AI분류: ${item.discordCategory || imp}] ${item.subject.slice(0, 200)}`,
+        value: val.slice(0, 1024),
+        inline: false,
+      });
+    });
+  }
+
+  await sendSingleDiscordEmbed(
+    webhooks.defaultUrl,
+    `📋 [${summaryReport.labelName}] 라벨 메일 요약 리포트`,
+    `총 ${summaryReport.totalAnalyzed || 0}개 메일 중 ${summaryReport.selectedCount || 0}개 주요 메일 선별`,
+    embedColor,
+    fields
+  );
+
+  return { ok: true };
 }
 
 
@@ -2204,6 +2697,8 @@ async function processApplyLabelColors() {
 
 const KEEP_ALIVE_ALARM = "gmailLabelerKeepAlive";
 const AUTO_CLASSIFY_CHECK_ALARM = "gmailLabelerAutoClassifyCheck";
+const AUTO_CLASSIFY_STARTUP_DELAY_MS = 10000;
+const AUTO_CLASSIFY_BLOCKED_UNTIL_KEY = "autoClassifyBlockedUntil";
 const AUTO_CLASSIFY_CHECK_PERIOD_MIN = 5; // 새 메일 도착 여부를 이 주기(분)마다 확인
 
 function startKeepAlive() {
@@ -2218,8 +2713,22 @@ function registerAutoClassifyAlarm() {
   chrome.alarms.create(AUTO_CLASSIFY_CHECK_ALARM, { periodInMinutes: AUTO_CLASSIFY_CHECK_PERIOD_MIN });
 }
 
+// Give storage and OAuth initialization time to settle before the first
+// automatic-mail check after Chrome or the extension starts.
+async function delayInitialAutoClassifyCheck() {
+  const blockedUntil = Date.now() + AUTO_CLASSIFY_STARTUP_DELAY_MS;
+  await chrome.storage.local.set({ [AUTO_CLASSIFY_BLOCKED_UNTIL_KEY]: blockedUntil });
+  setTimeout(async () => {
+    const stored = await chrome.storage.local.get([AUTO_CLASSIFY_BLOCKED_UNTIL_KEY]);
+    if (stored[AUTO_CLASSIFY_BLOCKED_UNTIL_KEY] !== blockedUntil) return;
+    await chrome.storage.local.remove([AUTO_CLASSIFY_BLOCKED_UNTIL_KEY]);
+    checkAutoClassifyTrigger();
+  }, AUTO_CLASSIFY_STARTUP_DELAY_MS);
+}
+
 chrome.runtime.onStartup.addListener(() => {
   registerAutoClassifyAlarm();
+  delayInitialAutoClassifyCheck();
   chrome.storage.local.get(["jobStatus"], (result) => {
     setActionIconRunning(result.jobStatus === "running");
   });
@@ -2228,8 +2737,9 @@ chrome.runtime.onStartup.addListener(() => {
 // 새 메일 자동 분류: 라벨 없는 메일이 설정한 임계값(1~배치크기) 이상 쌓이면 자동으로 1배치 분류를 시작한다.
 async function checkAutoClassifyTrigger() {
   const settings = await new Promise((resolve) =>
-    chrome.storage.local.get(["autoClassifyEnabled", "autoClassifyThreshold"], resolve)
+    chrome.storage.local.get(["autoClassifyEnabled", "autoClassifyThreshold", AUTO_CLASSIFY_BLOCKED_UNTIL_KEY], resolve)
   );
+  if ((settings[AUTO_CLASSIFY_BLOCKED_UNTIL_KEY] || 0) > Date.now()) return;
   // 기본값: 켜짐 / 1개 (사용자가 명시적으로 끈 적이 없다면 새 기본값을 적용)
   const autoClassifyEnabled = settings.autoClassifyEnabled === undefined ? true : settings.autoClassifyEnabled;
   if (!autoClassifyEnabled) return;
@@ -2334,12 +2844,19 @@ async function runJob(jobFn, notifyTitleKey, notifyTitleParams) {
     if (isCancelled() && !summary.cancelled) summary = { ...summary, cancelled: true };
     const finalStatus = summary.quotaExhausted ? "quota_exceeded" : summary.cancelled ? "cancelled" : "done";
     await chrome.storage.local.set({ jobStatus: finalStatus, jobResult: summary, jobFinishedAt: Date.now() });
+    await chrome.storage.local.remove(["lastApiError"]);
     await addLog(
       summary.quotaExhausted ? t("logJobQuotaExceeded") : summary.cancelled ? t("logJobCancelled") : t("logJobDone")
     );
     notifyCompletion(notifyTitle, summary);
   } catch (err) {
     const errMsg = String(err.message || err);
+    const apiService = /gemini/i.test(errMsg) ? "Gemini API" : /oauth|google sign-in/i.test(errMsg) ? "Google OAuth" : /gmail/i.test(errMsg) ? "Gmail API" : "";
+    if (apiService) {
+      await chrome.storage.local.set({
+        lastApiError: { service: apiService, message: errMsg.slice(0, 400), at: Date.now() },
+      });
+    }
     if (isCancelled() || isCancellationError(err)) {
       const summary = { total: 0, success: 0, failMessages: [], requestsUsed: 0, cancelled: true, quotaExhausted: false };
       await chrome.storage.local.set({ jobStatus: "cancelled", jobResult: summary, jobFinishedAt: Date.now() });
@@ -2382,14 +2899,15 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
 
   if (request.action === "getOAuthStatus") {
-    getStoredOAuthTokens().then((tokens) => {
-      sendResponse({ connected: !!(tokens && tokens.refreshToken) });
+    Promise.all([getStoredOAuthTokens(), getOAuthCredentials()]).then(([tokens, credentials]) => {
+      const connected = !!(tokens && tokens.refreshToken);
+      sendResponse({ connected, requiresLogin: !connected && !!credentials.clientId });
     });
     return true;
   }
 
   if (request.action === "disconnectOAuth") {
-    clearStoredOAuthTokens().then(() => sendResponse({ ok: true }));
+    clearStoredOAuthTokens().then(() => chrome.storage.local.set({ oauthReauthRequired: false })).then(() => sendResponse({ ok: true }));
     return true;
   }
 
@@ -2559,6 +3077,31 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     return true;
   }
 
+  if (request.action === "startLabelSummary") {
+    isJobRunning().then(async (running) => {
+      if (running) {
+        sendResponse({ messageKey: "errorAlreadyRunning", ok: false });
+        return;
+      }
+      const labelName = String(request.labelName || "").trim();
+      if (!labelName) {
+        sendResponse({ messageKey: "errorSelectSummaryLabel", ok: false });
+        return;
+      }
+      await markJobRunning("labelSummary");
+      runJob(() => processSummarizeLabelEmails(labelName, request.count, request.filterCriteria), "notifyTitleSummary");
+      sendResponse({ messageKey: "summaryRequesting", ok: true, started: true });
+    });
+    return true;
+  }
+
+  if (request.action === "sendDiscordNotification") {
+    sendSummaryToDiscord(request.webhookUrl, request.summaryReport)
+      .then(() => sendResponse({ ok: true }))
+      .catch((err) => sendResponse({ ok: false, error: String(err.message || err) }));
+    return true;
+  }
+
   if (request.action === "applyLabelColors") {
     isJobRunning().then(async (running) => {
       if (running) {
@@ -2611,8 +3154,49 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
 
   if (request.action === "getJobStatus") {
-    chrome.storage.local.get(["jobStatus", "jobResult", "jobError", "jobProgress", "jobKind", "jobFinishedAt"], (result) => {
+    chrome.storage.local.get(["jobStatus", "jobResult", "jobError", "jobProgress", "jobKind", "jobFinishedAt", "lastApiError"], (result) => {
       sendResponse(result);
+    });
+    return true;
+  }
+
+  if (request.action === "getLogs") {
+    getRecentLogs(request.limit || 100).then((logs) => sendResponse(logs));
+    return true;
+  }
+
+  if (request.action === "clearLogs") {
+    clearLogs().then(() => sendResponse({ ok: true }));
+    return true;
+  }
+
+  if (request.action === "relabelExistingEmails") {
+    isJobRunning().then(async (running) => {
+      if (running) { sendResponse({ messageKey: "errorAlreadyRunning", ok: false }); return; }
+      const label = String(request.targetLabel || "").trim();
+      await markJobRunning("relabel");
+      runJob(() => processRelabel(label, !!request.excludeSelf, MAX_EMAIL_COUNT_PER_RUN), "notifyTitleRelabel", [label]);
+      sendResponse({ messageKey: "relabelRequesting", ok: true, started: true });
+    });
+    return true;
+  }
+
+  if (request.action === "dedupeAndRelabel") {
+    isJobRunning().then(async (running) => {
+      if (running) { sendResponse({ messageKey: "errorAlreadyRunning", ok: false }); return; }
+      await markJobRunning("dedupe");
+      runJob(() => processDedupeRelabel(), "notifyTitleDedupe");
+      sendResponse({ messageKey: "dedupeRequesting", ok: true, started: true });
+    });
+    return true;
+  }
+
+  if (request.action === "backupToDrive") {
+    isJobRunning().then(async (running) => {
+      if (running) { sendResponse({ messageKey: "errorAlreadyRunning", ok: false }); return; }
+      await markJobRunning("driveBackup");
+      runJob(() => processBackupToDrive(false, ""), "notifyTitleDriveBackup");
+      sendResponse({ messageKey: "driveBackupRequesting", ok: true, started: true });
     });
     return true;
   }

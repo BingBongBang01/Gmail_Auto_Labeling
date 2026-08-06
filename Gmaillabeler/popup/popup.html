@@ -62,6 +62,20 @@
   .status-pill.done .status-dot { background: var(--green); }
   .status-pill.error .status-dot { background: var(--red); }
   .status-pill.cancelled .status-dot { background: #9e9e9e; }
+  .oauth-reauth-banner {
+    display: none; align-items: center; justify-content: space-between; gap: 8px;
+    margin: 8px 12px 0; padding: 8px 10px; border-radius: 6px;
+    background: #fff4e5; border: 1px solid #e6a34a; color: #8a4b08; font-size: 11.5px;
+  }
+  .oauth-reauth-banner.show { display: flex; }
+  .oauth-reauth-banner button { padding: 5px 8px; font-size: 11px; white-space: nowrap; }
+  html[data-theme="dark"] .oauth-reauth-banner { background: #3b2c1c; color: #ffd59a; }
+  .api-error-banner {
+    display: none; margin: 8px 12px 0; padding: 8px 10px; border-radius: 6px;
+    background: #fdecea; border: 1px solid #e0a49c; color: #a12316; font-size: 11.5px; line-height: 1.4;
+  }
+  .api-error-banner.show { display: block; }
+  html[data-theme="dark"] .api-error-banner { background: #3a2a28; color: #ffb4ab; }
   @keyframes blink { 0%,100%{opacity:1;} 50%{opacity:0.35;} }
 
   /* ---- 탭 ---- */
@@ -212,6 +226,21 @@
   .theme-row button.active { background: var(--blue); color: #fff; border-color: var(--blue); }
   html[data-theme="dark"] .theme-row button.active { color: #202124; }
 
+  .global-progress-banner {
+    background: linear-gradient(135deg, rgba(37, 99, 235, 0.12), rgba(124, 58, 237, 0.12));
+    border: 1px solid var(--blue);
+    border-radius: 8px;
+    padding: 8px 10px;
+    margin: 8px 0 10px 0;
+  }
+  .global-progress-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+  .global-progress-title { font-size: 11.5px; font-weight: 700; color: var(--text); }
+  .global-progress-cancel { font-size: 10px; padding: 2px 6px; border-radius: 4px; background: rgba(234, 67, 53, 0.12); color: var(--red); border: 1px solid rgba(234, 67, 53, 0.3); cursor: pointer; }
+  .global-progress-cancel:hover { background: var(--red); color: #fff; }
+  .global-progress-bar-wrap { width: 100%; height: 5px; background: var(--bg-secondary, #e2e8f0); border-radius: 3px; overflow: hidden; margin-bottom: 3px; }
+  .global-progress-bar-inner { height: 100%; width: 0%; background: linear-gradient(90deg, #2563eb, #7c3aed); transition: width 0.3s ease; }
+  .global-progress-text { font-size: 10.5px; color: var(--text-secondary); text-align: right; }
+
   .footer-link { text-align: center; padding: 8px 0 14px 0; }
   .footer-link a { font-size: 11px; color: var(--blue); text-decoration: none; cursor: pointer; }
 </style>
@@ -226,11 +255,28 @@
     </div>
   </div>
 
+  <div class="oauth-reauth-banner" id="oauthReauthBanner">
+    <span data-i18n="oauthReauthBanner">Google login is required to classify mail.</span>
+    <button id="oauthReauthBtn" data-i18n="btnOAuthReauth">Sign in</button>
+  </div>
+  <div class="api-error-banner" id="apiErrorBanner"></div>
+
+  <!-- Global Active Task Banner (Shown above tabs when any job is running) -->
+  <div class="global-progress-banner" id="globalProgressBanner" style="display:none;">
+    <div class="global-progress-header">
+      <span class="global-progress-title" id="globalProgressTitle">⚡ 작업 진행 중...</span>
+      <button class="global-progress-cancel" id="globalCancelBtn" title="작업 중지">🛑 중지</button>
+    </div>
+    <div class="global-progress-bar-wrap">
+      <div class="global-progress-bar-inner" id="globalProgressBarInner"></div>
+    </div>
+    <div class="global-progress-text" id="globalProgressText">0% 완료</div>
+  </div>
+
   <div class="tabs">
-    <button class="tab-btn active" data-tab="classify" data-i18n="tabClassify">Classify</button>
-    <button class="tab-btn" data-tab="manage" data-i18n="tabManage">Labels</button>
-    <button class="tab-btn" data-tab="settings" data-i18n="tabSettings">Settings</button>
-    <button class="tab-btn" data-tab="advanced" data-i18n="tabAdvancedSettings">Advanced</button>
+    <button class="tab-btn active" data-tab="classify" data-i18n="tabClassify">⚡ 메일 분류</button>
+    <button class="tab-btn" data-tab="summary" data-i18n="tabSummary">📋 라벨 요약</button>
+    <button class="tab-btn" data-tab="settings" data-i18n="tabSettings">⚙️ 통합 설정</button>
   </div>
 
   <!-- 분류 탭 -->
@@ -282,17 +328,122 @@
     </details>
   </div>
 
-  <!-- 라벨 관리 탭 -->
-  <div class="tab-panel" id="panel-manage">
-    <div class="section-title" data-i18n="sectionFilterRules">Personal filter rules</div>
-    <div class="hint" data-i18n="hintFilterRules"></div>
-    <div id="filterRulesList"></div>
-    <div class="btn-row">
-      <button id="addFilterRuleBtn" data-i18n="btnAddFilterRule">+ Add rule</button>
-      <button class="primary" id="saveFilterRulesBtn" data-i18n="btnSaveFilterRules">Save rules</button>
-    </div>
-    <div class="result-box" id="filterRulesResultBox"></div>
+  <!-- 요약 탭 -->
+  <div class="tab-panel" id="panel-summary">
+    <div class="section-title" data-i18n="sectionLabelSummary">Summarize label emails</div>
 
+    <div class="field-row" style="flex-direction: column; align-items: stretch; gap: 4px;">
+      <label for="summaryLabelSelect" data-i18n="labelSelectSummaryLabel">Label to summarize</label>
+      <select id="summaryLabelSelect"></select>
+    </div>
+
+    <div class="field-row" style="margin-top: 8px;">
+      <label for="summaryEmailCountInput" data-i18n="labelSummaryEmailCount">Emails to fetch</label>
+      <input type="number" id="summaryEmailCountInput" value="20" min="1" max="100">
+    </div>
+
+    <div style="margin-top: 8px;">
+      <label for="summaryCriteriaInput" style="font-size: 12.5px; color: var(--text);" data-i18n="labelSummaryCriteria">Filter criteria (optional)</label>
+      <textarea id="summaryCriteriaInput" rows="2" data-i18n-placeholder="placeholderSummaryCriteria" placeholder="예: 중요한 업무 공지 및 결제 내역만 선별" style="margin-top: 4px; font-size: 12px;"></textarea>
+    </div>
+
+    <div class="start-row" style="margin-top: 12px;">
+      <button class="primary" id="startSummaryBtn" data-i18n="btnStartSummary">Generate Korean Summary</button>
+    </div>
+
+    <div class="progress-wrap" id="summaryProgressWrap"><div class="progress-bar" id="summaryProgressBar"></div></div>
+    <div class="progress-text" id="summaryProgressText"></div>
+
+    <div class="result-box" id="summaryResultBox"></div>
+
+    <div class="btn-row" id="summaryActionRow" style="display:none; margin-top:8px;">
+      <button id="copySummaryBtn" data-i18n="btnCopySummary">Copy summary</button>
+      <button id="sendDiscordBtn" data-i18n="btnSendDiscord" style="background: linear-gradient(135deg, #5865F2, #4752C4); color: #fff; border:none;">💬 디스코드로 전송</button>
+    </div>
+
+    <button class="primary" id="openDashboardTabBtn" style="width:100%; margin-top:12px; background: linear-gradient(135deg, #2563eb, #7c3aed);">🖥️ 전체 화면 대시보드 열기</button>
+  </div>
+
+  <!-- 통합 설정 탭 -->
+  <div class="tab-panel" id="panel-settings">
+    
+    <!-- 1. API 키 설정 -->
+    <details class="settings-group" open>
+      <summary data-i18n="sectionApiKey">Gemini API Key</summary>
+      <div class="hint" data-i18n="hintApiKey"></div>
+      <button class="link" id="openAiStudioBtn" type="button" style="padding-left:0;" data-i18n="btnGetApiKey">Get a key</button>
+      <div id="apiKeysList"></div>
+      <div class="btn-row">
+        <button id="addApiKeyBtn" data-i18n="btnAddApiKey">+ Add key</button>
+        <button class="primary" id="saveKeyBtn" data-i18n="btnSaveKey">Save</button>
+      </div>
+      <div class="result-box" id="keyResultBox"></div>
+    </details>
+
+    <!-- 2. 디스코드 연동 -->
+    <details class="settings-group">
+      <summary data-i18n="sectionDiscordWebhook">Discord Integration (Discord Webhook)</summary>
+      <div class="hint">Discord Webhook URL을 설정하여 이메일 요약 및 중요한 공지를 디스코드 채널로 실시간 전송합니다.</div>
+      <input type="password" id="popupDiscordWebhookUrl" data-i18n-placeholder="placeholderDiscordWebhookUrl" placeholder="https://discord.com/api/webhooks/...">
+      <div class="btn-row" style="margin-top:6px;">
+        <button class="primary" id="savePopupDiscordBtn">Save Discord Webhook</button>
+      </div>
+      <div class="result-box" id="discordResultBox"></div>
+    </details>
+
+    <!-- 3. 중요도 분류 기준 -->
+    <details class="settings-group">
+      <summary>⚙️ 중요도(상/중/하) 분류 기준 설정</summary>
+      <div class="hint">Gemini AI가 이메일 중요도를 판단할 때 사용하는 사용자 정의 기준을 설정합니다.</div>
+      
+      <div class="field-row" style="flex-direction:column; align-items:stretch; margin-bottom:6px;">
+        <label for="criteriaHighInput" style="font-weight:600; color:var(--red);">🔴 [상] 긴급/조치 필요 기준</label>
+        <textarea id="criteriaHighInput" rows="2" style="font-size:11.5px;"></textarea>
+      </div>
+
+      <div class="field-row" style="flex-direction:column; align-items:stretch; margin-bottom:6px;">
+        <label for="criteriaMediumInput" style="font-weight:600; color:var(--amber);">🟡 [중] 공지/일정/업무 기준</label>
+        <textarea id="criteriaMediumInput" rows="2" style="font-size:11.5px;"></textarea>
+      </div>
+
+      <div class="field-row" style="flex-direction:column; align-items:stretch; margin-bottom:6px;">
+        <label for="criteriaLowInput" style="font-weight:600; color:var(--green);">🟢 [하] 정보/참고 기준</label>
+        <textarea id="criteriaLowInput" rows="2" style="font-size:11.5px;"></textarea>
+      </div>
+
+      <div class="btn-row">
+        <button class="primary" id="saveCriteriaBtn">기준 저장</button>
+        <button id="resetCriteriaBtn">기본값 복원</button>
+      </div>
+      <div class="result-box" id="criteriaResultBox"></div>
+    </details>
+
+    <!-- 4. 개인 필터 규칙 -->
+    <details class="settings-group">
+      <summary data-i18n="sectionFilterRules">Personal filter rules</summary>
+      <div class="hint" data-i18n="hintFilterRules"></div>
+      <div id="filterRulesList"></div>
+      <div class="btn-row">
+        <button id="addFilterRuleBtn" data-i18n="btnAddFilterRule">+ Add rule</button>
+        <button class="primary" id="saveFilterRulesBtn" data-i18n="btnSaveFilterRules">Save rules</button>
+      </div>
+      <div class="result-box" id="filterRulesResultBox"></div>
+    </details>
+
+    <!-- 5. 라벨 카테고리 설정 -->
+    <details class="settings-group">
+      <summary data-i18n="sectionCategories">Label categories</summary>
+      <div class="hint" data-i18n="hintCategories"></div>
+      <div id="categoriesList"></div>
+      <div class="btn-row">
+        <button id="addCategoryBtn" data-i18n="btnAddCategory">+ Add category</button>
+        <button class="primary" id="saveCategoriesBtn" data-i18n="btnSaveCategories">Save</button>
+      </div>
+      <button id="resetCategoriesBtn" type="button" style="width:100%; margin-top:6px;" data-i18n="btnResetCategories">Reset to defaults</button>
+      <div class="result-box" id="categoryResultBox"></div>
+    </details>
+
+    <!-- 6. 재분류/분할 및 중복 라벨 정리 -->
     <details class="settings-group">
       <summary data-i18n="sectionRelabelSplit">Relabel / split</summary>
       <div class="hint" data-i18n="hintRelabelSplit"></div>
@@ -312,18 +463,7 @@
       <div class="result-box" id="dedupeResultBox"></div>
     </details>
 
-    <details class="settings-group" open>
-      <summary data-i18n="sectionCategories">Label categories</summary>
-      <div class="hint" data-i18n="hintCategories"></div>
-      <div id="categoriesList"></div>
-      <div class="btn-row">
-        <button id="addCategoryBtn" data-i18n="btnAddCategory">+ Add category</button>
-        <button class="primary" id="saveCategoriesBtn" data-i18n="btnSaveCategories">Save</button>
-      </div>
-      <button id="resetCategoriesBtn" type="button" style="width:100%; margin-top:6px;" data-i18n="btnResetCategories">Reset to defaults</button>
-      <div class="result-box" id="categoryResultBox"></div>
-    </details>
-
+    <!-- 7. 라벨 분석 -->
     <details class="settings-group">
       <summary data-i18n="sectionLabelAnalysis">Analyze label for criteria</summary>
       <div class="hint" data-i18n="hintLabelAnalysis"></div>
@@ -345,127 +485,89 @@
       </div>
     </details>
 
-    <details class="settings-group danger-group">
-      <summary data-i18n="sectionDeleteAllLabels">Delete all labels</summary>
-      <div class="hint" data-i18n="hintDeleteAllLabels"></div>
-      <button class="danger" id="deleteAllLabelsBtn" style="width:100%;" data-i18n="btnDeleteAllLabels">Delete all labels</button>
-      <div id="deleteAllLabelsConfirmBox" style="display:none; margin-top:8px; border:1px solid var(--red); border-radius:6px; padding:10px;">
-        <div class="hint" id="deleteAllLabelsConfirmText" style="color:var(--red);"></div>
+    <!-- 8. Google 계정 연동 (OAuth) -->
+    <details class="settings-group">
+      <summary data-i18n="sectionOAuth">Google account connection (personal OAuth)</summary>
+      <div class="hint" data-i18n="hintOAuth"></div>
+      <div class="btn-row">
+        <button class="link" id="openOAuthGuideBtn" type="button" style="padding-left:0;" data-i18n="btnOAuthGuide">Open setup guide</button>
+        <button class="link" id="openOAuthConsoleBtn" type="button" data-i18n="btnOAuthGetCredentials">Get credentials</button>
+      </div>
+      <div class="field-row">
+        <label for="oauthClientIdInput" data-i18n="labelOAuthClientId">OAuth Client ID</label>
+      </div>
+      <input type="text" id="oauthClientIdInput" placeholder="xxxxxxxx.apps.googleusercontent.com">
+      <div class="field-row" style="margin-top:6px;">
+        <label for="oauthClientSecretInput" data-i18n="labelOAuthClientSecret">OAuth Client Secret</label>
+      </div>
+      <input type="password" id="oauthClientSecretInput" data-i18n-placeholder="placeholderOAuthSecret" placeholder="GOCSPX-... (optional)">
+      <div class="hint" data-i18n="hintOAuthSecretOptional"></div>
+      <div class="btn-row">
+        <button id="saveOAuthBtn" data-i18n="btnSaveOAuth">Save</button>
+      </div>
+      <div class="btn-row">
+        <button class="primary" id="connectOAuthBtn" data-i18n="btnConnectOAuth">Connect Google account</button>
+        <button class="danger" id="disconnectOAuthBtn" data-i18n="btnDisconnectOAuth">Disconnect</button>
+      </div>
+      <div class="hint" id="oauthStatusText" style="margin-top:6px;"></div>
+      <div class="result-box" id="oauthResultBox"></div>
+    </details>
+
+    <!-- 9. 백업 및 복원 -->
+    <details class="settings-group">
+      <summary data-i18n="sectionBackupRestore">Backup / restore</summary>
+      <div class="hint" data-i18n="hintDriveBackup"></div>
+      <label class="checkbox-row">
+        <input type="checkbox" id="includeCredentialsCheckbox" checked>
+        <span data-i18n="checkboxIncludeCredentials">Include API keys / OAuth credentials in backup</span>
+      </label>
+      <div class="hint" data-i18n="hintIncludeCredentials"></div>
+      <div class="field-row" style="margin-top:6px;">
+        <label for="backupPassphraseInput" data-i18n="labelBackupPassphrase">Encryption passphrase</label>
+      </div>
+      <input type="password" id="backupPassphraseInput" data-i18n-placeholder="placeholderBackupPassphrase" placeholder="Optional - encrypts your API keys/secrets">
+      <div class="hint" data-i18n="hintBackupPassphrase"></div>
+
+      <div class="field-row" style="margin-top:10px;">
+        <label data-i18n="labelLocalBackup">Local backup</label>
+      </div>
+      <div class="btn-row">
+        <button class="primary" id="backupLocalBtn" data-i18n="btnBackupLocal">Save to file</button>
+        <button id="restoreLocalBtn" data-i18n="btnRestoreLocal">Load from file</button>
+      </div>
+      <input type="file" id="restoreLocalFileInput" accept="application/json" style="display:none;">
+      <div class="result-box" id="localBackupResultBox"></div>
+
+      <div class="field-row" style="margin-top:10px;">
+        <label data-i18n="labelDriveBackup">Google Drive backup</label>
+      </div>
+      <div class="btn-row">
+        <button class="primary" id="backupToDriveBtn" data-i18n="btnBackupToDrive">Back up now</button>
+        <button id="restoreFromDriveBtn" data-i18n="btnRestoreFromDrive">Restore</button>
+      </div>
+      <label class="checkbox-row">
+        <input type="checkbox" id="autoBackupOnChangeCheckbox" checked>
+        <span data-i18n="checkboxAutoBackupOnChange">Automatically back up to Drive when settings change</span>
+      </label>
+      <div id="driveRestoreConfirmBox" style="display:none; margin-top:8px; border:1px solid var(--red); border-radius:6px; padding:10px;">
+        <div class="hint" id="driveRestoreConfirmText" style="color:var(--red);"></div>
         <div class="btn-row">
-          <button id="deleteAllLabelsConfirmBtn" class="danger"></button>
-          <button id="deleteAllLabelsCancelBtn"></button>
+          <button id="driveRestoreConfirmBtn" class="danger"></button>
+          <button id="driveRestoreCancelBtn"></button>
         </div>
       </div>
-      <div class="result-box" id="deleteAllLabelsResultBox"></div>
-    </details>
-  </div>
-
-  <!-- 설정 탭 (기본 - 사용하려면 꼭 필요한 것들, 항상 펼쳐짐) -->
-  <div class="tab-panel" id="panel-settings">
-    <div class="section-title" data-i18n="sectionApiKey">Gemini API key</div>
-    <div class="hint" data-i18n="hintApiKey"></div>
-    <button class="link" id="openAiStudioBtn" type="button" style="padding-left:0;" data-i18n="btnGetApiKey">Get a key</button>
-    <div id="apiKeysList"></div>
-    <div class="btn-row">
-      <button id="addApiKeyBtn" data-i18n="btnAddApiKey">+ Add key</button>
-      <button class="primary" id="saveKeyBtn" data-i18n="btnSaveKey">Save</button>
-    </div>
-    <div class="result-box" id="keyResultBox"></div>
-
-    <hr>
-
-    <div class="section-title" data-i18n="sectionOAuth">Google account connection (personal OAuth)</div>
-    <div class="hint" data-i18n="hintOAuth"></div>
-    <div class="btn-row">
-      <button class="link" id="openOAuthGuideBtn" type="button" style="padding-left:0;" data-i18n="btnOAuthGuide">Open setup guide</button>
-      <button class="link" id="openOAuthConsoleBtn" type="button" data-i18n="btnOAuthGetCredentials">Get credentials</button>
-    </div>
-    <div class="field-row">
-      <label for="oauthClientIdInput" data-i18n="labelOAuthClientId">OAuth Client ID</label>
-    </div>
-    <input type="text" id="oauthClientIdInput" placeholder="xxxxxxxx.apps.googleusercontent.com">
-    <div class="field-row" style="margin-top:6px;">
-      <label for="oauthClientSecretInput" data-i18n="labelOAuthClientSecret">OAuth Client Secret</label>
-    </div>
-    <input type="password" id="oauthClientSecretInput" data-i18n-placeholder="placeholderOAuthSecret" placeholder="GOCSPX-... (optional)">
-    <div class="hint" data-i18n="hintOAuthSecretOptional"></div>
-    <div class="btn-row">
-      <button id="saveOAuthBtn" data-i18n="btnSaveOAuth">Save</button>
-    </div>
-    <div class="btn-row">
-      <button class="primary" id="connectOAuthBtn" data-i18n="btnConnectOAuth">Connect Google account</button>
-      <button class="danger" id="disconnectOAuthBtn" data-i18n="btnDisconnectOAuth">Disconnect</button>
-    </div>
-    <div class="hint" id="oauthStatusText" style="margin-top:6px;"></div>
-    <div class="result-box" id="oauthResultBox"></div>
-
-    <hr>
-
-    <div class="section-title" data-i18n="sectionBackupRestore">Backup / restore</div>
-    <div class="hint" data-i18n="hintDriveBackup"></div>
-    <label class="checkbox-row">
-      <input type="checkbox" id="includeCredentialsCheckbox" checked>
-      <span data-i18n="checkboxIncludeCredentials">Include API keys / OAuth credentials in backup</span>
-    </label>
-    <div class="hint" data-i18n="hintIncludeCredentials"></div>
-    <div class="field-row" style="margin-top:6px;">
-      <label for="backupPassphraseInput" data-i18n="labelBackupPassphrase">Encryption passphrase</label>
-    </div>
-    <input type="password" id="backupPassphraseInput" data-i18n-placeholder="placeholderBackupPassphrase" placeholder="Optional - encrypts your API keys/secrets">
-    <div class="hint" data-i18n="hintBackupPassphrase"></div>
-
-    <div class="field-row" style="margin-top:10px;">
-      <label data-i18n="labelLocalBackup">Local backup</label>
-    </div>
-    <div class="btn-row">
-      <button class="primary" id="backupLocalBtn" data-i18n="btnBackupLocal">Save to file</button>
-      <button id="restoreLocalBtn" data-i18n="btnRestoreLocal">Load from file</button>
-    </div>
-    <input type="file" id="restoreLocalFileInput" accept="application/json" style="display:none;">
-    <div class="result-box" id="localBackupResultBox"></div>
-
-    <div class="field-row" style="margin-top:10px;">
-      <label data-i18n="labelDriveBackup">Google Drive backup</label>
-    </div>
-    <div class="btn-row">
-      <button class="primary" id="backupToDriveBtn" data-i18n="btnBackupToDrive">Back up now</button>
-      <button id="restoreFromDriveBtn" data-i18n="btnRestoreFromDrive">Restore</button>
-    </div>
-    <label class="checkbox-row">
-      <input type="checkbox" id="autoBackupOnChangeCheckbox" checked>
-      <span data-i18n="checkboxAutoBackupOnChange">Automatically back up to Drive when settings change</span>
-    </label>
-    <div id="driveRestoreConfirmBox" style="display:none; margin-top:8px; border:1px solid var(--red); border-radius:6px; padding:10px;">
-      <div class="hint" id="driveRestoreConfirmText" style="color:var(--red);"></div>
-      <div class="btn-row">
-        <button id="driveRestoreConfirmBtn" class="danger"></button>
-        <button id="driveRestoreCancelBtn"></button>
-      </div>
-    </div>
-    <div class="hint" id="driveBackupStatusText" style="margin-top:6px;"></div>
-    <div class="result-box" id="driveBackupResultBox"></div>
-  </div>
-
-  <!-- 고급설정 탭 (자주 안 바꾸는 것들, 접이식) -->
-  <div class="tab-panel" id="panel-advanced">
-    <details class="settings-group">
-      <summary data-i18n="sectionLabelColors">Gmail label colors</summary>
-      <div class="hint" data-i18n="hintLabelColors"></div>
-      <button class="primary" id="applyColorsBtn" data-i18n="btnApplyColors">Apply colors to existing labels</button>
-      <div class="result-box" id="colorResultBox"></div>
+      <div class="hint" id="driveBackupStatusText" style="margin-top:6px;"></div>
+      <div class="result-box" id="driveBackupResultBox"></div>
     </details>
 
+    <!-- 10. 테마 / 언어 / 자동 분류 / 고급 -->
     <details class="settings-group">
-      <summary data-i18n="sectionTheme">Theme</summary>
-      <div class="theme-row">
+      <summary data-i18n="sectionTheme">Theme & Language</summary>
+      <div class="theme-row" style="margin-bottom:8px;">
         <button id="themeLightBtn" data-i18n="themeLight">Light</button>
         <button id="themeDarkBtn" data-i18n="themeDark">Dark</button>
         <button id="themeSystemBtn" data-i18n="themeSystem">System</button>
       </div>
-    </details>
-
-    <details class="settings-group">
-      <summary data-i18n="sectionLanguage">Language</summary>
       <div class="hint" data-i18n="hintLanguage"></div>
       <div class="lang-row">
         <select id="languageSelect">
@@ -486,8 +588,7 @@
     </details>
 
     <details class="settings-group">
-      <summary data-i18n="sectionAutoClassify">Auto-classify new mail</summary>
-      <div class="hint" data-i18n="hintAutoClassify"></div>
+      <summary data-i18n="sectionAutoClassify">Auto-classify & Label Colors</summary>
       <label class="checkbox-row">
         <input type="checkbox" id="autoClassifyCheckbox" checked>
         <span data-i18n="checkboxAutoClassify">Automatically classify when new mail arrives</span>
@@ -496,10 +597,12 @@
         <label for="autoClassifyThresholdInput" data-i18n="labelAutoClassifyThreshold">Trigger threshold</label>
         <input type="number" id="autoClassifyThresholdInput" value="1" min="1" max="37">
       </div>
+      <button class="primary" id="applyColorsBtn" style="width:100%; margin-top:8px;" data-i18n="btnApplyColors">Apply colors to existing labels</button>
+      <div class="result-box" id="colorResultBox"></div>
     </details>
 
     <details class="settings-group">
-      <summary data-i18n="sectionAdvanced">Advanced</summary>
+      <summary data-i18n="sectionAdvanced">Advanced Options</summary>
       <label class="checkbox-row">
         <input type="checkbox" id="correctionLearningCheckbox">
         <span data-i18n="checkboxCorrectionLearning">Learn from my manual label corrections</span>
@@ -512,14 +615,31 @@
       <div class="hint" data-i18n="hintQuota"></div>
     </details>
 
+    <!-- 11. 위험 / 전체 삭제 / 정보 -->
+    <details class="settings-group danger-group">
+      <summary data-i18n="sectionDeleteAllLabels">Delete all labels</summary>
+      <div class="hint" data-i18n="hintDeleteAllLabels"></div>
+      <button class="danger" id="deleteAllLabelsBtn" style="width:100%;" data-i18n="btnDeleteAllLabels">Delete all labels</button>
+      <div id="deleteAllLabelsConfirmBox" style="display:none; margin-top:8px; border:1px solid var(--red); border-radius:6px; padding:10px;">
+        <div class="hint" id="deleteAllLabelsConfirmText" style="color:var(--red);"></div>
+        <div class="btn-row">
+          <button id="deleteAllLabelsConfirmBtn" class="danger"></button>
+          <button id="deleteAllLabelsCancelBtn"></button>
+        </div>
+      </div>
+      <div class="result-box" id="deleteAllLabelsResultBox"></div>
+    </details>
+
     <details class="settings-group">
       <summary data-i18n="sectionAbout">About</summary>
       <div class="hint" id="aboutCopyright">© 2026 thk7410@gmail.com. All rights reserved.</div>
       <button class="link" id="supportLinkBtn" type="button" style="padding-left:0;" data-i18n="btnSupportDeveloper">Support the developer</button>
     </details>
+
   </div>
 
-  <div class="footer-link">
+  <div class="footer-link" style="display:flex; justify-content:center; gap:16px;">
+    <a id="openDashboardLink" style="font-weight: 600;">🖥️ 대시보드 탭 열기</a>
     <a id="advancedOptionsLink" data-i18n="footerOpenFull">Open full screen</a>
   </div>
 

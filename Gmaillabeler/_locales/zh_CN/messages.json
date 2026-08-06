@@ -32,6 +32,42 @@
   "tabManage": {
     "message": "标签管理"
   },
+  "tabSummary": {
+    "message": "摘要"
+  },
+  "sectionLabelSummary": {
+    "message": "所选标签邮件摘要"
+  },
+  "labelSelectSummaryLabel": {
+    "message": "要摘要的标签"
+  },
+  "labelSummaryEmailCount": {
+    "message": "获取邮件数量"
+  },
+  "labelSummaryCriteria": {
+    "message": "筛选条件（过滤器）"
+  },
+  "placeholderSummaryCriteria": {
+    "message": "例：仅筛选重要工作通知及支付记录"
+  },
+  "btnStartSummary": {
+    "message": "生成韩语摘要"
+  },
+  "btnCopySummary": {
+    "message": "复制摘要"
+  },
+  "summaryCopied": {
+    "message": "已复制！"
+  },
+  "summaryRequesting": {
+    "message": "正在生成标签邮件摘要..."
+  },
+  "notifyTitleSummary": {
+    "message": "邮件摘要完成"
+  },
+  "errorSelectSummaryLabel": {
+    "message": "请选择要摘要 summarize 的标签。"
+  },
   "tabSettings": {
     "message": "设置"
   },
@@ -587,6 +623,15 @@
   },
   "oauthStatusNotConnected": {
     "message": "未连接"
+  },
+  "oauthReauthBanner": {
+    "message": "需要登录 Google 才能分类邮件。"
+  },
+  "btnOAuthReauth": {
+    "message": "登录"
+  },
+  "apiErrorPrefix": {
+    "message": "错误"
   },
   "msgOAuthSaved": {
     "message": "已保存。"
@@ -1927,5 +1972,11 @@
         "content": "$1$"
       }
     }
+  },
+  "errDiscordWebhookMissing": {
+    "message": "请先输入 Discord Webhook URL。"
+  },
+  "msgDiscordSent": {
+    "message": "已将摘要报告发送到 Discord。"
   }
 }

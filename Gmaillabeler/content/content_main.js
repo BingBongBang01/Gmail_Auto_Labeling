@@ -66,8 +66,17 @@ try {
   // 컨텍스트가 이미 무효화된 상태로 스크립트가 실행된 경우
 }
 
-window.onload = () => {
+// 콘텐츠 스크립트는 기본적으로 document_idle(=load 이후) 시점에 주입되므로, window.onload에 등록하면
+// 이미 지나간 이벤트라 콜백이 절대 실행되지 않는다(배지/카드가 전혀 표시되지 않던 원인).
+// 이미 로드가 끝난 경우엔 즉시 시작하고, 아직이면 load를 기다린다.
+function startContentScript() {
   if (!isExtensionContextValid()) return;
   observeGmailNavigation();
   handleRouteChange(location.href);
-};
+}
+
+if (document.readyState === "complete") {
+  startContentScript();
+} else {
+  window.addEventListener("load", startContentScript, { once: true });
+}
