@@ -2833,5 +2833,81 @@
   },
   "dashRuleNoLabels": {
     "message": "등록된 라벨이 없습니다. '라벨 관리' 탭에서 카테고리를 추가하세요."
+  },
+  "checkboxDiscordPerEmail": {
+    "message": "메일 한 통씩 개별 메시지로 전송"
+  },
+  "hintDiscordPerEmail": {
+    "message": "선별된 메일을 각각 하나의 메시지로 보냅니다(제목·발신자·중요도·Gmail 링크 포함). 끄면 예전처럼 한 번에 묶어 보냅니다. 전송 간격을 두고, Discord가 속도 제한을 걸면 자동으로 다시 시도합니다."
+  },
+  "dashFeedbackPrompt": {
+    "message": "이 판단 맞나요?"
+  },
+  "dashFeedbackNotMine": {
+    "message": "🙅 내 것 아님"
+  },
+  "dashFeedbackMine": {
+    "message": "🙋 내 것 맞음"
+  },
+  "dashFeedbackNotImportant": {
+    "message": "🔽 덜 중요"
+  },
+  "dashFeedbackImportant": {
+    "message": "🔼 더 중요"
+  },
+  "dashFeedbackHeading": {
+    "message": "🧠 피드백으로 기준 학습"
+  },
+  "dashFeedbackDesc": {
+    "message": "요약 카드에서 누른 판정이 여기에 쌓입니다. Gmail 라벨은 전혀 건드리지 않고, 아래 기준 문장만 학습 실행 시 다시 작성됩니다."
+  },
+  "dashFeedbackEmpty": {
+    "message": "아직 피드백이 없습니다. 요약 카드의 버튼으로 내 메일인지 아닌지 표시해 보세요."
+  },
+  "dashFeedbackCount": {
+    "message": "판정 $COUNT$건 저장됨 (최근 20건 표시)",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "dashFeedbackVerdict_notMine": {
+    "message": "내 것 아님"
+  },
+  "dashFeedbackVerdict_mine": {
+    "message": "내 것 맞음"
+  },
+  "dashFeedbackVerdict_notImportant": {
+    "message": "덜 중요"
+  },
+  "dashFeedbackVerdict_important": {
+    "message": "더 중요"
+  },
+  "dashBtnLearnFeedback": {
+    "message": "🧠 피드백으로 기준 업데이트"
+  },
+  "dashBtnClearFeedback": {
+    "message": "피드백 비우기"
+  },
+  "dashConfirmClearFeedback": {
+    "message": "저장된 판정을 모두 지울까요? 이미 학습돼 기준에 반영된 내용은 그대로 남습니다."
+  },
+  "dashMsgLearning": {
+    "message": "기준 업데이트 중..."
+  },
+  "dashMsgLearned": {
+    "message": "판정 $COUNT$건을 반영해 기준을 갱신했습니다.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "dashLabelExclusionRules": {
+    "message": "학습된 '내 것 아님' 규칙"
+  },
+  "dashPlaceholderExclusionRules": {
+    "message": "한 줄에 규칙 하나. 예: 싱가포르 지사 라우터/네트워크 장비 알림은 내 담당이 아님"
   }
 }

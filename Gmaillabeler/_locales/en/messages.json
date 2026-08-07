@@ -2833,5 +2833,81 @@
   },
   "dashRuleNoLabels": {
     "message": "No label registered yet. Add categories on the Label management tab."
+  },
+  "checkboxDiscordPerEmail": {
+    "message": "Send one Discord message per email"
+  },
+  "hintDiscordPerEmail": {
+    "message": "Each selected email is posted as its own message with subject, sender, importance and a Gmail link. Turn this off to get a single grouped digest instead. Sending is spaced out and retried automatically if Discord rate-limits it."
+  },
+  "dashFeedbackPrompt": {
+    "message": "Was this right?"
+  },
+  "dashFeedbackNotMine": {
+    "message": "🙅 Not mine"
+  },
+  "dashFeedbackMine": {
+    "message": "🙋 Mine"
+  },
+  "dashFeedbackNotImportant": {
+    "message": "🔽 Less important"
+  },
+  "dashFeedbackImportant": {
+    "message": "🔼 More important"
+  },
+  "dashFeedbackHeading": {
+    "message": "🧠 Learning from your feedback"
+  },
+  "dashFeedbackDesc": {
+    "message": "Verdicts you leave on summary cards are remembered here. Gmail labels are never changed — only the criteria text below is rewritten when you run the update."
+  },
+  "dashFeedbackEmpty": {
+    "message": "No feedback yet. Use the buttons on a summary card to mark whether a mail was yours."
+  },
+  "dashFeedbackCount": {
+    "message": "$COUNT$ verdicts saved (showing the 20 most recent)",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "dashFeedbackVerdict_notMine": {
+    "message": "Not mine"
+  },
+  "dashFeedbackVerdict_mine": {
+    "message": "Mine"
+  },
+  "dashFeedbackVerdict_notImportant": {
+    "message": "Less important"
+  },
+  "dashFeedbackVerdict_important": {
+    "message": "More important"
+  },
+  "dashBtnLearnFeedback": {
+    "message": "🧠 Update criteria from feedback"
+  },
+  "dashBtnClearFeedback": {
+    "message": "Clear feedback"
+  },
+  "dashConfirmClearFeedback": {
+    "message": "Delete all saved verdicts? The criteria already learned from them stay as they are."
+  },
+  "dashMsgLearning": {
+    "message": "Updating criteria..."
+  },
+  "dashMsgLearned": {
+    "message": "Criteria updated from $COUNT$ verdicts.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "dashLabelExclusionRules": {
+    "message": "Learned \"not mine\" rules"
+  },
+  "dashPlaceholderExclusionRules": {
+    "message": "One rule per line, e.g. router/network device alerts from the Singapore office are not mine"
   }
 }

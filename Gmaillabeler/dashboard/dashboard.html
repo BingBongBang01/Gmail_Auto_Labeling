@@ -256,6 +256,12 @@
             <input type="text" id="dashDiscordWebhookLow" class="dash-input-text" data-i18n-placeholder="dashPlaceholderWebhookLow" placeholder="🟢 Newsletter channel webhook URL">
           </div>
 
+          <label class="dash-inline-check" style="margin-top:12px;">
+            <input type="checkbox" id="dashDiscordSendPerEmail" checked>
+            <span data-i18n="checkboxDiscordPerEmail">Send one Discord message per email</span>
+          </label>
+          <p class="dash-desc" data-i18n="hintDiscordPerEmail"></p>
+
           <hr class="dash-divider">
 
           <h3 data-i18n="dashAutoSummaryHeading">🤖 Auto-summarize and auto-send</h3>
@@ -295,6 +301,21 @@
           <div class="dash-form-group">
             <label data-i18n="dashLabelIdentityHints">Names / aliases that mean me</label>
             <input type="text" id="dashPersonalIdentityHints" class="dash-input-text" data-i18n-placeholder="dashPlaceholderIdentityHints" placeholder="e.g. 김태형, TH Kim, 개발팀장">
+          </div>
+
+          <div class="dash-form-group">
+            <label data-i18n="dashLabelExclusionRules">Learned "not mine" rules</label>
+            <textarea id="dashPersonalExclusionRules" class="dash-input-text" rows="4" data-i18n-placeholder="dashPlaceholderExclusionRules" placeholder="One rule per line"></textarea>
+          </div>
+
+          <hr class="dash-divider">
+
+          <h3 data-i18n="dashFeedbackHeading">🧠 Learning from your feedback</h3>
+          <p class="dash-desc" data-i18n="dashFeedbackDesc"></p>
+          <div id="dashFeedbackList"></div>
+          <div class="dash-btn-row" style="margin-top:10px;">
+            <button class="dash-btn dash-btn-primary" id="dashLearnFeedbackBtn" data-i18n="dashBtnLearnFeedback">🧠 Update criteria from feedback</button>
+            <button class="dash-btn dash-btn-secondary" id="dashClearFeedbackBtn" data-i18n="dashBtnClearFeedback">Clear feedback</button>
           </div>
 
           <hr class="dash-divider">

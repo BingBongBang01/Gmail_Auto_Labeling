@@ -2833,5 +2833,81 @@
   },
   "dashRuleNoLabels": {
     "message": "登録されたラベルがありません。「ラベル管理」タブでカテゴリを追加してください。"
+  },
+  "checkboxDiscordPerEmail": {
+    "message": "メール1通ごとに個別メッセージで送信"
+  },
+  "hintDiscordPerEmail": {
+    "message": "抽出したメールをそれぞれ1件のメッセージとして送信します（件名・送信者・重要度・Gmailリンクを含む）。オフにすると従来どおりまとめて送信します。送信間隔を空け、Discordのレート制限時は自動で再試行します。"
+  },
+  "dashFeedbackPrompt": {
+    "message": "この判定は合っていますか？"
+  },
+  "dashFeedbackNotMine": {
+    "message": "🙅 自分のではない"
+  },
+  "dashFeedbackMine": {
+    "message": "🙋 自分のもの"
+  },
+  "dashFeedbackNotImportant": {
+    "message": "🔽 重要度を下げる"
+  },
+  "dashFeedbackImportant": {
+    "message": "🔼 重要度を上げる"
+  },
+  "dashFeedbackHeading": {
+    "message": "🧠 フィードバックによる基準学習"
+  },
+  "dashFeedbackDesc": {
+    "message": "要約カードで押した判定がここに蓄積されます。Gmailのラベルは一切変更せず、学習を実行したときに下の基準文だけが書き換えられます。"
+  },
+  "dashFeedbackEmpty": {
+    "message": "まだフィードバックがありません。要約カードのボタンで、自分宛かどうかを記録してみてください。"
+  },
+  "dashFeedbackCount": {
+    "message": "判定$COUNT$件を保存（直近20件を表示）",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "dashFeedbackVerdict_notMine": {
+    "message": "自分のではない"
+  },
+  "dashFeedbackVerdict_mine": {
+    "message": "自分のもの"
+  },
+  "dashFeedbackVerdict_notImportant": {
+    "message": "重要度低"
+  },
+  "dashFeedbackVerdict_important": {
+    "message": "重要度高"
+  },
+  "dashBtnLearnFeedback": {
+    "message": "🧠 フィードバックで基準を更新"
+  },
+  "dashBtnClearFeedback": {
+    "message": "フィードバックを消去"
+  },
+  "dashConfirmClearFeedback": {
+    "message": "保存された判定をすべて削除しますか？すでに学習されて基準に反映された内容はそのまま残ります。"
+  },
+  "dashMsgLearning": {
+    "message": "基準を更新中..."
+  },
+  "dashMsgLearned": {
+    "message": "判定$COUNT$件を反映して基準を更新しました。",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "dashLabelExclusionRules": {
+    "message": "学習された「自分のではない」ルール"
+  },
+  "dashPlaceholderExclusionRules": {
+    "message": "1行に1ルール。例：シンガポール支社のルーター／ネットワーク機器の通知は自分の担当ではない"
   }
 }

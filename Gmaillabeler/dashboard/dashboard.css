@@ -1355,3 +1355,81 @@ select#dashEmailCount {
 .dash-inline-check input { margin: 0; }
 
 .dash-del-webhook-btn { flex: 0 0 auto; }
+
+/* ---- 요약 카드 피드백 ---- */
+.email-card-feedback {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--border-color);
+}
+
+.feedback-label {
+  font-size: 11.5px;
+  color: var(--text-sub);
+  margin-right: 2px;
+}
+
+.feedback-chip {
+  font-family: inherit;
+  font-size: 11.5px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-primary);
+  color: var(--text-main);
+  cursor: pointer;
+}
+
+.feedback-chip:hover { border-color: var(--accent-blue); }
+.feedback-chip.active {
+  background: var(--accent-blue);
+  border-color: var(--accent-blue);
+  color: #fff;
+}
+
+.feedback-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--border-color);
+  font-size: 12px;
+}
+
+.feedback-row:last-child { border-bottom: none; }
+
+.feedback-verdict {
+  flex: 0 0 auto;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--bg-secondary, #eef2f7);
+  color: var(--text-sub);
+  white-space: nowrap;
+}
+
+.feedback-verdict.notMine { background: rgba(234, 67, 53, 0.14); color: #d93025; }
+.feedback-verdict.mine { background: rgba(37, 99, 235, 0.14); color: #2563eb; }
+
+.feedback-subject {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.feedback-sender {
+  flex: 0 0 auto;
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-sub);
+  font-size: 11px;
+}

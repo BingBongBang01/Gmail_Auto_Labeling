@@ -2833,5 +2833,81 @@
   },
   "dashRuleNoLabels": {
     "message": "尚未注册标签。请在“标签管理”标签页中添加类别。"
+  },
+  "checkboxDiscordPerEmail": {
+    "message": "每封邮件单独发送一条 Discord 消息"
+  },
+  "hintDiscordPerEmail": {
+    "message": "每封筛选出的邮件各自作为一条消息发送（包含主题、发件人、重要度和 Gmail 链接）。关闭后将如以往那样合并为一条摘要。发送会保持间隔，遇到 Discord 限流时自动重试。"
+  },
+  "dashFeedbackPrompt": {
+    "message": "这个判断对吗？"
+  },
+  "dashFeedbackNotMine": {
+    "message": "🙅 不是我的"
+  },
+  "dashFeedbackMine": {
+    "message": "🙋 是我的"
+  },
+  "dashFeedbackNotImportant": {
+    "message": "🔽 降低重要度"
+  },
+  "dashFeedbackImportant": {
+    "message": "🔼 提高重要度"
+  },
+  "dashFeedbackHeading": {
+    "message": "🧠 根据反馈学习标准"
+  },
+  "dashFeedbackDesc": {
+    "message": "你在摘要卡片上做出的判断会累积在这里。不会改动任何 Gmail 标签，只有在执行学习时才会重写下面的标准文本。"
+  },
+  "dashFeedbackEmpty": {
+    "message": "还没有反馈。请用摘要卡片上的按钮标记邮件是否与你相关。"
+  },
+  "dashFeedbackCount": {
+    "message": "已保存 $COUNT$ 条判断（显示最近 20 条）",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "dashFeedbackVerdict_notMine": {
+    "message": "不是我的"
+  },
+  "dashFeedbackVerdict_mine": {
+    "message": "是我的"
+  },
+  "dashFeedbackVerdict_notImportant": {
+    "message": "重要度低"
+  },
+  "dashFeedbackVerdict_important": {
+    "message": "重要度高"
+  },
+  "dashBtnLearnFeedback": {
+    "message": "🧠 用反馈更新标准"
+  },
+  "dashBtnClearFeedback": {
+    "message": "清空反馈"
+  },
+  "dashConfirmClearFeedback": {
+    "message": "要删除所有已保存的判断吗？已经学习并写入标准的内容会保留。"
+  },
+  "dashMsgLearning": {
+    "message": "正在更新标准…"
+  },
+  "dashMsgLearned": {
+    "message": "已根据 $COUNT$ 条判断更新标准。",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "dashLabelExclusionRules": {
+    "message": "已学习的“不是我的”规则"
+  },
+  "dashPlaceholderExclusionRules": {
+    "message": "每行一条规则，例如：新加坡分公司的路由器／网络设备通知不归我负责"
   }
 }
