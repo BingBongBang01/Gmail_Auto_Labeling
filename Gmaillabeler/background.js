@@ -269,6 +269,9 @@ function matchesFilterRule(detail, rule) {
 chrome.runtime.onInstalled.addListener(async (details) => {
   registerAutoClassifyAlarm();
   delayInitialAutoClassifyCheck();
+  // 전용 '나와 관련된 메일 웹훅'은 없어졌다(커스텀 웹훅의 onlyPersonal 조건으로 대체).
+  // 쓰이지 않는 웹훅 URL이 저장소에 남아 있지 않게 지운다.
+  await chrome.storage.local.remove(["discordWebhookUrlPersonal"]);
   if (details.reason !== "install") return;
   await i18nInit(true);
   await chrome.storage.local.set({
@@ -571,7 +574,6 @@ const BACKUP_SETTING_KEYS = [
   "discordWebhookUrlHigh",
   "discordWebhookUrlMedium",
   "discordWebhookUrlLow",
-  "discordWebhookUrlPersonal",
   "customDiscordWebhooks",
   "personalIdentityHints",
   "lastSummaryLabel",
@@ -2762,24 +2764,11 @@ function buildDiscordEmailFields(list, options = {}) {
   });
 }
 
-// 커스텀 웹훅 + '나와 관련된 메일' 웹훅으로 전송한다. 중요도별/기본 채널 전송과는 별개로 추가 동작한다.
+// 사용자 정의 웹훅으로 전송한다. 중요도별/기본 채널 전송과는 별개로 추가 동작한다.
+// ('나와 관련된 메일만' 보내고 싶으면 커스텀 웹훅 규칙의 onlyPersonal 조건을 쓰면 된다)
 async function sendExtraDiscordWebhooks(webhooks, summaryReport) {
   const selected = summaryReport.selectedEmails || [];
   let sentCount = 0;
-
-  if (isValidWebhookUrl(webhooks.personalUrl)) {
-    const mine = selected.filter((e) => e.personallyRelevant === true);
-    if (mine.length) {
-      await sendSingleDiscordEmbed(
-        webhooks.personalUrl,
-        `🙋 [${summaryReport.labelName}] 나와 관련된 메일 (${mine.length}건)`,
-        summaryReport.overallSummary || "",
-        0x6366f1,
-        buildDiscordEmailFields(mine, { showPersonalReason: true })
-      );
-      sentCount += 1;
-    }
-  }
 
   const customs = (Array.isArray(webhooks.custom) ? webhooks.custom : []).filter(
     (w) => w && w.enabled !== false && isValidWebhookUrl(w.url)
@@ -2813,8 +2802,7 @@ async function sendSummaryToDiscord(webhookInput, summaryReport) {
 
   const hasSpecificChannel = webhooks.highUrl || webhooks.mediumUrl || webhooks.lowUrl;
   const hasExtraChannel =
-    isValidWebhookUrl(webhooks.personalUrl) ||
-    (Array.isArray(webhooks.custom) && webhooks.custom.some((w) => w && w.enabled !== false && isValidWebhookUrl(w.url)));
+    Array.isArray(webhooks.custom) && webhooks.custom.some((w) => w && w.enabled !== false && isValidWebhookUrl(w.url));
 
   if (!hasSpecificChannel && !hasExtraChannel && !isValidWebhookUrl(webhooks.defaultUrl)) {
     throw new Error(t("errDiscordWebhookMissing"));
@@ -3706,7 +3694,6 @@ async function loadDiscordWebhookConfig() {
         "discordWebhookUrlHigh",
         "discordWebhookUrlMedium",
         "discordWebhookUrlLow",
-        "discordWebhookUrlPersonal",
         "customDiscordWebhooks",
       ],
       resolve
@@ -3717,7 +3704,6 @@ async function loadDiscordWebhookConfig() {
     highUrl: stored.discordWebhookUrlHigh || "",
     mediumUrl: stored.discordWebhookUrlMedium || "",
     lowUrl: stored.discordWebhookUrlLow || "",
-    personalUrl: stored.discordWebhookUrlPersonal || "",
     custom: Array.isArray(stored.customDiscordWebhooks) ? stored.customDiscordWebhooks : [],
   };
 }

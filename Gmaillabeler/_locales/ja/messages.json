@@ -2725,16 +2725,10 @@
     "message": "まだ実行した処理はありません。"
   },
   "dashPersonalWebhookHeading": {
-    "message": "🙋 自分に関係するメールのWebhook"
+    "message": "🙋 「自分に関係するメール」の判定基準"
   },
   "dashPersonalWebhookDesc": {
-    "message": "自分宛に直接届いたメール、返信・承認・提出などの対応が必要なメール、本文で自分が名指しされたメールだけをAIが選んでこのチャンネルに送ります。一斉配信のニュースレターや自動通知は除外されます。"
-  },
-  "dashLabelWebhookPersonal": {
-    "message": "🙋 Webhook URL（自分に関係するメールのみ）"
-  },
-  "dashPlaceholderWebhookPersonal": {
-    "message": "🙋 個人チャンネルのWebhook URL"
+    "message": "自分宛に直接届いたメール、返信・承認・提出などの対応が必要なメール、本文で自分が名指しされたメールをAIが判定します。一斉配信のニュースレターや自動通知は除外されます。これらだけを受け取るには、カスタムWebhookの「自分に関係するメールのみ」を有効にしてください。"
   },
   "dashLabelIdentityHints": {
     "message": "自分を指す名前・呼称"
@@ -2782,7 +2776,7 @@
     "message": "除外キーワード（カンマ区切り・一致すると除外）"
   },
   "hintCustomWebhookInDashboard": {
-    "message": "条件付きのWebhookを追加するには、ダッシュボードの「設定 & Discord」タブを開いてください。"
+    "message": "条件付きのWebhook（「自分に関係するメールのみ」を含む）を追加するには、ダッシュボードの「設定 & Discord」タブを開いてください。"
   },
   "btnGenerateCriteria": {
     "message": "✨ AIで基準を自動生成"

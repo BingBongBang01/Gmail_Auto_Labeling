@@ -2725,16 +2725,10 @@
     "message": "아직 실행한 작업이 없습니다."
   },
   "dashPersonalWebhookHeading": {
-    "message": "🙋 나와 관련된 메일 웹훅"
+    "message": "🙋 '나와 관련된 메일' 판별 기준"
   },
   "dashPersonalWebhookDesc": {
-    "message": "나에게 직접 온 메일, 내가 회신·승인·제출 등 조치를 해야 하는 메일, 본문에서 나를 직접 언급한 메일만 AI가 골라 이 채널로 보냅니다. 대량 발송 뉴스레터와 자동 알림은 제외됩니다."
-  },
-  "dashLabelWebhookPersonal": {
-    "message": "🙋 웹훅 URL (나와 관련된 메일만)"
-  },
-  "dashPlaceholderWebhookPersonal": {
-    "message": "🙋 개인 채널 웹훅 URL"
+    "message": "나에게 직접 온 메일, 내가 회신·승인·제출 등 조치를 해야 하는 메일, 본문에서 나를 직접 언급한 메일을 AI가 표시합니다. 대량 발송 뉴스레터와 자동 알림은 제외됩니다. 이런 메일만 따로 받으려면 사용자 지정 웹훅에서 '나와 관련된 메일만'을 켜세요."
   },
   "dashLabelIdentityHints": {
     "message": "나를 가리키는 이름/별칭"
@@ -2782,7 +2776,7 @@
     "message": "제외 키워드 (쉼표로 구분, 하나라도 맞으면 제외)"
   },
   "hintCustomWebhookInDashboard": {
-    "message": "조건별 웹훅을 직접 추가하려면 대시보드의 '설정 & Discord' 탭을 여세요."
+    "message": "조건별 웹훅('나와 관련된 메일만' 포함)을 직접 추가하려면 대시보드의 '설정 & Discord' 탭을 여세요."
   },
   "btnGenerateCriteria": {
     "message": "✨ AI로 기준 자동 생성"

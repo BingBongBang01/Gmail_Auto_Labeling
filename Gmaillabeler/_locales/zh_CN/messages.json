@@ -2725,16 +2725,10 @@
     "message": "尚未执行任何任务。"
   },
   "dashPersonalWebhookHeading": {
-    "message": "🙋 与我相关的邮件 Webhook"
+    "message": "🙋 “与我相关的邮件”判定标准"
   },
   "dashPersonalWebhookDesc": {
-    "message": "由 AI 判断哪些邮件真正与你有关——直接发给你、需要你回复或处理、或正文中点名提到你的邮件，只有这些会发送到该频道。群发邮件和自动通知会被排除。"
-  },
-  "dashLabelWebhookPersonal": {
-    "message": "🙋 Webhook URL（仅与我相关的邮件）"
-  },
-  "dashPlaceholderWebhookPersonal": {
-    "message": "🙋 个人频道 Webhook URL"
+    "message": "由 AI 标记真正与你有关的邮件——直接发给你、需要你回复或处理、或正文中点名提到你的邮件。群发邮件和自动通知会被排除。若只想接收这类邮件，请在自定义 Webhook 中启用“仅与我相关的邮件”。"
   },
   "dashLabelIdentityHints": {
     "message": "代表我的姓名 / 别称"
@@ -2782,7 +2776,7 @@
     "message": "排除关键词（逗号分隔，任一匹配即排除）"
   },
   "hintCustomWebhookInDashboard": {
-    "message": "如需按条件添加自己的 Webhook，请打开仪表板的“设置 & Discord”标签页。"
+    "message": "如需按条件添加自己的 Webhook（包含“仅与我相关的邮件”），请打开仪表板的“设置 & Discord”标签页。"
   },
   "btnGenerateCriteria": {
     "message": "✨ 用 AI 自动生成标准"

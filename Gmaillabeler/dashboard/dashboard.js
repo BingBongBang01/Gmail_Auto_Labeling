@@ -605,6 +605,8 @@ function renderCustomWebhooks() {
   const wrap = $("dashCustomWebhookList");
   if (!wrap) return;
 
+  wrap.dataset.rendered = "1";
+
   if (!dashCustomWebhooks.length) {
     wrap.innerHTML = `<p class="dash-desc">${escapeHtml(t("dashCustomWebhookEmpty"))}</p>`;
     return;
@@ -666,17 +668,27 @@ function renderCustomWebhooks() {
       collectCustomWebhooksFromDom();
       dashCustomWebhooks.splice(parseInt(btn.getAttribute("data-idx"), 10), 1);
       renderCustomWebhooks();
+      // 버튼 클릭은 input/change 이벤트가 아니라서 자동 저장이 걸리지 않는다.
+      // 여기서 직접 저장하지 않으면 이미 저장돼 있던 웹훅은 탭을 다시 열 때 되살아난다.
+      persistCustomWebhooks();
     });
   });
+}
+
+// 목록 자체가 바뀌는 조작(추가/삭제)은 자동 저장을 기다리지 않고 즉시 반영한다.
+function persistCustomWebhooks() {
+  chrome.storage.local.set({ customDiscordWebhooks: dashCustomWebhooks }, showSettingsAutoSaveMark);
 }
 
 // 화면에 입력된 값을 dashCustomWebhooks에 다시 담는다(행 추가/삭제/저장 직전에 호출).
 function collectCustomWebhooksFromDom() {
   const wrap = $("dashCustomWebhookList");
   if (!wrap) return;
-  const rows = wrap.querySelectorAll(".dash-custom-webhook");
-  if (!rows.length) return;
+  // 아직 한 번도 그리지 않았다면 화면에 값이 없는 게 정상이므로 메모리 값을 덮어쓰지 않는다.
+  // (반대로 그린 뒤 행이 0개인 것은 "전부 지웠다"는 뜻이라 빈 목록으로 반영해야 한다)
+  if (wrap.dataset.rendered !== "1") return;
 
+  const rows = wrap.querySelectorAll(".dash-custom-webhook");
   dashCustomWebhooks = Array.from(rows).map((row) => {
     const text = (field) => {
       const el = row.querySelector(`[data-field="${field}"]`);
@@ -714,7 +726,6 @@ function loadDashboardSettingsData() {
       "discordWebhookUrlHigh",
       "discordWebhookUrlMedium",
       "discordWebhookUrlLow",
-      "discordWebhookUrlPersonal",
       "customDiscordWebhooks",
       "personalIdentityHints",
       "importanceCriteria",
@@ -742,7 +753,6 @@ function loadDashboardSettingsData() {
         dashDiscordWebhookHigh: stored.discordWebhookUrlHigh,
         dashDiscordWebhookMedium: stored.discordWebhookUrlMedium,
         dashDiscordWebhookLow: stored.discordWebhookUrlLow,
-        dashDiscordWebhookPersonal: stored.discordWebhookUrlPersonal,
         dashPersonalIdentityHints: stored.personalIdentityHints,
       };
       Object.keys(webhookFields).forEach((id) => {
@@ -806,7 +816,6 @@ function collectDashboardSettings() {
     discordWebhookUrlHigh: val("dashDiscordWebhookHigh"),
     discordWebhookUrlMedium: val("dashDiscordWebhookMedium"),
     discordWebhookUrlLow: val("dashDiscordWebhookLow"),
-    discordWebhookUrlPersonal: val("dashDiscordWebhookPersonal"),
     personalIdentityHints: val("dashPersonalIdentityHints"),
     customDiscordWebhooks: dashCustomWebhooks,
     autoSummaryEnabled: checked("dashAutoSummaryEnabled"),
@@ -1262,7 +1271,6 @@ function initEvents() {
           "discordWebhookUrlHigh",
           "discordWebhookUrlMedium",
           "discordWebhookUrlLow",
-          "discordWebhookUrlPersonal",
           "customDiscordWebhooks",
         ],
         (stored) => {
@@ -1272,7 +1280,6 @@ function initEvents() {
             highUrl: stored.discordWebhookUrlHigh || "",
             mediumUrl: stored.discordWebhookUrlMedium || "",
             lowUrl: stored.discordWebhookUrlLow || "",
-            personalUrl: stored.discordWebhookUrlPersonal || "",
             custom: customs,
           };
           const hasCustom = customs.some((w) => w && w.enabled !== false && w.url);
@@ -1281,7 +1288,6 @@ function initEvents() {
             !webhookInput.highUrl &&
             !webhookInput.mediumUrl &&
             !webhookInput.lowUrl &&
-            !webhookInput.personalUrl &&
             !hasCustom
           ) {
             alert(t("dashMsgNeedWebhook"));
@@ -1410,6 +1416,7 @@ function initEvents() {
       collectCustomWebhooksFromDom();
       dashCustomWebhooks.push(emptyCustomWebhook());
       renderCustomWebhooks();
+      persistCustomWebhooks();
     });
   }
 

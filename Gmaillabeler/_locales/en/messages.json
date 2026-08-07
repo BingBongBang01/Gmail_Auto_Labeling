@@ -2725,16 +2725,10 @@
     "message": "No job has run yet."
   },
   "dashPersonalWebhookHeading": {
-    "message": "🙋 Webhook for mail related to me"
+    "message": "🙋 Deciding what counts as \"related to me\""
   },
   "dashPersonalWebhookDesc": {
-    "message": "The AI decides which mail is actually about you — sent directly to you, needs your reply or action, or mentions you by name. Only those are posted to this channel. Bulk newsletters and automated notices are skipped."
-  },
-  "dashLabelWebhookPersonal": {
-    "message": "🙋 Webhook URL (only mail related to me)"
-  },
-  "dashPlaceholderWebhookPersonal": {
-    "message": "🙋 Personal channel webhook URL"
+    "message": "The AI marks mail that is actually about you — sent directly to you, needs your reply or action, or mentions you by name. Bulk newsletters and automated notices are excluded. Turn on \"Only mail related to me\" on a custom webhook to route just those."
   },
   "dashLabelIdentityHints": {
     "message": "Names / aliases that mean me"
@@ -2782,7 +2776,7 @@
     "message": "Exclude keywords (comma separated, any match excludes)"
   },
   "hintCustomWebhookInDashboard": {
-    "message": "To add your own webhooks with routing rules, open the dashboard and go to Settings & Discord."
+    "message": "To add your own webhooks with routing rules — including \"only mail related to me\" — open the dashboard and go to Settings & Discord."
   },
   "btnGenerateCriteria": {
     "message": "✨ Generate criteria with AI"

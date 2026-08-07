@@ -1634,7 +1634,6 @@ async function main() {
     "discordWebhookUrlHigh",
     "discordWebhookUrlMedium",
     "discordWebhookUrlLow",
-    "discordWebhookUrlPersonal",
     "customDiscordWebhooks",
     "personalIdentityHints",
     "lastSummaryLabel",
@@ -2006,7 +2005,6 @@ async function main() {
         "discordWebhookUrlHigh",
         "discordWebhookUrlMedium",
         "discordWebhookUrlLow",
-        "discordWebhookUrlPersonal",
         "customDiscordWebhooks",
       ], (stored) => {
         if (!stored.lastLabelSummary) {
@@ -2019,7 +2017,6 @@ async function main() {
           highUrl: stored.discordWebhookUrlHigh || "",
           mediumUrl: stored.discordWebhookUrlMedium || "",
           lowUrl: stored.discordWebhookUrlLow || "",
-          personalUrl: stored.discordWebhookUrlPersonal || "",
           custom: customs,
         };
         const hasCustom = customs.some((w) => w && w.enabled !== false && w.url);
@@ -2028,7 +2025,6 @@ async function main() {
           !webhookInput.highUrl &&
           !webhookInput.mediumUrl &&
           !webhookInput.lowUrl &&
-          !webhookInput.personalUrl &&
           !hasCustom
         ) {
           showResult(summaryResultBox, t("errDiscordWebhookMissing"));
@@ -2052,17 +2048,13 @@ async function main() {
   const savePopupDiscordBtn = document.getElementById("savePopupDiscordBtn");
   const discordResultBox = document.getElementById("discordResultBox");
 
-  const popupDiscordWebhookPersonal = document.getElementById("popupDiscordWebhookPersonal");
   const popupPersonalIdentityHints = document.getElementById("popupPersonalIdentityHints");
 
   if (popupDiscordWebhookUrl) {
     chrome.storage.local.get(
-      ["discordWebhookUrl", "discordWebhookUrlPersonal", "personalIdentityHints"],
+      ["discordWebhookUrl", "personalIdentityHints"],
       (stored) => {
         if (stored.discordWebhookUrl) popupDiscordWebhookUrl.value = stored.discordWebhookUrl;
-        if (popupDiscordWebhookPersonal && stored.discordWebhookUrlPersonal) {
-          popupDiscordWebhookPersonal.value = stored.discordWebhookUrlPersonal;
-        }
         if (popupPersonalIdentityHints && stored.personalIdentityHints) {
           popupPersonalIdentityHints.value = stored.personalIdentityHints;
         }
@@ -2075,7 +2067,6 @@ async function main() {
       chrome.storage.local.set(
         {
           discordWebhookUrl: popupDiscordWebhookUrl.value.trim(),
-          discordWebhookUrlPersonal: popupDiscordWebhookPersonal ? popupDiscordWebhookPersonal.value.trim() : "",
           personalIdentityHints: popupPersonalIdentityHints ? popupPersonalIdentityHints.value.trim() : "",
         },
         () => {
