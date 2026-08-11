@@ -2945,5 +2945,191 @@
   },
   "checkboxAutoCalendar": {
     "message": "새로운 캘린더 일정 자동 분류"
+  },
+  "optionsTitle": {
+    "message": "설정"
+  },
+  "optionsHeader": {
+    "message": "확장 프로그램 설정"
+  },
+  "settingsGeneralTitle": {
+    "message": "일반"
+  },
+  "settingsGeneralDesc": {
+    "message": "언어 및 테마 설정"
+  },
+  "settingsThemeTitle": {
+    "message": "테마"
+  },
+  "settingsThemeSystem": {
+    "message": "시스템 기본값"
+  },
+  "settingsThemeLight": {
+    "message": "라이트 모드"
+  },
+  "settingsThemeDark": {
+    "message": "다크 모드"
+  },
+  "settingsLangTitle": {
+    "message": "언어"
+  },
+  "settingsStartupTitle": {
+    "message": "시작 설정"
+  },
+  "settingsStartupSidePanel": {
+    "message": "Gmail에서 사이드 패널 사용"
+  },
+  "settingsStartupBadge": {
+    "message": "상태 배지 표시"
+  },
+  "settingsOAuthConnected": {
+    "message": "Google 서비스 연결됨"
+  },
+  "settingsOAuthConnecting": {
+    "message": "Google 로그인 창 여는 중..."
+  },
+  "settingsOAuthNotConnected": {
+    "message": "연결되지 않음"
+  },
+  "sidepanelWorkspace": {
+    "message": "작업 공간"
+  },
+  "sidepanelInbox": {
+    "message": "받은편지함"
+  },
+  "sidepanelReady": {
+    "message": "대기 중"
+  },
+  "sidepanelClassifyVisible": {
+    "message": "현재 메일 분류"
+  },
+  "sidepanelSummarizeSender": {
+    "message": "발신자 요약"
+  },
+  "sidepanelAITools": {
+    "message": "AI 도구"
+  },
+  "sidepanelWriteEmail": {
+    "message": "이메일 작성"
+  },
+  "sidepanelAskGemini": {
+    "message": "Gemini에게 질문"
+  },
+  "sidepanelSettingsBtn": {
+    "message": "설정"
+  },
+  "sidepanelDashboardBtn": {
+    "message": "대시보드 열기"
+  },
+  "sidepanelAnalyzePage": {
+    "message": "페이지 분석"
+  },
+  "popupConnected": {
+    "message": "연결됨"
+  },
+  "popupNotConnected": {
+    "message": "연결 안됨"
+  },
+  "popupReady": {
+    "message": "준비됨"
+  },
+  "popupMissingKey": {
+    "message": "키 누락"
+  },
+  "popupSetupRequired": {
+    "message": "초기 설정 필요"
+  },
+  "popupQuickActions": {
+    "message": "빠른 실행"
+  },
+  "popupGmailClassify": {
+    "message": "Gmail 분류"
+  },
+  "popupSummarize": {
+    "message": "요약"
+  },
+  "popupCalendarClassify": {
+    "message": "캘린더 분류"
+  },
+  "popupOpenSidePanel": {
+    "message": "사이드 패널 열기"
+  },
+  "popupRecentActivity": {
+    "message": "최근 활동"
+  },
+  "popupNoRecentActivity": {
+    "message": "최근 활동 없음"
+  },
+  "popupAutomation": {
+    "message": "자동화"
+  },
+  "popupON": {
+    "message": "켜짐"
+  },
+  "popupOFF": {
+    "message": "꺼짐"
+  },
+  "aiTitle": {
+    "message": "AI 서비스"
+  },
+  "aiDescription": {
+    "message": "확장 프로그램에서 사용하는 AI 서비스를 구성합니다."
+  },
+  "aiCredentialsTitle": {
+    "message": "AI API 인증 정보"
+  },
+  "aiCredentialsAdd": {
+    "message": "AI API 추가"
+  },
+  "aiFailoverTitle": {
+    "message": "페일오버(대체 작동)"
+  },
+  "aiFailoverEnabled": {
+    "message": "자동 페일오버 활성화"
+  },
+  "aiRetryTitle": {
+    "message": "재시도"
+  },
+  "aiRetryEnabled": {
+    "message": "재시도 활성화"
+  },
+  "aiRetryMaxRetries": {
+    "message": "최대 재시도 횟수"
+  },
+  "aiBatchSizeTitle": {
+    "message": "처리 설정"
+  },
+  "aiBatchSize": {
+    "message": "배치 크기"
+  },
+  "aiCredentialsProvider": {
+    "message": "AI 제공자"
+  },
+  "aiCredentialsName": {
+    "message": "API 키 이름"
+  },
+  "aiCredentialsApiKey": {
+    "message": "API 키"
+  },
+  "aiCredentialsModel": {
+    "message": "모델"
+  },
+  "aiCredentialsTest": {
+    "message": "연결 테스트"
+  },
+  "aiCredentialsEdit": {
+    "message": "AI API 수정"
+  },
+  "aiCancel": {
+    "message": "취소"
+  },
+  "aiSave": {
+    "message": "저장"
+  },
+  "aiTestSuccess": {
+    "message": "연결 성공!"
+  },
+  "aiConfirmDelete": {
+    "message": "정말로 이 인증 정보를 삭제하시겠습니까?"
   }
 }

@@ -7,7 +7,7 @@
 const SETTINGS_SCHEMA = {
   schemaVersion: "number",
   general: {
-    language: "string", // "system", "ko", "en", etc.
+    language: "string", // "ko", "en", "ja", "zh_CN"
     themeMode: "string", // "system", "light", "dark"
     startupBehavior: {
       openSidePanelOnGmail: "boolean",
@@ -24,13 +24,12 @@ const SETTINGS_SCHEMA = {
   },
   
   ai: {
-    provider: "string", // "gemini"
-    geminiApiKeys: "array", // Array of { label: string, key: string, active: boolean }
-    model: "string", // "gemini-1.5-flash"
-    retry: {
-      enabled: "boolean",
+    credentials: "array", // Array of { id, provider, name, apiKey, model, enabled, priority, status }
+    requestPolicy: {
+      failoverEnabled: "boolean",
+      retryEnabled: "boolean",
       maxRetries: "number",
-      useFallbackKey: "boolean"
+      quotaAware: "boolean"
     },
     processing: {
       batchSize: "number",
@@ -76,11 +75,14 @@ const SETTINGS_SCHEMA = {
     },
     classification: {
       enabled: "boolean",
-      dateRange: "string", // "today", "week", "custom"
-      applyColors: "boolean"
+      dateRange: "string", // "today", "week", "month", "custom"
+      applyColors: "boolean",
+      analysisMode: "string", // "ai"
+      maxEventsPerRun: "number",
+      overwriteExistingColors: "boolean"
     },
-    filters: "array",
-    colors: "object" // Mapping of CategoryName -> Calendar Color ID
+    categories: "array", // Array of { id, name, criteria, colorId, priority, enabled, colorSource }
+    filters: "array"
   },
   
   automation: {

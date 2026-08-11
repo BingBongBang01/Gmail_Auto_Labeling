@@ -2945,5 +2945,191 @@
   },
   "checkboxAutoCalendar": {
     "message": "Automatically classify new Calendar events"
+  },
+  "optionsTitle": {
+    "message": "Options"
+  },
+  "optionsHeader": {
+    "message": "Extension Settings"
+  },
+  "settingsGeneralTitle": {
+    "message": "General"
+  },
+  "settingsGeneralDesc": {
+    "message": "Language and Theme"
+  },
+  "settingsThemeTitle": {
+    "message": "Theme"
+  },
+  "settingsThemeSystem": {
+    "message": "System Default"
+  },
+  "settingsThemeLight": {
+    "message": "Light"
+  },
+  "settingsThemeDark": {
+    "message": "Dark"
+  },
+  "settingsLangTitle": {
+    "message": "Language"
+  },
+  "settingsStartupTitle": {
+    "message": "Startup"
+  },
+  "settingsStartupSidePanel": {
+    "message": "Enable Side Panel on Gmail"
+  },
+  "settingsStartupBadge": {
+    "message": "Show Status Badge"
+  },
+  "settingsOAuthConnected": {
+    "message": "Connected to Google Services"
+  },
+  "settingsOAuthConnecting": {
+    "message": "Opening Google login..."
+  },
+  "settingsOAuthNotConnected": {
+    "message": "Not Connected"
+  },
+  "sidepanelWorkspace": {
+    "message": "Workspace"
+  },
+  "sidepanelInbox": {
+    "message": "Inbox"
+  },
+  "sidepanelReady": {
+    "message": "Ready to assist"
+  },
+  "sidepanelClassifyVisible": {
+    "message": "Classify Visible"
+  },
+  "sidepanelSummarizeSender": {
+    "message": "Summarize Sender"
+  },
+  "sidepanelAITools": {
+    "message": "AI Tools"
+  },
+  "sidepanelWriteEmail": {
+    "message": "Write Email"
+  },
+  "sidepanelAskGemini": {
+    "message": "Ask Gemini"
+  },
+  "sidepanelSettingsBtn": {
+    "message": "Settings"
+  },
+  "sidepanelDashboardBtn": {
+    "message": "Full Dashboard"
+  },
+  "sidepanelAnalyzePage": {
+    "message": "Analyze Page"
+  },
+  "popupConnected": {
+    "message": "Connected"
+  },
+  "popupNotConnected": {
+    "message": "Not Connected"
+  },
+  "popupReady": {
+    "message": "Ready"
+  },
+  "popupMissingKey": {
+    "message": "Missing Key"
+  },
+  "popupSetupRequired": {
+    "message": "Setup Required"
+  },
+  "popupQuickActions": {
+    "message": "Quick Actions"
+  },
+  "popupGmailClassify": {
+    "message": "Gmail Classify"
+  },
+  "popupSummarize": {
+    "message": "Summarize"
+  },
+  "popupCalendarClassify": {
+    "message": "Calendar Classify"
+  },
+  "popupOpenSidePanel": {
+    "message": "Open Side Panel"
+  },
+  "popupRecentActivity": {
+    "message": "Recent Activity"
+  },
+  "popupNoRecentActivity": {
+    "message": "No recent activity"
+  },
+  "popupAutomation": {
+    "message": "Automation"
+  },
+  "popupON": {
+    "message": "ON"
+  },
+  "popupOFF": {
+    "message": "OFF"
+  },
+  "aiTitle": {
+    "message": "AI Services"
+  },
+  "aiDescription": {
+    "message": "Configure the AI services used by the extension."
+  },
+  "aiCredentialsTitle": {
+    "message": "AI API Credentials"
+  },
+  "aiCredentialsAdd": {
+    "message": "Add AI API"
+  },
+  "aiFailoverTitle": {
+    "message": "Failover"
+  },
+  "aiFailoverEnabled": {
+    "message": "Enable automatic failover"
+  },
+  "aiRetryTitle": {
+    "message": "Retry"
+  },
+  "aiRetryEnabled": {
+    "message": "Enable retry"
+  },
+  "aiRetryMaxRetries": {
+    "message": "Maximum retries"
+  },
+  "aiBatchSizeTitle": {
+    "message": "Processing"
+  },
+  "aiBatchSize": {
+    "message": "Batch size"
+  },
+  "aiCredentialsProvider": {
+    "message": "AI Provider"
+  },
+  "aiCredentialsName": {
+    "message": "API Key Name"
+  },
+  "aiCredentialsApiKey": {
+    "message": "API Key"
+  },
+  "aiCredentialsModel": {
+    "message": "Model"
+  },
+  "aiCredentialsTest": {
+    "message": "Test Connection"
+  },
+  "aiCredentialsEdit": {
+    "message": "Edit AI API"
+  },
+  "aiCancel": {
+    "message": "Cancel"
+  },
+  "aiSave": {
+    "message": "Save"
+  },
+  "aiTestSuccess": {
+    "message": "Connection successful!"
+  },
+  "aiConfirmDelete": {
+    "message": "Are you sure you want to delete this credential?"
   }
 }

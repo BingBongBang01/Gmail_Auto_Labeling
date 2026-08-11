@@ -2945,5 +2945,191 @@
   },
   "checkboxAutoCalendar": {
     "message": "自动分类新日程"
+  },
+  "optionsTitle": {
+    "message": "设置"
+  },
+  "optionsHeader": {
+    "message": "扩展设置"
+  },
+  "settingsGeneralTitle": {
+    "message": "常规"
+  },
+  "settingsGeneralDesc": {
+    "message": "语言和主题"
+  },
+  "settingsThemeTitle": {
+    "message": "主题"
+  },
+  "settingsThemeSystem": {
+    "message": "系统默认"
+  },
+  "settingsThemeLight": {
+    "message": "浅色"
+  },
+  "settingsThemeDark": {
+    "message": "深色"
+  },
+  "settingsLangTitle": {
+    "message": "语言"
+  },
+  "settingsStartupTitle": {
+    "message": "启动"
+  },
+  "settingsStartupSidePanel": {
+    "message": "在Gmail中启用侧边栏"
+  },
+  "settingsStartupBadge": {
+    "message": "显示状态徽章"
+  },
+  "settingsOAuthConnected": {
+    "message": "已连接到Google服务"
+  },
+  "settingsOAuthConnecting": {
+    "message": "正在打开Google登录..."
+  },
+  "settingsOAuthNotConnected": {
+    "message": "未连接"
+  },
+  "sidepanelWorkspace": {
+    "message": "工作区"
+  },
+  "sidepanelInbox": {
+    "message": "收件箱"
+  },
+  "sidepanelReady": {
+    "message": "准备就绪"
+  },
+  "sidepanelClassifyVisible": {
+    "message": "分类当前邮件"
+  },
+  "sidepanelSummarizeSender": {
+    "message": "发件人摘要"
+  },
+  "sidepanelAITools": {
+    "message": "AI工具"
+  },
+  "sidepanelWriteEmail": {
+    "message": "写邮件"
+  },
+  "sidepanelAskGemini": {
+    "message": "询问Gemini"
+  },
+  "sidepanelSettingsBtn": {
+    "message": "设置"
+  },
+  "sidepanelDashboardBtn": {
+    "message": "打开仪表板"
+  },
+  "sidepanelAnalyzePage": {
+    "message": "分析页面"
+  },
+  "popupConnected": {
+    "message": "已连接"
+  },
+  "popupNotConnected": {
+    "message": "未连接"
+  },
+  "popupReady": {
+    "message": "就绪"
+  },
+  "popupMissingKey": {
+    "message": "缺少密钥"
+  },
+  "popupSetupRequired": {
+    "message": "需要设置"
+  },
+  "popupQuickActions": {
+    "message": "快速操作"
+  },
+  "popupGmailClassify": {
+    "message": "Gmail分类"
+  },
+  "popupSummarize": {
+    "message": "摘要"
+  },
+  "popupCalendarClassify": {
+    "message": "日历分类"
+  },
+  "popupOpenSidePanel": {
+    "message": "打开侧边栏"
+  },
+  "popupRecentActivity": {
+    "message": "近期活动"
+  },
+  "popupNoRecentActivity": {
+    "message": "近期没有活动"
+  },
+  "popupAutomation": {
+    "message": "自动化"
+  },
+  "popupON": {
+    "message": "开"
+  },
+  "popupOFF": {
+    "message": "关"
+  },
+  "aiTitle": {
+    "message": "AI服务"
+  },
+  "aiDescription": {
+    "message": "配置扩展使用的AI服务。"
+  },
+  "aiCredentialsTitle": {
+    "message": "AI API凭证"
+  },
+  "aiCredentialsAdd": {
+    "message": "添加AI API"
+  },
+  "aiFailoverTitle": {
+    "message": "故障转移"
+  },
+  "aiFailoverEnabled": {
+    "message": "启用自动故障转移"
+  },
+  "aiRetryTitle": {
+    "message": "重试"
+  },
+  "aiRetryEnabled": {
+    "message": "启用重试"
+  },
+  "aiRetryMaxRetries": {
+    "message": "最大重试次数"
+  },
+  "aiBatchSizeTitle": {
+    "message": "处理设置"
+  },
+  "aiBatchSize": {
+    "message": "批处理大小"
+  },
+  "aiCredentialsProvider": {
+    "message": "AI提供商"
+  },
+  "aiCredentialsName": {
+    "message": "API密钥名称"
+  },
+  "aiCredentialsApiKey": {
+    "message": "API密钥"
+  },
+  "aiCredentialsModel": {
+    "message": "模型"
+  },
+  "aiCredentialsTest": {
+    "message": "测试连接"
+  },
+  "aiCredentialsEdit": {
+    "message": "编辑AI API"
+  },
+  "aiCancel": {
+    "message": "取消"
+  },
+  "aiSave": {
+    "message": "保存"
+  },
+  "aiTestSuccess": {
+    "message": "连接成功！"
+  },
+  "aiConfirmDelete": {
+    "message": "您确定要删除此凭证吗？"
   }
 }

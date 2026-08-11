@@ -2945,5 +2945,191 @@
   },
   "checkboxAutoCalendar": {
     "message": "新しいカレンダー予定を自動分類"
+  },
+  "optionsTitle": {
+    "message": "設定"
+  },
+  "optionsHeader": {
+    "message": "拡張機能の設定"
+  },
+  "settingsGeneralTitle": {
+    "message": "一般"
+  },
+  "settingsGeneralDesc": {
+    "message": "言語とテーマ"
+  },
+  "settingsThemeTitle": {
+    "message": "テーマ"
+  },
+  "settingsThemeSystem": {
+    "message": "システムデフォルト"
+  },
+  "settingsThemeLight": {
+    "message": "ライトモード"
+  },
+  "settingsThemeDark": {
+    "message": "ダークモード"
+  },
+  "settingsLangTitle": {
+    "message": "言語"
+  },
+  "settingsStartupTitle": {
+    "message": "起動設定"
+  },
+  "settingsStartupSidePanel": {
+    "message": "Gmailでサイドパネルを有効にする"
+  },
+  "settingsStartupBadge": {
+    "message": "ステータスバッジを表示"
+  },
+  "settingsOAuthConnected": {
+    "message": "Googleサービスに接続済み"
+  },
+  "settingsOAuthConnecting": {
+    "message": "Googleログインを開いています..."
+  },
+  "settingsOAuthNotConnected": {
+    "message": "未接続"
+  },
+  "sidepanelWorkspace": {
+    "message": "ワークスペース"
+  },
+  "sidepanelInbox": {
+    "message": "受信トレイ"
+  },
+  "sidepanelReady": {
+    "message": "準備完了"
+  },
+  "sidepanelClassifyVisible": {
+    "message": "現在のメールを分類"
+  },
+  "sidepanelSummarizeSender": {
+    "message": "送信者を要約"
+  },
+  "sidepanelAITools": {
+    "message": "AIツール"
+  },
+  "sidepanelWriteEmail": {
+    "message": "メールを作成"
+  },
+  "sidepanelAskGemini": {
+    "message": "Geminiに質問"
+  },
+  "sidepanelSettingsBtn": {
+    "message": "設定"
+  },
+  "sidepanelDashboardBtn": {
+    "message": "ダッシュボードを開く"
+  },
+  "sidepanelAnalyzePage": {
+    "message": "ページを分析"
+  },
+  "popupConnected": {
+    "message": "接続済み"
+  },
+  "popupNotConnected": {
+    "message": "未接続"
+  },
+  "popupReady": {
+    "message": "準備完了"
+  },
+  "popupMissingKey": {
+    "message": "キーがありません"
+  },
+  "popupSetupRequired": {
+    "message": "初期設定が必要"
+  },
+  "popupQuickActions": {
+    "message": "クイックアクション"
+  },
+  "popupGmailClassify": {
+    "message": "Gmailを分類"
+  },
+  "popupSummarize": {
+    "message": "要約"
+  },
+  "popupCalendarClassify": {
+    "message": "カレンダーを分類"
+  },
+  "popupOpenSidePanel": {
+    "message": "サイドパネルを開く"
+  },
+  "popupRecentActivity": {
+    "message": "最近のアクティビティ"
+  },
+  "popupNoRecentActivity": {
+    "message": "最近のアクティビティはありません"
+  },
+  "popupAutomation": {
+    "message": "自動化"
+  },
+  "popupON": {
+    "message": "オン"
+  },
+  "popupOFF": {
+    "message": "オフ"
+  },
+  "aiTitle": {
+    "message": "AIサービス"
+  },
+  "aiDescription": {
+    "message": "拡張機能で使用するAIサービスを構成します。"
+  },
+  "aiCredentialsTitle": {
+    "message": "AI API 認証情報"
+  },
+  "aiCredentialsAdd": {
+    "message": "AI API 追加"
+  },
+  "aiFailoverTitle": {
+    "message": "フェイルオーバー"
+  },
+  "aiFailoverEnabled": {
+    "message": "自動フェイルオーバーを有効にする"
+  },
+  "aiRetryTitle": {
+    "message": "再試行"
+  },
+  "aiRetryEnabled": {
+    "message": "再試行を有効にする"
+  },
+  "aiRetryMaxRetries": {
+    "message": "最大再試行回数"
+  },
+  "aiBatchSizeTitle": {
+    "message": "処理設定"
+  },
+  "aiBatchSize": {
+    "message": "バッチサイズ"
+  },
+  "aiCredentialsProvider": {
+    "message": "AIプロバイダー"
+  },
+  "aiCredentialsName": {
+    "message": "APIキー名"
+  },
+  "aiCredentialsApiKey": {
+    "message": "APIキー"
+  },
+  "aiCredentialsModel": {
+    "message": "モデル"
+  },
+  "aiCredentialsTest": {
+    "message": "接続テスト"
+  },
+  "aiCredentialsEdit": {
+    "message": "AI API 編集"
+  },
+  "aiCancel": {
+    "message": "キャンセル"
+  },
+  "aiSave": {
+    "message": "保存"
+  },
+  "aiTestSuccess": {
+    "message": "接続に成功しました！"
+  },
+  "aiConfirmDelete": {
+    "message": "この認証情報を削除してもよろしいですか？"
   }
 }

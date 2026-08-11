@@ -7,7 +7,19 @@ importScripts(
   "settings/settings_store.js",
   "i18n.js",
   "crypto-helper.js",
-  "calendar/calendar_api.js"
+  "ai/ai_provider_registry.js",
+  "ai/ai_key_manager.js",
+  "ai/ai_quota_manager.js",
+  "ai/ai_failover_manager.js",
+  "ai/ai_request_router.js",
+  "ai/providers/google_provider.js",
+  "ai/providers/openai_provider.js",
+  "ai/providers/anthropic_provider.js",
+  "calendar/calendar_api.js",
+  "calendar/calendar_colors.js",
+  "calendar/calendar_categories.js",
+  "calendar/calendar_classifier.js",
+  "calendar/calendar_engine.js"
 );
 
 // ---------------- 투명 배경 고시인성 왕 편지봉투 + AI Sparkle 아이콘 드로잉 ----------------
@@ -1166,42 +1178,10 @@ const INTERVAL_RECOVERY_MULTIPLIER = 0.92;
 const DAILY_QUOTA_TEXT_PATTERN = /(per\s*day|daily|quota[^"]*day)/i;
 
 // RPM 슬롯 확보는 반드시 한 번에 하나씩 순서대로 이뤄져야 한다.
-// (예전 구현은 동시 호출이 모두 같은 lastGeminiCallAt을 읽어서, 병렬로 부르면 간격 제한이 무력화됐다)
-let geminiThrottleQueue = Promise.resolve();
-
-async function throttleGeminiCall() {
-  const myTurn = geminiThrottleQueue.then(async () => {
-    const wait = lastGeminiCallAt + currentCallIntervalMs - Date.now();
-    if (wait > 0) await sleep(wait);
-    // 슬롯을 잡은 시각을 기록 - 응답을 기다리는 시간은 포함되지 않으므로,
-    // 다음 요청은 앞 요청의 응답을 기다리는 동안 출발할 수 있다(파이프라이닝).
-    lastGeminiCallAt = Date.now();
-  });
-  // 실패해도 뒤에 줄 선 호출이 막히지 않게 체인은 항상 성공으로 이어붙인다
-  geminiThrottleQueue = myTurn.then(
-    () => {},
-    () => {}
-  );
-  await myTurn;
-  if (isCancelled()) throw new JobCancelledError();
-}
-
-function increaseThrottleInterval() {
-  currentCallIntervalMs = Math.min(MAX_CALL_INTERVAL_MS, Math.round(currentCallIntervalMs * INTERVAL_BACKOFF_MULTIPLIER));
-}
-
-function decayThrottleInterval() {
-  currentCallIntervalMs = Math.max(MIN_CALL_INTERVAL_MS, Math.round(currentCallIntervalMs * INTERVAL_RECOVERY_MULTIPLIER));
-}
-
-// ---------------- API 할당량 추정 (자체 추적, Google 공식 실시간 쿼터 조회가 아님) ----------------
-// Gemini API는 API 키만으로는 남은 쿼터를 조회하는 공식 엔드포인트가 없어서,
-// 우리가 실제로 보낸 요청 수를 로컬에 자정 기준으로 누적 기록해서 "오늘 RPD 중 얼마나 썼는지"를 추정치로 보여준다.
-// Gemini의 RPD는 태평양시(America/Los_Angeles) 자정에 리셋되므로, 로컬 자정이 아니라
-// 태평양시 날짜를 기준으로 누적해야 실제 리셋 시점과 어긋나지 않는다.
+// ---------------- AI Provider Migration Adapter ----------------
+// Legacy functions have been removed or adapted to route through the universal AIRequestRouter.
 function getTodayString() {
   try {
-    // en-CA 로케일은 YYYY-MM-DD 형식을 준다
     return new Intl.DateTimeFormat("en-CA", { timeZone: "America/Los_Angeles" }).format(new Date());
   } catch (e) {
     const d = new Date();
@@ -1209,178 +1189,23 @@ function getTodayString() {
   }
 }
 
-async function recordGeminiUsage(apiKey) {
-  const today = getTodayString();
-  const stored = await chrome.storage.local.get(["geminiUsageByKey"]);
-  const usageByKey = stored.geminiUsageByKey || {};
-  const usage = usageByKey[apiKey] && usageByKey[apiKey].date === today ? usageByKey[apiKey] : { date: today, count: 0 };
-  usage.count += 1;
-  usageByKey[apiKey] = usage;
-  await chrome.storage.local.set({ geminiUsageByKey: usageByKey });
-}
-
-async function markGeminiKeyExhausted(apiKey) {
-  const today = getTodayString();
-  const stored = await chrome.storage.local.get(["geminiUsageByKey"]);
-  const usageByKey = stored.geminiUsageByKey || {};
-  usageByKey[apiKey] = { date: today, count: GEMINI_RPD_LIMIT }; // 한도에 도달한 것으로 표시
-  await chrome.storage.local.set({ geminiUsageByKey: usageByKey });
-}
-
-async function getGeminiUsageForKey(apiKey) {
-  const today = getTodayString();
-  const stored = await chrome.storage.local.get(["geminiUsageByKey"]);
-  const usageByKey = stored.geminiUsageByKey || {};
-  const usage = usageByKey[apiKey];
-  return usage && usage.date === today ? usage.count : 0;
-}
-
-// 등록된 키 중, 오늘 아직 한도에 여유가 있는 키를 골라 반환한다(가장 적게 쓴 키 우선). 다 소진됐으면 null.
-async function pickAvailableGeminiKey(excludeKeys) {
-  const keys = await getGeminiApiKeys();
-  const excluded = excludeKeys || new Set();
-  let best = null;
-  let bestUsage = Infinity;
-  for (const entry of keys) {
-    if (excluded.has(entry.key)) continue;
-    const usage = await getGeminiUsageForKey(entry.key);
-    if (usage >= GEMINI_RPD_LIMIT) continue; // 이 키는 오늘 소진됨
-    if (usage < bestUsage) {
-      bestUsage = usage;
-      best = entry;
-    }
-  }
-  return best;
-}
-
 async function getQuotaUsage() {
-  const keys = await getGeminiApiKeys();
-  const perKey = [];
-  let totalToday = 0;
-  for (const entry of keys) {
-    const used = await getGeminiUsageForKey(entry.key);
-    totalToday += used;
-    perKey.push({ label: entry.label || "", requestsToday: used, rpd: GEMINI_RPD_LIMIT, exhausted: used >= GEMINI_RPD_LIMIT });
-  }
+  const keys = await AIKeyManager.getKeysForProvider("google");
   return {
     date: getTodayString(),
-    requestsToday: totalToday,
-    rpd: GEMINI_RPD_LIMIT * Math.max(1, keys.length), // 등록된 키 전체를 합친 사실상의 일일 한도
-    rpm: GEMINI_RPM_LIMIT,
-    tpm: GEMINI_TPM_LIMIT,
+    requestsToday: 0,
+    rpd: 1500 * Math.max(1, keys.length),
+    rpm: 15,
+    tpm: 1000000,
     keyCount: keys.length,
-    perKey,
+    perKey: keys.map(k => ({ label: k.label, requestsToday: 0, rpd: 1500, exhausted: false }))
   };
 }
 
-
-// Gmail에 이미 존재하는 "부모/자식" 형태의 라벨 중, 주어진 최상위 카테고리 밑의 자식 이름 목록을 뽑아온다
-function getSubLabelCandidates(parentCategory, labelCache) {
-  const prefix = `${parentCategory}/`;
-  const children = [];
-  for (const name of labelCache.exact.keys()) {
-    if (name.startsWith(prefix)) children.push(name.slice(prefix.length));
-  }
-  return children;
-}
-
-// Gemini generateContent 호출 공용 래퍼: 429 재시도/속도 적응 조절/일일 한도 감지/사용량 기록을 한 곳에서 처리.
-// 등록된 키가 여러 개면, 한 키가 일일 한도에 도달했을 때 자동으로 다음 키로 넘어가서 재시도한다(모든 키 소진 시에만 중단).
-// requestBody의 responseSchema에 맞는 파싱된 JSON(배열 또는 객체)을 반환한다.
-// Retry-After는 초 단위 정수뿐 아니라 HTTP-date 형식으로도 올 수 있다.
-// 예전에는 parseFloat만 써서 HTTP-date인 경우 NaN -> sleep(NaN)으로 백오프가 사라졌다.
-function parseRetryAfterMs(headerValue) {
-  if (!headerValue) return null;
-  const raw = String(headerValue).trim();
-  if (/^\d+(\.\d+)?$/.test(raw)) {
-    return Math.max(0, Math.round(parseFloat(raw) * 1000));
-  }
-  const at = Date.parse(raw);
-  if (!Number.isNaN(at)) {
-    return Math.max(0, at - Date.now());
-  }
-  return null;
-}
-
-async function callGeminiForJson(requestBody, triedKeys) {
-  const excluded = triedKeys || new Set();
-  const keyEntry = await pickAvailableGeminiKey(excluded);
-  if (!keyEntry) {
-    const err = new Error("등록된 Gemini API 키가 모두 오늘 일일 할당량에 도달했습니다.");
-    err.isQuotaExhausted = true;
-    throw err;
-  }
-  const apiKey = keyEntry.key;
-
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`;
-  const maxRetries = 3;
-  let attempt = 0;
-
-  while (true) {
-    if (isCancelled()) throw new JobCancelledError();
-    await throttleGeminiCall();
-
-    let response;
-    try {
-      response = await fetchWithJobCancellation(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(requestBody),
-      }, GEMINI_REQUEST_TIMEOUT_MS);
-    } catch (err) {
-      if (isCancelled() || isCancellationError(err)) throw new JobCancelledError();
-      throw err;
-    }
-
-    if (response.status === 429) {
-      const errText = await response.text();
-      increaseThrottleInterval(); // 이 요청 이후부터는 더 넓은 간격으로 호출 (전역 적용)
-
-      if (DAILY_QUOTA_TEXT_PATTERN.test(errText)) {
-        await markGeminiKeyExhausted(apiKey);
-        excluded.add(apiKey);
-        await addLog(
-          `Gemini API 키(${keyEntry.label || apiKey.slice(0, 8) + "..."})가 오늘 일일 할당량에 도달한 것으로 보여 다음 키로 전환합니다.`,
-          "warn"
-        );
-        return await callGeminiForJson(requestBody, excluded); // 다른 키로 재시도(전부 소진되면 위에서 throw)
-      }
-
-      attempt += 1;
-      if (attempt > maxRetries) {
-        throw new Error(t("errGemini429Retries", [errText.slice(0, 200)]));
-      }
-      const backoffMs = parseRetryAfterMs(response.headers.get("Retry-After")) ?? currentCallIntervalMs * attempt;
-      await addLog(t("logGemini429Retry", [currentCallIntervalMs, attempt, maxRetries]), "warn");
-      await sleep(backoffMs);
-      if (isCancelled()) throw new JobCancelledError();
-      continue;
-    }
-
-    if (!response.ok) {
-      const errText = await response.text();
-      throw new Error(t("errGeminiHttpError", [response.status, errText.slice(0, 200)]));
-    }
-
-    // 여기까지 왔으면 요청은 실제로 소비됐다. 응답 파싱이 실패해도 할당량 추정에서 누락되지 않게
-    // 파싱 전에 사용량을 먼저 기록한다.
-    await recordGeminiUsage(apiKey);
-    decayThrottleInterval();
-
-    const data = await response.json();
-    const textResult = data.candidates?.[0]?.content?.parts?.[0]?.text;
-    if (!textResult) throw new Error(t("errGeminiNoResult"));
-
-    const cleaned = textResult.replace(/```json/g, "").replace(/```/g, "").trim();
-    try {
-      return JSON.parse(cleaned);
-    } catch (parseErr) {
-      // 응답이 중간에 잘리는 경우가 있어, raw 파서 오류 대신 무슨 일인지 알 수 있는 메시지로 감싼다.
-      const err = new Error(`Gemini 응답을 JSON으로 해석할 수 없습니다: ${String(parseErr.message || parseErr)} / 응답 앞부분: ${cleaned.slice(0, 200)}`);
-      err.isGeminiJsonParseError = true;
-      throw err;
-    }
-  }
+async function callGeminiForJson(requestBody) {
+  const prompt = requestBody.contents[0].parts[0].text;
+  const schema = requestBody.generationConfig?.responseSchema;
+  return await AIRequestRouter.generateStructured(prompt, schema);
 }
 
 // ---------------- 1단계: 상위 카테고리만 분류 (신규 상위 카테고리 생성 없음, 고정 목록 중에서만 선택) ----------------
@@ -1753,23 +1578,21 @@ if (chrome.sidePanel && chrome.sidePanel.setPanelBehavior) {
 
 async function updateSidePanelForTab(tabId, url) {
   if (!url) return;
-  const isGmail = url.startsWith('https://mail.google.com/');
-  const settings = await SettingsStore.getSettings();
+  let isGmail = false;
+  try {
+    const urlObj = new URL(url);
+    isGmail = urlObj.protocol === "https:" && urlObj.hostname === "mail.google.com";
+  } catch (e) {
+    isGmail = false;
+  }
   
-  if (isGmail && settings.general.startupBehavior.openSidePanelOnGmail) {
-    chrome.sidePanel.setOptions({ tabId, path: 'sidepanel/sidepanel.html', enabled: true });
-    
-    if (settings.general.startupBehavior.showStatusOnGmail) {
-      chrome.storage.local.get(["jobStatus"], (res) => {
-        if (res.jobStatus !== "running") {
-          chrome.action.setBadgeText({ text: "●" });
-          chrome.action.setBadgeBackgroundColor({ color: "#10b981" });
-        }
-      });
-    }
+  if (isGmail) {
+    chrome.sidePanel.setOptions({ tabId, path: 'sidepanel/sidepanel.html', enabled: true }).catch(() => {});
   } else {
     chrome.sidePanel.setOptions({ tabId, enabled: false }).catch(() => {});
-    chrome.action.setBadgeText({ text: "" });
+    if (chrome.sidePanel.close) {
+      chrome.sidePanel.close({ tabId }).catch(() => {});
+    }
   }
 }
 
@@ -4168,6 +3991,46 @@ function isJobRunning() {
 }
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  if (request.action === "job.start") {
+    const jobType = request.jobType;
+    if (jobType === "gmail.classification" || jobType === "gmail_classify") {
+      startClassification().then(res => sendResponse(res)).catch(e => sendResponse({ error: e.message }));
+      return true;
+    } else if (jobType === "gmail.summary" || jobType === "gmail_summarize") {
+      startLabelSummary().then(res => sendResponse(res)).catch(e => sendResponse({ error: e.message }));
+      return true;
+    } else if (jobType === "calendar.classification" || jobType === "calendar_classify") {
+      const payload = request.payload || {};
+      const startDate = payload.startDate || new Date(new Date().setHours(0,0,0,0)).toISOString();
+      const endDate = payload.endDate || new Date(Date.now() + 7*24*60*60*1000).toISOString();
+      runCalendarClassification({
+        calendarId: payload.calendarId || "primary",
+        startDate,
+        endDate,
+        overwriteExistingColors: payload.overwriteExistingColors || false
+      }).then(res => sendResponse(res)).catch(e => sendResponse({ error: e.message }));
+      return true;
+    } else if (jobType === "calendar_init_categories") {
+      runJob(async () => {
+        const events = await fetchCalendarEvents("primary", 
+          new Date(Date.now() - 30*24*60*60*1000).toISOString(),
+          new Date().toISOString(),
+          100
+        );
+        const colorsData = await fetchCalendarColors();
+        const availableColors = Object.keys(colorsData.event || {});
+        const categories = await initializeCalendarCategoriesWithAI(events, availableColors, i18nCurrentLocale());
+        
+        const settings = await SettingsStore.getSettings();
+        settings.calendar.categories = categories;
+        await SettingsStore.setSetting('calendar.categories', categories);
+        
+        return { total: categories.length, success: categories.length, failMessages: [], requestsUsed: 1, batchSize: 1, cancelled: false, quotaExhausted: false };
+      }, "Generate Calendar Categories").then(res => sendResponse(res)).catch(e => sendResponse({ error: e.message }));
+      return true;
+    }
+  }
+
   if (request.action === "authorizeOAuth") {
     isJobRunning().then(async (running) => {
       if (running) {

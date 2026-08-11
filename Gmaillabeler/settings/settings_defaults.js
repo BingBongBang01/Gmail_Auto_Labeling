@@ -6,7 +6,7 @@
 const SETTINGS_DEFAULTS = {
   schemaVersion: 2,
   general: {
-    language: "system",
+    language: "en",
     themeMode: "system",
     startupBehavior: {
       openSidePanelOnGmail: false,
@@ -23,17 +23,16 @@ const SETTINGS_DEFAULTS = {
   },
   
   ai: {
-    provider: "gemini",
-    geminiApiKeys: [],
-    model: "gemini-1.5-flash",
-    retry: {
-      enabled: true,
+    credentials: [], // Will store { id, provider, name, apiKey, model, enabled, priority, status }
+    requestPolicy: {
+      failoverEnabled: true,
+      retryEnabled: true,
       maxRetries: 3,
-      useFallbackKey: true
+      quotaAware: true
     },
     processing: {
       batchSize: 50,
-      concurrency: 2
+      concurrency: 1
     }
   },
   
@@ -76,10 +75,13 @@ const SETTINGS_DEFAULTS = {
     classification: {
       enabled: true,
       dateRange: "week",
-      applyColors: true
+      applyColors: true,
+      analysisMode: "ai",
+      maxEventsPerRun: 100,
+      overwriteExistingColors: false
     },
-    filters: [],
-    colors: {}
+    categories: [],
+    filters: []
   },
   
   automation: {

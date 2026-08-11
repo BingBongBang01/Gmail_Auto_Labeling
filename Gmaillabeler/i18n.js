@@ -35,6 +35,25 @@ function i18nResolveLocale() {
   });
 }
 
+// Watch for language changes and re-render the UI dynamically
+if (typeof chrome !== "undefined" && chrome.storage && chrome.storage.onChanged) {
+  chrome.storage.onChanged.addListener((changes, areaName) => {
+    if (areaName === "local" && changes.appSettings) {
+      const oldSettings = changes.appSettings.oldValue || {};
+      const newSettings = changes.appSettings.newValue || {};
+      const oldLang = oldSettings.general?.language;
+      const newLang = newSettings.general?.language;
+      if (newLang && newLang !== oldLang && newLang !== "system") {
+        i18nInit(true).then(() => {
+          if (typeof document !== "undefined") {
+            i18nApplyToDom(document);
+          }
+        });
+      }
+    }
+  });
+}
+
 // 언어가 바뀌었을 때 재로딩할 수 있도록 force 옵션 제공
 async function i18nInit(force) {
   const locale = await i18nResolveLocale();

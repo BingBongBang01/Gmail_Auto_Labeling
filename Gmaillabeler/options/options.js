@@ -8,8 +8,8 @@ async function initOptions() {
   }
 
   // Ensure migration is complete, then load settings
-  if (typeof migrateToV2Settings === 'function') {
-    await migrateToV2Settings();
+  if (typeof migrateToLatestSettings === 'function') {
+    await migrateToLatestSettings();
   }
 
   SettingsStore.getSettings(settings => {
@@ -233,77 +233,6 @@ function initConnectionsSettings(settings) {
     chrome.tabs.create({ url: chrome.runtime.getURL("guide/oauth-guide.html") });
   });
 
-  // Gemini API Keys
-  let currentKeys = Array.isArray(settings.ai.geminiApiKeys) ? [...settings.ai.geminiApiKeys] : [];
-  const keysList = $('geminiApiKeysList');
-  
-  function renderKeys() {
-    if (!keysList) return;
-    
-    if (currentKeys.length === 0) {
-      keysList.innerHTML = `<p class="body-medium" style="color:var(--md-sys-color-error)">No API keys configured.</p>`;
-      return;
-    }
-
-    keysList.innerHTML = currentKeys.map((k, idx) => `
-      <div class="apikey-row" style="display:flex; gap:8px; margin-bottom:8px; align-items:center;">
-        <input type="radio" name="activeApiKey" value="${idx}" ${k.active ? 'checked' : ''} style="margin:0 8px;">
-        <input type="text" class="form-input apikey-label" placeholder="Label (e.g. Prod)" value="${k.label || ""}" style="flex:1;">
-        <input type="password" class="form-input apikey-value" placeholder="AIza..." value="${k.key || ""}" style="flex:2;">
-        <button class="btn btn-icon toggle-apikey-btn" type="button" data-idx="${idx}">👁</button>
-        <button class="btn btn-icon danger delete-apikey-btn" type="button" data-idx="${idx}" style="color:var(--md-sys-color-error)">✕</button>
-      </div>
-    `).join("");
-
-    // Bind events
-    keysList.querySelectorAll('.toggle-apikey-btn').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        const row = e.target.closest('.apikey-row');
-        const input = row.querySelector('.apikey-value');
-        input.type = input.type === "password" ? "text" : "password";
-      });
-    });
-
-    keysList.querySelectorAll('.delete-apikey-btn').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        const idx = parseInt(e.target.getAttribute('data-idx'), 10);
-        currentKeys.splice(idx, 1);
-        if (currentKeys.length > 0 && !currentKeys.some(k => k.active)) {
-          currentKeys[0].active = true;
-        }
-        saveKeys();
-      });
-    });
-
-    keysList.querySelectorAll('input').forEach(input => {
-      input.addEventListener('change', () => {
-        collectAndSaveKeys();
-      });
-    });
-  }
-
-  function collectAndSaveKeys() {
-    if (!keysList) return;
-    const rows = keysList.querySelectorAll('.apikey-row');
-    currentKeys = Array.from(rows).map(row => ({
-      active: row.querySelector('input[type="radio"]').checked,
-      label: row.querySelector('.apikey-label').value.trim(),
-      key: row.querySelector('.apikey-value').value.trim()
-    }));
-    saveKeys();
-  }
-
-  function saveKeys() {
-    // Only save valid keys
-    const validKeys = currentKeys.filter(k => k.key);
-    scheduleSave('ai.geminiApiKeys', validKeys);
-    renderKeys(); // Re-render to clean up empty rows if they were saved (though we filter them out)
-  }
-
-  $('btnAddGeminiKey')?.addEventListener('click', () => {
-    currentKeys.push({ label: "", key: "", active: currentKeys.length === 0 });
-    renderKeys();
-  });
 }
 
 function initGmailSettings(settings) {
@@ -450,65 +379,342 @@ function initCalendarSettings(settings) {
 
   // Calendar Colors
   const colorsList = $('calendarColorsList');
-  if (colorsList && settings.gmail.categories) {
-    let colors = settings.calendar.colors || {};
-    
-    // We map over gmail categories since they define the classifications
-    colorsList.innerHTML = settings.gmail.categories.map(c => `
-      <div class="form-row">
-        <label class="body-medium" style="flex:1;">${c.name}</label>
-        <select class="form-select calendar-color-select" data-category="${c.name}" style="flex:1;">
-          <option value="">Default</option>
-          <option value="1" ${colors[c.name] === "1" ? "selected" : ""}>Lavender (1)</option>
-          <option value="2" ${colors[c.name] === "2" ? "selected" : ""}>Sage (2)</option>
-          <option value="3" ${colors[c.name] === "3" ? "selected" : ""}>Grape (3)</option>
-          <option value="4" ${colors[c.name] === "4" ? "selected" : ""}>Flamingo (4)</option>
-          <option value="5" ${colors[c.name] === "5" ? "selected" : ""}>Banana (5)</option>
-          <option value="6" ${colors[c.name] === "6" ? "selected" : ""}>Tangerine (6)</option>
-          <option value="7" ${colors[c.name] === "7" ? "selected" : ""}>Peacock (7)</option>
-          <option value="8" ${colors[c.name] === "8" ? "selected" : ""}>Graphite (8)</option>
-          <option value="9" ${colors[c.name] === "9" ? "selected" : ""}>Blueberry (9)</option>
-          <option value="10" ${colors[c.name] === "10" ? "selected" : ""}>Basil (10)</option>
-          <option value="11" ${colors[c.name] === "11" ? "selected" : ""}>Tomato (11)</option>
-        </select>
-      </div>
-    `).join("");
+  if (colorsList) {
+    if (!settings.calendar.categories || settings.calendar.categories.length === 0) {
+      colorsList.innerHTML = `<p class="body-medium" style="color:var(--md-sys-color-on-surface-variant)">No calendar categories defined. Generate them using AI.</p>`;
+    } else {
+      colorsList.innerHTML = settings.calendar.categories.map((c, idx) => `
+        <div class="form-row" style="margin-bottom:8px;">
+          <label class="body-medium" style="flex:1;" title="${c.criteria}">${c.name}</label>
+          <select class="form-select calendar-color-select" data-idx="${idx}" style="flex:1;">
+            <option value="">Default</option>
+            <option value="1" ${c.colorId === "1" ? "selected" : ""}>Lavender (1)</option>
+            <option value="2" ${c.colorId === "2" ? "selected" : ""}>Sage (2)</option>
+            <option value="3" ${c.colorId === "3" ? "selected" : ""}>Grape (3)</option>
+            <option value="4" ${c.colorId === "4" ? "selected" : ""}>Flamingo (4)</option>
+            <option value="5" ${c.colorId === "5" ? "selected" : ""}>Banana (5)</option>
+            <option value="6" ${c.colorId === "6" ? "selected" : ""}>Tangerine (6)</option>
+            <option value="7" ${c.colorId === "7" ? "selected" : ""}>Peacock (7)</option>
+            <option value="8" ${c.colorId === "8" ? "selected" : ""}>Graphite (8)</option>
+            <option value="9" ${c.colorId === "9" ? "selected" : ""}>Blueberry (9)</option>
+            <option value="10" ${c.colorId === "10" ? "selected" : ""}>Basil (10)</option>
+            <option value="11" ${c.colorId === "11" ? "selected" : ""}>Tomato (11)</option>
+          </select>
+        </div>
+      `).join("");
 
-    colorsList.querySelectorAll('.calendar-color-select').forEach(sel => {
-      sel.addEventListener('change', (e) => {
-        const cat = e.target.getAttribute('data-category');
-        colors[cat] = e.target.value;
-        scheduleSave('calendar.colors', colors);
+      colorsList.querySelectorAll('.calendar-color-select').forEach(sel => {
+        sel.addEventListener('change', (e) => {
+          const idx = parseInt(e.target.getAttribute('data-idx'), 10);
+          settings.calendar.categories[idx].colorId = e.target.value;
+          scheduleSave('calendar.categories', settings.calendar.categories);
+        });
+      });
+    }
+  }
+
+  const btnGenerate = $('btnGenerateCalendarCategories');
+  if (btnGenerate) {
+    btnGenerate.addEventListener('click', () => {
+      const statusSpan = $('calendarGenerateStatus');
+      btnGenerate.disabled = true;
+      statusSpan.textContent = t("calendarGeneratingStatus") || "Generating (may take a minute)...";
+      statusSpan.style.color = "var(--md-sys-color-primary)";
+      
+      chrome.runtime.sendMessage({ action: "job.start", jobType: "calendar_init_categories" }, (response) => {
+        btnGenerate.disabled = false;
+        if (response && response.error) {
+          statusSpan.textContent = "Error: " + response.error;
+          statusSpan.style.color = "var(--md-sys-color-error)";
+        } else {
+          statusSpan.textContent = "Success! Reloading...";
+          statusSpan.style.color = "var(--md-sys-color-success)";
+          setTimeout(() => location.reload(), 1000);
+        }
       });
     });
   }
 }
 function initAiSettings(settings) {
-  const selModel = $('selectAiModel');
-  if (selModel) {
-    selModel.value = settings.ai.model;
-    selModel.addEventListener('change', e => scheduleSave('ai.model', e.target.value));
+  // Failover & Retry Options
+  const checkFailover = $('checkAiFailover');
+  if (checkFailover) {
+    checkFailover.checked = settings.ai.requestPolicy?.failoverEnabled ?? true;
+    checkFailover.addEventListener('change', e => scheduleSave('ai.requestPolicy.failoverEnabled', e.target.checked));
   }
+  
   const checkRetry = $('checkAiRetry');
   if (checkRetry) {
-    checkRetry.checked = settings.ai.retry.enabled;
-    checkRetry.addEventListener('change', e => scheduleSave('ai.retry.enabled', e.target.checked));
+    checkRetry.checked = settings.ai.requestPolicy?.retryEnabled ?? true;
+    checkRetry.addEventListener('change', e => scheduleSave('ai.requestPolicy.retryEnabled', e.target.checked));
   }
+  
   const maxRetry = $('inputAiMaxRetries');
   if (maxRetry) {
-    maxRetry.value = settings.ai.retry.maxRetries;
-    maxRetry.addEventListener('input', e => scheduleSave('ai.retry.maxRetries', parseInt(e.target.value, 10)));
+    maxRetry.value = settings.ai.requestPolicy?.maxRetries ?? 3;
+    maxRetry.addEventListener('input', e => scheduleSave('ai.requestPolicy.maxRetries', parseInt(e.target.value, 10)));
   }
-  const fallback = $('checkAiFallbackKey');
-  if (fallback) {
-    fallback.checked = settings.ai.retry.useFallbackKey;
-    fallback.addEventListener('change', e => scheduleSave('ai.retry.useFallbackKey', e.target.checked));
+
+  const batchSize = $('inputAiBatchSize');
+  if (batchSize) {
+    batchSize.value = settings.ai.processing?.batchSize ?? 10;
+    batchSize.addEventListener('input', e => scheduleSave('ai.processing.batchSize', parseInt(e.target.value, 10)));
   }
-  const concurrency = $('inputAiConcurrency');
-  if (concurrency) {
-    concurrency.value = settings.ai.processing.concurrency;
-    concurrency.addEventListener('input', e => scheduleSave('ai.processing.concurrency', parseInt(e.target.value, 10)));
+
+  // Credentials UI
+  const credsList = $('aiCredentialsList');
+  const btnAdd = $('btnAddAiCredential');
+  
+  // Dialog Elements
+  const dialog = $('aiCredentialDialog');
+  const dTitle = $('aiCredentialDialogTitle');
+  const dId = $('aiCredId');
+  const dProvider = $('aiCredProvider');
+  const dName = $('aiCredName');
+  const dApiKey = $('aiCredApiKey');
+  const dModel = $('aiCredModel');
+  const btnToggleApiKey = $('btnToggleApiKeyVisibility');
+  const btnTest = $('btnAiCredTest');
+  const btnCancel = $('btnAiCredCancel');
+  const btnSave = $('btnAiCredSave');
+
+  let currentCreds = Array.isArray(settings.ai.credentials) ? [...settings.ai.credentials] : [];
+
+  function renderCredentials() {
+    if (!credsList) return;
+    
+    if (currentCreds.length === 0) {
+      credsList.innerHTML = `<p class="body-medium" style="color:var(--md-sys-color-on-surface-variant)">No AI credentials configured.</p>`;
+      return;
+    }
+    
+    // Sort by priority
+    currentCreds.sort((a, b) => a.priority - b.priority);
+    
+    credsList.innerHTML = currentCreds.map((cred, idx) => {
+      const providerInfo = AIProviderRegistry ? AIProviderRegistry.getProvider(cred.provider) : null;
+      const providerName = providerInfo ? providerInfo.name : cred.provider;
+      const modelInfo = (AIProviderRegistry?.SUPPORTED_MODELS?.[cred.provider] || []).find(m => m.id === cred.model);
+      const modelName = modelInfo ? modelInfo.name : cred.model;
+      
+      const statusColor = cred.status === "Ready" ? "var(--md-sys-color-success)" : "var(--md-sys-color-error)";
+      
+      return `
+      <div class="cred-card" style="border:1px solid var(--md-sys-color-outline-variant); border-radius:8px; padding:12px; margin-bottom:8px; display:flex; align-items:center; gap:12px;">
+        <div style="display:flex; flex-direction:column; align-items:center; gap:4px;">
+          <button class="btn btn-icon btn-cred-up" data-id="${cred.id}" ${idx === 0 ? 'disabled' : ''} title="Move Up">▲</button>
+          <button class="btn btn-icon btn-cred-down" data-id="${cred.id}" ${idx === currentCreds.length - 1 ? 'disabled' : ''} title="Move Down">▼</button>
+        </div>
+        <div style="flex:1;">
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
+            <span style="font-weight:600; font-size:16px;">${cred.name}</span>
+            <span style="font-size:12px; background:var(--md-sys-color-surface-variant); padding:2px 6px; border-radius:4px;">${providerName}</span>
+          </div>
+          <div style="font-size:13px; color:var(--md-sys-color-on-surface-variant); margin-bottom:4px;">Model: ${modelName}</div>
+          <div style="font-size:13px; display:flex; align-items:center; gap:4px;">
+            <span>Status:</span>
+            <span style="color:${statusColor}; font-weight:500;">${cred.status || "Unknown"}</span>
+          </div>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:8px;">
+          <label class="switch" style="display:flex; align-items:center; gap:8px;">
+            <span style="font-size:13px;">${cred.enabled ? 'Enabled' : 'Disabled'}</span>
+            <input type="checkbox" class="cred-toggle" data-id="${cred.id}" ${cred.enabled ? 'checked' : ''}>
+          </label>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:4px;">
+          <button class="btn btn-secondary btn-cred-edit" data-id="${cred.id}" style="padding:4px 8px; font-size:13px;">Edit</button>
+          <button class="btn btn-outlined danger btn-cred-delete" data-id="${cred.id}" style="padding:4px 8px; font-size:13px;">Delete</button>
+        </div>
+      </div>
+      `;
+    }).join("");
+    
+    bindCredentialEvents();
   }
+
+  function bindCredentialEvents() {
+    credsList.querySelectorAll('.cred-toggle').forEach(el => {
+      el.addEventListener('change', (e) => {
+        const id = e.target.getAttribute('data-id');
+        const cred = currentCreds.find(c => c.id === id);
+        if (cred) {
+          cred.enabled = e.target.checked;
+          if (cred.enabled && cred.status !== "Ready") cred.status = "Ready"; // Optimistically reset status
+          saveCredentials();
+        }
+      });
+    });
+    
+    credsList.querySelectorAll('.btn-cred-delete').forEach(el => {
+      el.addEventListener('click', (e) => {
+        if (confirm(t("aiConfirmDelete") || "Are you sure you want to delete this credential?")) {
+          const id = e.target.getAttribute('data-id');
+          currentCreds = currentCreds.filter(c => c.id !== id);
+          saveCredentials();
+        }
+      });
+    });
+    
+    credsList.querySelectorAll('.btn-cred-edit').forEach(el => {
+      el.addEventListener('click', (e) => {
+        const id = e.target.getAttribute('data-id');
+        const cred = currentCreds.find(c => c.id === id);
+        if (cred) openDialog(cred);
+      });
+    });
+    
+    credsList.querySelectorAll('.btn-cred-up').forEach(el => {
+      el.addEventListener('click', (e) => {
+        const id = e.target.getAttribute('data-id');
+        const idx = currentCreds.findIndex(c => c.id === id);
+        if (idx > 0) {
+          [currentCreds[idx-1], currentCreds[idx]] = [currentCreds[idx], currentCreds[idx-1]];
+          updatePrioritiesAndSave();
+        }
+      });
+    });
+    
+    credsList.querySelectorAll('.btn-cred-down').forEach(el => {
+      el.addEventListener('click', (e) => {
+        const id = e.target.getAttribute('data-id');
+        const idx = currentCreds.findIndex(c => c.id === id);
+        if (idx < currentCreds.length - 1) {
+          [currentCreds[idx+1], currentCreds[idx]] = [currentCreds[idx], currentCreds[idx+1]];
+          updatePrioritiesAndSave();
+        }
+      });
+    });
+  }
+  
+  function updatePrioritiesAndSave() {
+    currentCreds.forEach((c, idx) => c.priority = idx + 1);
+    saveCredentials();
+  }
+  
+  function saveCredentials() {
+    settings.ai.credentials = currentCreds;
+    scheduleSave('ai.credentials', currentCreds);
+    renderCredentials();
+  }
+
+  // --- Dialog Management ---
+  function populateProviders() {
+    if (!AIProviderRegistry) return;
+    dProvider.innerHTML = AIProviderRegistry.SUPPORTED_PROVIDERS.map(p => `<option value="${p.id}">${p.name}</option>`).join("");
+  }
+  
+  function populateModels(providerId) {
+    if (!AIProviderRegistry) return;
+    const models = AIProviderRegistry.SUPPORTED_MODELS[providerId] || [];
+    dModel.innerHTML = models.map(m => `<option value="${m.id}">${m.name}</option>`).join("");
+  }
+  
+  if (dProvider) {
+    dProvider.addEventListener('change', (e) => populateModels(e.target.value));
+  }
+  
+  if (btnToggleApiKey) {
+    btnToggleApiKey.addEventListener('click', () => {
+      dApiKey.type = dApiKey.type === "password" ? "text" : "password";
+    });
+  }
+
+  function openDialog(cred = null) {
+    if (!dialog) return;
+    
+    populateProviders();
+    
+    if (cred) {
+      dTitle.textContent = t("aiCredentialsEdit") || "Edit AI API";
+      dId.value = cred.id;
+      dProvider.value = cred.provider;
+      populateModels(cred.provider);
+      dName.value = cred.name;
+      dApiKey.value = cred.apiKey;
+      dModel.value = cred.model;
+    } else {
+      dTitle.textContent = t("aiCredentialsAdd") || "Add AI API";
+      dId.value = "";
+      dProvider.value = AIProviderRegistry.SUPPORTED_PROVIDERS[0].id;
+      populateModels(dProvider.value);
+      dName.value = "";
+      dApiKey.value = "";
+    }
+    
+    dialog.showModal();
+  }
+  
+  function closeDialog() {
+    if (dialog) {
+      dialog.close();
+      dApiKey.type = "password";
+    }
+  }
+
+  btnAdd?.addEventListener('click', () => openDialog());
+  btnCancel?.addEventListener('click', () => closeDialog());
+  
+  btnSave?.addEventListener('click', () => {
+    if (!dName.value.trim() || !dApiKey.value.trim()) {
+      alert("Name and API Key are required.");
+      return;
+    }
+    
+    const isNew = !dId.value;
+    const credData = {
+      id: isNew ? (crypto.randomUUID ? crypto.randomUUID() : Math.random().toString()) : dId.value,
+      provider: dProvider.value,
+      name: dName.value.trim(),
+      apiKey: dApiKey.value.trim(),
+      model: dModel.value,
+      enabled: true,
+      priority: isNew ? currentCreds.length + 1 : currentCreds.find(c => c.id === dId.value).priority,
+      status: "Ready"
+    };
+    
+    if (isNew) {
+      currentCreds.push(credData);
+    } else {
+      const idx = currentCreds.findIndex(c => c.id === dId.value);
+      currentCreds[idx] = credData;
+    }
+    
+    saveCredentials();
+    closeDialog();
+  });
+  
+  btnTest?.addEventListener('click', async () => {
+    const originalText = btnTest.textContent;
+    btnTest.textContent = "Testing...";
+    btnTest.disabled = true;
+    
+    try {
+      const providerId = dProvider.value;
+      const apiKey = dApiKey.value.trim();
+      const model = dModel.value;
+      
+      const provider = AIProviderRegistry.getProvider(providerId);
+      if (!provider) throw new Error("Provider not found");
+      
+      // Simple prompt to test
+      const res = await provider.generateStructured(apiKey, model, "Say 'OK'", {
+        type: "object",
+        properties: { status: { type: "string" } }
+      });
+      
+      alert(t("aiTestSuccess") || "Connection successful!");
+    } catch (err) {
+      let msg = err.message || "Unknown error";
+      if (err.status) msg = `HTTP ${err.status}: ${JSON.stringify(err.raw)}`;
+      alert(`Connection failed: ${msg}`);
+    } finally {
+      btnTest.textContent = originalText;
+      btnTest.disabled = false;
+    }
+  });
+
+  renderCredentials();
 }
 
 function initAutomationSettings(settings) {
@@ -640,6 +846,44 @@ function initDataSettings(settings) {
   const lastBackup = $('labelLastBackup');
   if (lastBackup) {
     lastBackup.textContent = settings.data.backup.lastBackupAt || "Never";
+  }
+
+  const btnBackupNow = $('btnDriveBackupNow');
+  if (btnBackupNow) {
+    btnBackupNow.addEventListener('click', () => {
+      btnBackupNow.disabled = true;
+      btnBackupNow.textContent = "Backing up...";
+      chrome.runtime.sendMessage({ action: "backupToDrive" }, (response) => {
+        btnBackupNow.disabled = false;
+        btnBackupNow.textContent = "Backup Now";
+        if (response && response.ok) {
+          showSnackbar("Backup to Google Drive successful!");
+          if (lastBackup) lastBackup.textContent = new Date().toLocaleString();
+        } else {
+          showSnackbar("Backup failed: " + (response?.error || "Unknown Error"));
+        }
+      });
+    });
+  }
+
+  const btnRestore = $('btnDriveRestore');
+  if (btnRestore) {
+    btnRestore.addEventListener('click', () => {
+      if (confirm("Restore settings from Google Drive? This will overwrite your current settings.")) {
+        btnRestore.disabled = true;
+        btnRestore.textContent = "Restoring...";
+        chrome.runtime.sendMessage({ action: "restoreFromDrive" }, (response) => {
+          btnRestore.disabled = false;
+          btnRestore.textContent = "Restore from Drive";
+          if (response && response.ok) {
+            showSnackbar("Settings restored successfully!");
+            setTimeout(() => window.location.reload(), 1000);
+          } else {
+            showSnackbar("Restore failed: " + (response?.error || "Unknown Error"));
+          }
+        });
+      }
+    });
   }
 }
 

@@ -83,3 +83,33 @@ async function calendarColorsGet() {
   const url = "https://www.googleapis.com/calendar/v3/colors";
   return await calendarApiGet(url);
 }
+
+async function calendarList(params = {}) {
+  const url = new URL(`https://www.googleapis.com/calendar/v3/users/me/calendarList`);
+  for (const key of Object.keys(params)) {
+    if (params[key] !== undefined && params[key] !== null) {
+      url.searchParams.append(key, params[key]);
+    }
+  }
+  return await calendarApiGet(url.toString());
+}
+
+async function calendarEventGet(calendarId, eventId) {
+  const url = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events/${encodeURIComponent(eventId)}`;
+  return await calendarApiGet(url);
+}
+
+async function calendarEventsListAll(calendarId, params = {}) {
+  let events = [];
+  let pageToken = null;
+  do {
+    const currentParams = { ...params };
+    if (pageToken) currentParams.pageToken = pageToken;
+    const response = await calendarEventsList(calendarId, currentParams);
+    if (response.items) {
+      events = events.concat(response.items);
+    }
+    pageToken = response.nextPageToken;
+  } while (pageToken);
+  return events;
+}
