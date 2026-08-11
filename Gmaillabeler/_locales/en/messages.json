@@ -3152,5 +3152,8 @@
   },
   "dashFilterLabelPlaceholder": {
     "message": "Label to apply"
+  },
+  "settingsBackupIncludeCredentials": {
+    "message": "Include API keys and OAuth details (a passphrase is required; they are encrypted)"
   }
 }

@@ -916,6 +916,12 @@ function initDataSettings(settings) {
     driveBackup.checked = settings.data.backup.autoBackupToDrive;
     driveBackup.addEventListener('change', e => scheduleSave('data.backup.autoBackupToDrive', e.target.checked));
   }
+
+  const includeCreds = $('checkBackupIncludeCredentials');
+  if (includeCreds) {
+    includeCreds.checked = settings.data.backup.includeCredentials === true;
+    includeCreds.addEventListener('change', e => scheduleSave('data.backup.includeCredentials', e.target.checked));
+  }
   
   const lastBackup = $('labelLastBackup');
   if (lastBackup) {

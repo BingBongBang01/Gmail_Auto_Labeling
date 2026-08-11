@@ -3152,5 +3152,8 @@
   },
   "dashFilterLabelPlaceholder": {
     "message": "적용할 라벨"
+  },
+  "settingsBackupIncludeCredentials": {
+    "message": "API 키와 OAuth 정보 포함 (암호 입력 필요, 암호화되어 저장됩니다)"
   }
 }

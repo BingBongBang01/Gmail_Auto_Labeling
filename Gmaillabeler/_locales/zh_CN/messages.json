@@ -3152,5 +3152,8 @@
   },
   "dashFilterLabelPlaceholder": {
     "message": "要应用的标签"
+  },
+  "settingsBackupIncludeCredentials": {
+    "message": "包含 API 密钥和 OAuth 信息（需要口令，将加密保存）"
   }
 }

@@ -3152,5 +3152,8 @@
   },
   "dashFilterLabelPlaceholder": {
     "message": "適用するラベル"
+  },
+  "settingsBackupIncludeCredentials": {
+    "message": "API キーと OAuth 情報を含める（パスフレーズが必要・暗号化されます）"
   }
 }
