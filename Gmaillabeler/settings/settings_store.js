@@ -138,8 +138,8 @@ if (typeof chrome !== "undefined" && chrome.storage) {
   });
 }
 
-if (typeof window !== "undefined") {
-  window.SettingsStore = SettingsStore;
+if (typeof self !== "undefined") {
+  self.SettingsStore = SettingsStore;
 }
 if (typeof module !== "undefined" && module.exports) {
   module.exports = SettingsStore;

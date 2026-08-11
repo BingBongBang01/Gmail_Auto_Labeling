@@ -3131,5 +3131,47 @@
   },
   "aiConfirmDelete": {
     "message": "この認証情報を削除してもよろしいですか？"
+  },
+  "optionsMenuCalendar": {
+    "message": "カレンダー"
+  },
+  "calendarPanelDesc": {
+    "message": "カレンダーイベントの分析と色を設定します。"
+  },
+  "calendarAiSettings": {
+    "message": "カレンダーAI設定"
+  },
+  "calendarEnableIntegration": {
+    "message": "カレンダー連携を有効にする"
+  },
+  "calendarEnableClassification": {
+    "message": "自動分類を有効にする"
+  },
+  "calendarDateRange": {
+    "message": "分類対象期間"
+  },
+  "calendarRangeToday": {
+    "message": "今日"
+  },
+  "calendarRangeWeek": {
+    "message": "今週"
+  },
+  "calendarRangeMonth": {
+    "message": "今月"
+  },
+  "calendarApplyColors": {
+    "message": "イベントに色を適用"
+  },
+  "calendarCategoriesTitle": {
+    "message": "カレンダーAIカテゴリ"
+  },
+  "calendarCategoriesDesc": {
+    "message": "AIカテゴリをGoogleカレンダーの色にマッピングします。"
+  },
+  "calendarGenerateBtn": {
+    "message": "AIカテゴリを生成"
+  },
+  "calendarGeneratingStatus": {
+    "message": "生成中です（最大1分程度かかります）..."
   }
 }

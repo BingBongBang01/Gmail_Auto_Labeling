@@ -27,4 +27,4 @@ class AIFailoverManager {
   }
 }
 
-if (typeof window !== "undefined") window.AIFailoverManager = AIFailoverManager;
+if (typeof self !== "undefined") self.AIFailoverManager = AIFailoverManager;

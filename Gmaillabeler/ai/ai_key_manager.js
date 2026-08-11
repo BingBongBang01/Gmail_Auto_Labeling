@@ -21,4 +21,4 @@ class AIKeyManager {
   }
 }
 
-if (typeof window !== "undefined") window.AIKeyManager = AIKeyManager;
+if (typeof self !== "undefined") self.AIKeyManager = AIKeyManager;

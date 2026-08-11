@@ -27,7 +27,8 @@ class AIRequestRouter {
           // Reset quota state on success if it was previously marked exhausted
           if (cred.status !== "Ready") {
             cred.status = "Ready";
-            await SettingsStore.setSetting(`ai.credentials`, settings.ai.credentials);
+            const latestCreds = settings.ai.credentials.map(c => c.id === cred.id ? { ...c, status: "Ready" } : c);
+            await SettingsStore.setSetting(`ai.credentials`, latestCreds);
           }
           
           return result;
@@ -50,4 +51,4 @@ class AIRequestRouter {
   }
 }
 
-if (typeof window !== "undefined") window.AIRequestRouter = AIRequestRouter;
+if (typeof self !== "undefined") self.AIRequestRouter = AIRequestRouter;

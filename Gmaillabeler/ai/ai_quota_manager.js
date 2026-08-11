@@ -28,4 +28,4 @@ class AIQuotaManager {
   }
 }
 
-if (typeof window !== "undefined") window.AIQuotaManager = AIQuotaManager;
+if (typeof self !== "undefined") self.AIQuotaManager = AIQuotaManager;

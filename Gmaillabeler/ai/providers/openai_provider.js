@@ -63,9 +63,9 @@ class OpenAIProvider {
   }
 }
 
-if (typeof window !== "undefined") {
-  window.OpenAIProvider = OpenAIProvider;
-  if (window.AIProviderRegistry) {
-    window.AIProviderRegistry.register(new OpenAIProvider());
+if (typeof self !== "undefined") {
+  self.OpenAIProvider = OpenAIProvider;
+  if (self.AIProviderRegistry) {
+    self.AIProviderRegistry.register(new OpenAIProvider());
   }
 }

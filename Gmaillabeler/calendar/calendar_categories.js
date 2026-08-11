@@ -59,30 +59,29 @@ Respond strictly in JSON format matching the following schema:
 }
 `;
 
+  const appSettings = await SettingsStore.getSettings();
   const apiKeys = await getGeminiApiKeys();
-  const activeKeyObj = apiKeys.find(k => k.active) || apiKeys[0];
-  if (!activeKeyObj || !activeKeyObj.key) throw new Error("No Gemini API Key available");
+  const activeKeyObj = apiKeys.find(k => k.provider === "google") || apiKeys[0];
+  if (!activeKeyObj || !activeKeyObj.apiKey) throw new Error("No Gemini API Key available");
 
-  return await throttleGeminiCall(async () => {
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${appSettings?.ai?.model || 'gemini-1.5-flash'}:generateContent?key=${activeKeyObj.key}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ role: "user", parts: [{ text: prompt }] }],
-        generationConfig: { response_mime_type: "application/json" }
-      })
-    });
-    
-    if (!response.ok) throw new Error(`Gemini API Error: ${response.status}`);
-    
-    const data = await response.json();
-    try {
-      const text = data.candidates[0].content.parts[0].text;
-      const parsed = JSON.parse(text);
-      return deduplicateCalendarCategories(parsed.categories || []);
-    } catch (e) {
-      console.error("Failed to parse Gemini response for Calendar Categories", e);
-      return [];
-    }
+  const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${activeKeyObj.model || appSettings?.ai?.model || 'gemini-1.5-flash'}:generateContent?key=${activeKeyObj.apiKey}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      contents: [{ role: "user", parts: [{ text: prompt }] }],
+      generationConfig: { response_mime_type: "application/json" }
+    })
   });
+
+  if (!response.ok) throw new Error(`Gemini API Error: ${response.status}`);
+
+  const data = await response.json();
+  try {
+    const text = data.candidates[0].content.parts[0].text;
+    const parsed = JSON.parse(text);
+    return deduplicateCalendarCategories(parsed.categories || []);
+  } catch (e) {
+    console.error("Failed to parse Gemini response for Calendar Categories", e);
+    return [];
+  }
 }

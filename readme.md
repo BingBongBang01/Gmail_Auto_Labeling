@@ -47,6 +47,22 @@ Gemini뿐만 아니라 OpenAI, Anthropic 등 다중 LLM을 지원하고 API 호�
 
 ---
 
+## 5. 버그 수정 (v3.0 리팩토링 직후 발견된 런타임 버그 수정)
+
+위 리팩토링 직후 실제로 실행하면 죽는 버그들이 다수 발견되어 함께 수정했습니다.
+
+*   **서비스 워커에서 `window` 전역 등록 실패**: `ai/*.js`, `settings/*.js`의 모듈들이 `typeof window !== "undefined"` 조건으로 전역 객체(`AIProviderRegistry`, `SettingsStore`, `migrateToLatestSettings` 등)를 등록하고 있었는데, MV3 백그라운드 서비스 워커에는 `window`가 없어 아무것도 등록되지 않았습니다. AI 라우터/설정 스토어 전체가 백그라운드에서 동작하지 않던 문제로, `self`를 사용하도록 전부 수정했습니다.
+*   **AI 공급자 어댑터 미등록**: `google_provider.js`, `openai_provider.js`, `anthropic_provider.js`가 옵션 페이지(`options.html`)에 스크립트로 포함되어 있지 않아 "Test Connection" 기능이 항상 실패했습니다. 스크립트 태그를 추가했습니다.
+*   **`ai.geminiApiKeys` → `ai.credentials` 스키마 불일치**: `background.js`의 `getGeminiApiKeys()`가 더 이상 존재하지 않는 옛 설정 경로(`ai.geminiApiKeys`)를 읽고 있어 항상 빈 배열을 반환, 메일 분류가 "API 키 없음" 오류로 실패했습니다. 새 `ai.credentials` 구조를 읽도록 수정했습니다.
+*   **설정 마이그레이션 미실행**: `settings_migration.js`가 `background.js`의 `importScripts` 목록에 없었고, 백그라운드 시작 시점에 호출되지도 않아 옵션 페이지를 열지 않은 사용자는 계속 구버전 설정을 사용했습니다. 임포트 목록에 추가하고 `onInstalled`/`onStartup` 시점에 마이그레이션을 실행하도록 했습니다. 또한 `settings_defaults.js`의 `schemaVersion`이 `2`로 남아있어 마이그레이션이 완료돼도 다시 실행되며 설정을 되돌리던 문제도 `3`으로 맞췄습니다.
+*   **캘린더 카테고리 자동 생성 기능 전체 오류**: `calendar_init_categories` 핸들러가 존재하지 않는 `fetchCalendarEvents`/`fetchCalendarColors` 함수를 호출하고 있었고(`calendar_api.js`가 export하는 실제 함수명은 `calendarEventsListAll`/`calendarColorsGet`), 색상 목록도 배열이 아닌 맵 형태여야 하는데 `Object.keys(...)`로 변환해 넘기고 있었습니다. 실제 API 함수를 호출하고 올바른 색상 맵을 전달하도록 수정했습니다.
+*   **`calendar_engine.js`/`calendar_categories.js`의 미선언 변수 `appSettings`**: 어디에도 선언되지 않은 전역 변수를 참조해 캘린더 분류 실행 시 `ReferenceError`로 즉시 중단되던 문제를 `SettingsStore.getSettings()` 호출로 수정했습니다.
+*   **존재하지 않는 `throttleGeminiCall` 호출**: `calendar_categories.js`가 정의된 적 없는 함수를 호출해 캘린더 카테고리 생성이 항상 실패했습니다. 해당 래퍼 호출을 제거했습니다.
+*   **캘린더 탭 i18n 키 누락**: 옵션 페이지 Calendar 탭에서 쓰는 13개 번역 키(`optionsMenuCalendar`, `calendarPanelDesc` 등)가 4개 언어 `messages.json`에 전혀 없어 번역 대신 키 이름이 그대로 노출되던 문제를 모든 로케일에 키를 추가해 수정했습니다.
+*   **AI 라우터 성공 시 상태 저장 누락**: `ai_request_router.js`가 실패했던 키가 복구됐을 때 상태를 `"Ready"`로 되돌리는 로직이, 저장 시점에 서로 다른 두 번의 설정 조회 결과를 섞어 써서 실제로는 저장되지 않던 문제를 수정했습니다.
+
+---
+
 ## 향후 작업 (Next Steps)
 
 현재 백엔드 및 핵심 인프라 공사는 성공적으로 완료되었으며, 향후 다음과 같은 기능들을 추가로 작업할 수 있는 기반이 마련되어 있습니다.

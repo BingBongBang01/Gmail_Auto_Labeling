@@ -5,6 +5,7 @@ importScripts(
   "settings/settings_schema.js",
   "settings/settings_defaults.js",
   "settings/settings_store.js",
+  "settings/settings_migration.js",
   "i18n.js",
   "crypto-helper.js",
   "ai/ai_provider_registry.js",
@@ -282,6 +283,9 @@ function matchesFilterRule(detail, rule) {
 // 설치 시점(최초 1회)에 감지된 브라우저 언어로 라벨 카테고리 기본값을 고정 저장.
 // 이후 사용자가 설정에서 언어를 바꾸더라도, 이미 만들어둔 라벨 이름까지 자동으로 바뀌진 않는다(의도된 동작).
 chrome.runtime.onInstalled.addListener(async (details) => {
+  if (typeof migrateToLatestSettings === "function") {
+    await migrateToLatestSettings();
+  }
   registerAutoClassifyAlarm();
   delayInitialAutoClassifyCheck();
   // 전용 '나와 관련된 메일 웹훅'은 없어졌다(커스텀 웹훅의 onlyPersonal 조건으로 대체).
@@ -304,15 +308,12 @@ function normalizeLabelName(name) {
 // 예전 버전은 API 키를 하나만 저장했는데, 이제는 여러 개를 등록해서 한 키의 일일 할당량이 다 차면
 // 자동으로 다음 키로 넘어가도록 한다(무료 티어 키 여러 개를 돌려쓰면 사실상 처리량이 늘어남).
 async function getGeminiApiKeys() {
-  const settings = await SettingsStore.getSettings();
-  if (settings.ai.geminiApiKeys && settings.ai.geminiApiKeys.length > 0) {
-    return settings.ai.geminiApiKeys.filter((k) => k && k.key);
-  }
-  return [];
+  const credentials = await AIKeyManager.getActiveCredentials();
+  return credentials.filter((c) => c && c.apiKey);
 }
 
 async function saveGeminiApiKeys(keys) {
-  await SettingsStore.setSetting("ai.geminiApiKeys", keys);
+  await SettingsStore.setSetting("ai.credentials", keys);
 }
 
 // ---------------- OAuth (사용자 개인 클라이언트 방식) ----------------
@@ -3742,7 +3743,10 @@ async function delayInitialAutoClassifyCheck() {
   }, AUTO_CLASSIFY_STARTUP_DELAY_MS);
 }
 
-chrome.runtime.onStartup.addListener(() => {
+chrome.runtime.onStartup.addListener(async () => {
+  if (typeof migrateToLatestSettings === "function") {
+    await migrateToLatestSettings();
+  }
   registerAutoClassifyAlarm();
   delayInitialAutoClassifyCheck();
   chrome.storage.local.get(["jobStatus"], (result) => {
@@ -4012,13 +4016,15 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       return true;
     } else if (jobType === "calendar_init_categories") {
       runJob(async () => {
-        const events = await fetchCalendarEvents("primary", 
-          new Date(Date.now() - 30*24*60*60*1000).toISOString(),
-          new Date().toISOString(),
-          100
-        );
-        const colorsData = await fetchCalendarColors();
-        const availableColors = Object.keys(colorsData.event || {});
+        const events = await calendarEventsListAll("primary", {
+          timeMin: new Date(Date.now() - 30*24*60*60*1000).toISOString(),
+          timeMax: new Date().toISOString(),
+          singleEvents: true,
+          orderBy: "startTime",
+          maxResults: 100
+        });
+        const colorsData = await calendarColorsGet();
+        const availableColors = colorsData.event || {};
         const categories = await initializeCalendarCategoriesWithAI(events, availableColors, i18nCurrentLocale());
         
         const settings = await SettingsStore.getSettings();

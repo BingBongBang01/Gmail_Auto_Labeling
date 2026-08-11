@@ -29,11 +29,12 @@ async function runCalendarClassification({ calendarId, startDate, endDate, overw
     calendarClassificationResult.totalEvents = events.length;
     if (events.length === 0) return calendarClassificationResult;
 
+    const appSettings = await SettingsStore.getSettings();
     const categories = appSettings?.calendar?.categories || [];
     const locale = appSettings?.general?.language || "en";
 
     // Batch process in chunks of 50
-    const chunkSize = 50;
+    const chunkSize = appSettings?.ai?.processing?.batchSize || 50;
     for (let i = 0; i < events.length; i += chunkSize) {
       const chunk = events.slice(i, i + chunkSize);
       

@@ -73,9 +73,9 @@ ${JSON.stringify(schema)}
   }
 }
 
-if (typeof window !== "undefined") {
-  window.AnthropicProvider = AnthropicProvider;
-  if (window.AIProviderRegistry) {
-    window.AIProviderRegistry.register(new AnthropicProvider());
+if (typeof self !== "undefined") {
+  self.AnthropicProvider = AnthropicProvider;
+  if (self.AIProviderRegistry) {
+    self.AIProviderRegistry.register(new AnthropicProvider());
   }
 }

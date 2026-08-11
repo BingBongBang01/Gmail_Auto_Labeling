@@ -4,7 +4,7 @@
  * Default values for all settings based on SETTINGS_SCHEMA.
  */
 const SETTINGS_DEFAULTS = {
-  schemaVersion: 2,
+  schemaVersion: 3,
   general: {
     language: "en",
     themeMode: "system",
@@ -135,8 +135,8 @@ const SETTINGS_DEFAULTS = {
   }
 };
 
-if (typeof window !== "undefined") {
-  window.SETTINGS_DEFAULTS = SETTINGS_DEFAULTS;
+if (typeof self !== "undefined") {
+  self.SETTINGS_DEFAULTS = SETTINGS_DEFAULTS;
 }
 if (typeof module !== "undefined" && module.exports) {
   module.exports = SETTINGS_DEFAULTS;

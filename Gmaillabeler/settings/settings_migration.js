@@ -159,8 +159,8 @@ async function migrateToLatestSettings() {
   });
 }
 
-if (typeof window !== "undefined") {
-  window.migrateToLatestSettings = migrateToLatestSettings;
+if (typeof self !== "undefined") {
+  self.migrateToLatestSettings = migrateToLatestSettings;
 }
 if (typeof module !== "undefined" && module.exports) {
   module.exports = migrateToLatestSettings;

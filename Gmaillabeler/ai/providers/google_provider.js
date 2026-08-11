@@ -53,9 +53,9 @@ class GoogleProvider {
   }
 }
 
-if (typeof window !== "undefined") {
-  window.GoogleProvider = GoogleProvider;
-  if (window.AIProviderRegistry) {
-    window.AIProviderRegistry.register(new GoogleProvider());
+if (typeof self !== "undefined") {
+  self.GoogleProvider = GoogleProvider;
+  if (self.AIProviderRegistry) {
+    self.AIProviderRegistry.register(new GoogleProvider());
   }
 }

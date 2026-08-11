@@ -43,4 +43,4 @@ class AIProviderRegistry {
   }
 }
 
-if (typeof window !== "undefined") window.AIProviderRegistry = AIProviderRegistry;
+if (typeof self !== "undefined") self.AIProviderRegistry = AIProviderRegistry;

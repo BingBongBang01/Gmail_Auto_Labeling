@@ -136,8 +136,8 @@ const SETTINGS_SCHEMA = {
   }
 };
 
-if (typeof window !== "undefined") {
-  window.SETTINGS_SCHEMA = SETTINGS_SCHEMA;
+if (typeof self !== "undefined") {
+  self.SETTINGS_SCHEMA = SETTINGS_SCHEMA;
 }
 if (typeof module !== "undefined" && module.exports) {
   module.exports = SETTINGS_SCHEMA;

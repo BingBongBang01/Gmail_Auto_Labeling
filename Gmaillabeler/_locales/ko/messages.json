@@ -3131,5 +3131,47 @@
   },
   "aiConfirmDelete": {
     "message": "정말로 이 인증 정보를 삭제하시겠습니까?"
+  },
+  "optionsMenuCalendar": {
+    "message": "캘린더"
+  },
+  "calendarPanelDesc": {
+    "message": "캘린더 이벤트 분석 및 색상을 설정합니다."
+  },
+  "calendarAiSettings": {
+    "message": "캘린더 AI 설정"
+  },
+  "calendarEnableIntegration": {
+    "message": "캘린더 연동 사용"
+  },
+  "calendarEnableClassification": {
+    "message": "자동 분류 사용"
+  },
+  "calendarDateRange": {
+    "message": "분류 대상 기간"
+  },
+  "calendarRangeToday": {
+    "message": "오늘"
+  },
+  "calendarRangeWeek": {
+    "message": "이번 주"
+  },
+  "calendarRangeMonth": {
+    "message": "이번 달"
+  },
+  "calendarApplyColors": {
+    "message": "이벤트에 색상 적용"
+  },
+  "calendarCategoriesTitle": {
+    "message": "캘린더 AI 카테고리"
+  },
+  "calendarCategoriesDesc": {
+    "message": "AI 카테고리를 Google 캘린더 색상에 매핑합니다."
+  },
+  "calendarGenerateBtn": {
+    "message": "AI 카테고리 생성"
+  },
+  "calendarGeneratingStatus": {
+    "message": "생성 중입니다 (최대 1분 정도 소요)..."
   }
 }

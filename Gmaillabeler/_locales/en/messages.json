@@ -3131,5 +3131,47 @@
   },
   "aiConfirmDelete": {
     "message": "Are you sure you want to delete this credential?"
+  },
+  "optionsMenuCalendar": {
+    "message": "Calendar"
+  },
+  "calendarPanelDesc": {
+    "message": "Configure calendar event analysis and colors."
+  },
+  "calendarAiSettings": {
+    "message": "Calendar AI Settings"
+  },
+  "calendarEnableIntegration": {
+    "message": "Enable Calendar Integration"
+  },
+  "calendarEnableClassification": {
+    "message": "Enable Automatic Classification"
+  },
+  "calendarDateRange": {
+    "message": "Classification Date Range"
+  },
+  "calendarRangeToday": {
+    "message": "Today"
+  },
+  "calendarRangeWeek": {
+    "message": "This Week"
+  },
+  "calendarRangeMonth": {
+    "message": "This Month"
+  },
+  "calendarApplyColors": {
+    "message": "Apply Colors to Events"
+  },
+  "calendarCategoriesTitle": {
+    "message": "Calendar AI Categories"
+  },
+  "calendarCategoriesDesc": {
+    "message": "Map AI categories to Google Calendar colors."
+  },
+  "calendarGenerateBtn": {
+    "message": "Generate AI Categories"
+  },
+  "calendarGeneratingStatus": {
+    "message": "Generating (may take a minute)..."
   }
 }
