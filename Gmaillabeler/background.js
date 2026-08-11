@@ -307,12 +307,12 @@ function normalizeLabelName(name) {
 
 // 예전 버전은 API 키를 하나만 저장했는데, 이제는 여러 개를 등록해서 한 키의 일일 할당량이 다 차면
 // 자동으로 다음 키로 넘어가도록 한다(무료 티어 키 여러 개를 돌려쓰면 사실상 처리량이 늘어남).
-async function getGeminiApiKeys() {
+async function getActiveAiCredentials() {
   const credentials = await AIKeyManager.getActiveCredentials();
   return credentials.filter((c) => c && c.apiKey);
 }
 
-async function saveGeminiApiKeys(keys) {
+async function saveAiCredentials(keys) {
   await SettingsStore.setSetting("ai.credentials", keys);
 }
 
@@ -600,6 +600,10 @@ const BACKUP_SETTING_KEYS = [
   "lastLabelSummary",
   "criteriaScratchpad"
 ];
+// v1/v2 시절의 평면 storage key. v3 마이그레이션 이후에는 실제로 존재하지 않지만, 마이그레이션을
+// 아직 거치지 않은 아주 오래된 설치본을 위해 하위호환으로만 남겨둔다. 새 credential은
+// appSettings.ai.credentials / appSettings.google.oauth에 저장되며, 아래 processBackupToDrive에서
+// 이 값들을 직접 백업/복원한다.
 const BACKUP_CREDENTIAL_KEYS = ["geminiApiKeys", "oauthClientId", "oauthClientSecret"];
 
 async function findOrCreateDriveBackupFileId() {
@@ -643,12 +647,35 @@ async function findOrCreateDriveBackupFileId() {
 
 async function processBackupToDrive(includeCredentials, passphrase) {
   await addLog(t("logDriveBackupStart"));
-  const stored = await new Promise((resolve) => chrome.storage.local.get([...BACKUP_SETTING_KEYS, ...BACKUP_CREDENTIAL_KEYS], resolve));
+  const stored = await new Promise((resolve) =>
+    chrome.storage.local.get([...BACKUP_SETTING_KEYS, ...BACKUP_CREDENTIAL_KEYS, "appSettings"], resolve)
+  );
 
   const settings = {};
   const credentials = {};
   for (const key of BACKUP_SETTING_KEYS) if (key in stored) settings[key] = stored[key];
+  // 구버전(v1/v2) 하위호환용 평면 credential key. v3 마이그레이션이 끝난 설치본에는 존재하지 않는다.
   for (const key of BACKUP_CREDENTIAL_KEYS) if (key in stored) credentials[key] = stored[key];
+
+  // v3 중앙 설정(appSettings)에는 ai.credentials(API Key 포함)와 google.oauth(clientSecret 포함)처럼
+  // 민감한 정보가 함께 들어있다. 항상 백업되는 settings에는 민감 정보를 제거한 사본을 넣고,
+  // 실제 값은 includeCredentials가 켜졌을 때만 credentials 쪽(암호화 대상)에 담는다.
+  if (stored.appSettings) {
+    const appSettingsSnapshot = JSON.parse(JSON.stringify(stored.appSettings));
+    if (includeCredentials) {
+      credentials.appSettingsSecrets = {
+        aiCredentialApiKeys: (appSettingsSnapshot.ai?.credentials || []).map((c) => ({ id: c.id, apiKey: c.apiKey })),
+        oauthClientSecret: appSettingsSnapshot.google?.oauth?.clientSecret || ""
+      };
+    }
+    if (appSettingsSnapshot.ai?.credentials) {
+      appSettingsSnapshot.ai.credentials = appSettingsSnapshot.ai.credentials.map((c) => ({ ...c, apiKey: "" }));
+    }
+    if (appSettingsSnapshot.google?.oauth) {
+      appSettingsSnapshot.google.oauth = { ...appSettingsSnapshot.google.oauth, clientSecret: "" };
+    }
+    settings.appSettings = appSettingsSnapshot;
+  }
 
   const payload = {
     backupVersion: 2,
@@ -720,8 +747,25 @@ async function processRestoreFromDrive(passphrase) {
     } catch (e) {
       throw new Error(t("errBackupPassphraseWrong"));
     }
-    Object.assign(settings, credentials);
-    restoredCount += Object.keys(credentials).length;
+
+    // appSettingsSecrets는 appSettings 안에 도로 병합해야 하는 특수 항목이라 별도 처리한다.
+    const { appSettingsSecrets, ...flatCredentials } = credentials;
+    Object.assign(settings, flatCredentials);
+    restoredCount += Object.keys(flatCredentials).length;
+
+    if (appSettingsSecrets && settings.appSettings) {
+      const appSettings = settings.appSettings;
+      if (Array.isArray(appSettingsSecrets.aiCredentialApiKeys) && appSettings.ai?.credentials) {
+        const keyById = new Map(appSettingsSecrets.aiCredentialApiKeys.map((k) => [k.id, k.apiKey]));
+        appSettings.ai.credentials = appSettings.ai.credentials.map((c) =>
+          keyById.has(c.id) ? { ...c, apiKey: keyById.get(c.id) } : c
+        );
+      }
+      if (appSettingsSecrets.oauthClientSecret && appSettings.google?.oauth) {
+        appSettings.google.oauth.clientSecret = appSettingsSecrets.oauthClientSecret;
+      }
+      restoredCount += 1;
+    }
   }
 
   await chrome.storage.local.set(settings);
@@ -1028,7 +1072,7 @@ async function initGmailOnlyContext() {
 }
 
 async function initGeminiAndGmailContext() {
-  const apiKeys = await getGeminiApiKeys();
+  const apiKeys = await getActiveAiCredentials();
   if (!apiKeys.length) {
     throw new Error(t("errNoApiKey"));
   }
@@ -1852,7 +1896,7 @@ async function flushDeferredCategoryLearning() {
 async function applyLearnedCategoryDescription(pattern) {
   let requestConsumed = false;
   try {
-    const apiKeys = await getGeminiApiKeys();
+    const apiKeys = await getActiveAiCredentials();
     if (!apiKeys.length) return false;
 
     const exampleText = pattern.examples
@@ -3771,7 +3815,7 @@ async function checkAutoClassifyTrigger() {
   const threshold = Math.max(1, Math.min(BATCH_SIZE, parseInt(settings.automation.autoClassify.threshold, 10) || 1));
 
   try {
-    const apiKeys = await getGeminiApiKeys();
+    const apiKeys = await getActiveAiCredentials();
     if (!apiKeys.length) return; // API 키 없으면 자동 실행 안 함
 
     const categories = getCategoryNames(await getCategoryDefinitions());
@@ -3825,7 +3869,7 @@ async function checkAutoSummaryTrigger() {
   if (running) return;
 
   try {
-    const apiKeys = await getGeminiApiKeys();
+    const apiKeys = await getActiveAiCredentials();
     if (!apiKeys.length) return;
 
     const { token } = await initGmailOnlyContext();
@@ -4025,12 +4069,23 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         });
         const colorsData = await calendarColorsGet();
         const availableColors = colorsData.event || {};
-        const categories = await initializeCalendarCategoriesWithAI(events, availableColors, i18nCurrentLocale());
-        
+        const generated = await initializeCalendarCategoriesWithAI(events, availableColors, i18nCurrentLocale());
+
+        // 사용자가 직접 지정한 색상(colorSource === "user")은 이름이 같은 새 category가 생성되어도
+        // AI가 임의로 덮어쓰지 않는다.
         const settings = await SettingsStore.getSettings();
+        const existingByName = new Map((settings.calendar.categories || []).map((c) => [c.name, c]));
+        const categories = generated.map((c) => {
+          const existing = existingByName.get(c.name);
+          if (existing && existing.colorSource === "user") {
+            return { ...c, colorId: existing.colorId, colorSource: "user" };
+          }
+          return c;
+        });
+
         settings.calendar.categories = categories;
         await SettingsStore.setSetting('calendar.categories', categories);
-        
+
         return { total: categories.length, success: categories.length, failMessages: [], requestsUsed: 1, batchSize: 1, cancelled: false, quotaExhausted: false };
       }, "Generate Calendar Categories").then(res => sendResponse(res)).catch(e => sendResponse({ error: e.message }));
       return true;

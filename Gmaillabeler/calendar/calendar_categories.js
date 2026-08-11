@@ -59,29 +59,56 @@ Respond strictly in JSON format matching the following schema:
 }
 `;
 
-  const appSettings = await SettingsStore.getSettings();
-  const apiKeys = await getGeminiApiKeys();
-  const activeKeyObj = apiKeys.find(k => k.provider === "google") || apiKeys[0];
-  if (!activeKeyObj || !activeKeyObj.apiKey) throw new Error("No Gemini API Key available");
+  const schema = {
+    type: "object",
+    properties: {
+      categories: {
+        type: "array",
+        items: {
+          type: "object",
+          properties: {
+            name: { type: "string" },
+            criteria: { type: "string" },
+            colorId: { type: "string" },
+            priority: { type: "integer" },
+            enabled: { type: "boolean" }
+          },
+          required: ["name", "criteria", "colorId", "priority", "enabled"]
+        }
+      }
+    },
+    required: ["categories"]
+  };
 
-  const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${activeKeyObj.model || appSettings?.ai?.model || 'gemini-1.5-flash'}:generateContent?key=${activeKeyObj.apiKey}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      contents: [{ role: "user", parts: [{ text: prompt }] }],
-      generationConfig: { response_mime_type: "application/json" }
-    })
-  });
+  // Provider/모델/키 선택, retry, failover, quota는 전부 공통 AIRequestRouter가 담당한다.
+  // Calendar Category 생성 전용 fetch/Gemini 직접 호출은 두지 않는다.
+  const result = await AIRequestRouter.generateStructured(prompt, schema);
+  const validCategories = validateCalendarCategories(result?.categories, availableColors);
+  return deduplicateCalendarCategories(validCategories);
+}
 
-  if (!response.ok) throw new Error(`Gemini API Error: ${response.status}`);
-
-  const data = await response.json();
-  try {
-    const text = data.candidates[0].content.parts[0].text;
-    const parsed = JSON.parse(text);
-    return deduplicateCalendarCategories(parsed.categories || []);
-  } catch (e) {
-    console.error("Failed to parse Gemini response for Calendar Categories", e);
-    return [];
+/**
+ * AI가 생성한 카테고리를 실제 저장 가능한 형태로 검증/정규화한다.
+ * 유효하지 않은 항목(빈 이름, 허용되지 않는 colorId 등)은 버린다.
+ */
+function validateCalendarCategories(categories, availableColors) {
+  if (!Array.isArray(categories)) return [];
+  const allowedColorIds = new Set(Object.keys(availableColors || {}));
+  const validated = [];
+  for (const cat of categories) {
+    if (!cat || typeof cat.name !== "string" || !cat.name.trim()) continue;
+    if (typeof cat.criteria !== "string" || !cat.criteria.trim()) continue;
+    const colorId = String(cat.colorId ?? "");
+    if (allowedColorIds.size > 0 && !allowedColorIds.has(colorId)) continue;
+    const priority = Number.isInteger(cat.priority) && cat.priority > 0 ? cat.priority : validated.length + 1;
+    validated.push({
+      name: cat.name.trim(),
+      criteria: cat.criteria.trim(),
+      colorId,
+      priority,
+      enabled: cat.enabled !== false,
+      colorSource: "ai"
+    });
   }
+  return validated;
 }

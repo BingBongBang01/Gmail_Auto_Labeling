@@ -686,7 +686,7 @@ function loadDashboardRelabelOptions() {
 }
 
 // ---------------- 설정 탭 ----------------
-let dashApiKeys = []; // [{label, key}] - background.js가 기대하는 형식과 동일하게 유지
+let dashApiKeys = []; // [{label, key}] - 중앙 설정의 ai.credentials 중 provider "google" 항목과 매핑
 
 // 사용자가 원하는 만큼 추가하는 커스텀 Discord 웹훅.
 // background.js의 matchesCustomWebhookRule()이 읽는 필드 이름과 반드시 같아야 한다.
@@ -1285,12 +1285,32 @@ function initEvents() {
         alert(t("dashMsgNeedApiKey"));
         return;
       }
-      // background.js의 getGeminiApiKeys()가 기대하는 [{key, label}] 형식으로 저장
-      chrome.storage.local.set({ geminiApiKeys: validKeys, geminiApiKey: null }, () => {
+      // 중앙 설정(ai.credentials)에 provider "google" 항목으로 반영한다. 다른 provider(OpenAI/Anthropic)
+      // credential은 그대로 유지하고, google 항목만 여기서 입력한 키 목록으로 교체한다.
+      (async () => {
+        const settings = await SettingsStore.getSettings();
+        const existingCreds = settings.ai?.credentials || [];
+        const nonGoogleCreds = existingCreds.filter((c) => c.provider !== "google");
+        const existingGoogleCreds = existingCreds.filter((c) => c.provider === "google");
+        const basePriority = nonGoogleCreds.reduce((max, c) => Math.max(max, c.priority || 0), 0);
+        const googleCreds = validKeys.map((k, idx) => {
+          const prior = existingGoogleCreds[idx];
+          return {
+            id: (prior && prior.id) || `google-${Date.now()}-${idx}`,
+            provider: "google",
+            name: k.label || `Gemini ${idx + 1}`,
+            apiKey: k.key,
+            model: (prior && prior.model) || "gemini-1.5-flash",
+            enabled: true,
+            priority: basePriority + idx + 1,
+            status: "Ready"
+          };
+        });
+        await SettingsStore.setSetting("ai.credentials", [...nonGoogleCreds, ...googleCreds]);
         dashApiKeys = validKeys;
         renderApiKeyInputs();
         alert(t("dashMsgKeysSaved", [validKeys.length]));
-      });
+      })();
     });
   }
 
@@ -1442,6 +1462,14 @@ async function main() {
   i18nApplyToDom(document);
 
   initTheme();
+  // 중앙 설정(ai.credentials)의 google provider 항목을 불러와 API Key 입력란을 채운다.
+  if (typeof SettingsStore !== "undefined") {
+    SettingsStore.getSettings((settings) => {
+      const googleCreds = (settings.ai?.credentials || []).filter((c) => c.provider === "google");
+      dashApiKeys = googleCreds.map((c) => ({ label: c.name || "", key: c.apiKey || "" }));
+      renderApiKeyInputs();
+    });
+  }
   // 저장된 판정을 먼저 읽어야 요약 리포트의 피드백 버튼이 눌린 상태로 그려진다.
   loadSummaryFeedback();
   loadCategories();

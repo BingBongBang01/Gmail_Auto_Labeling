@@ -63,6 +63,35 @@ Gemini뿐만 아니라 OpenAI, Anthropic 등 다중 LLM을 지원하고 API 호�
 
 ---
 
+## 6. 통합 오류 수정 (AI Credential 일원화 / Calendar Router 우회 제거 / Failover 정책 정교화)
+
+README에 "완료"라고 적혀 있던 내용을 실제 코드 기준으로 재검증하여 발견한 구조적 불일치와 런타임 결함을 수정했습니다. 상세 내역은 커밋 로그를 참고하세요.
+
+*   **AI Credential 구조 일원화**: `popup.js`, `dashboard.js`가 여전히 구형 `ai.geminiApiKeys` / flat `geminiApiKeys` storage key를 읽고 쓰던 문제를 중앙 `ai.credentials` 구조로 통일했습니다. Popup은 이제 활성 Credential 수·Provider·모델·상태를 함께 표시합니다.
+*   **Calendar Category 생성이 AI Router를 완전히 우회하던 문제 수정**: `calendar_categories.js`가 Gemini API를 직접 `fetch()`하던 코드를 제거하고, Gmail 분류와 동일하게 `AIRequestRouter.generateStructured()`를 통해 Provider/모델 선택·재시도·Failover·Quota 정책을 공유하도록 했습니다. AI가 생성한 카테고리는 저장 전 스키마/허용 색상 검증을 거칩니다.
+*   **Failover 정책이 실제로 반영되지 않던 문제 수정**: `ai.requestPolicy`의 `retryEnabled`/`failoverEnabled`/`quotaAware`가 라우터 동작에 반영되지 않던 것을 고쳤습니다. Rate Limit은 이제 무조건 다음 키로 넘어가지 않고 우선 Retry-After만큼 대기 후 재시도하며, Credential별 재시도 횟수가 다음 Credential에 누적되지 않습니다.
+*   **오류 분류 정교화**: HTTP 429/400을 무조건 quota/API Key 오류로 단정하던 로직을 응답 본문의 명시적 신호를 우선 확인하도록 바꾸고, 400은 `invalid_request`로 분리해 정상 Credential이 잘못 비활성화되지 않게 했습니다.
+*   **Provider별 Structured Output 형식 차이 대응**: 저장소 전체가 공유하는 schema(Gemini 스타일 대문자 타입)를 OpenAI strict `json_schema`(표준 소문자 JSON Schema)로 자동 변환하는 정규화 로직을 추가했습니다. Anthropic 응답은 코드펜스/설명 텍스트가 섞여도 JSON을 추출할 수 있도록 파싱을 강화했습니다.
+*   **Quota 상태의 서비스 워커 재시작 대응**: 메모리에만 있던 Quota/Rate-limit 상태를 `chrome.storage.local`에도 최소 정보로 백업해, 서비스 워커가 재시작되어도 이미 소진된 Credential을 곧바로 재시도하지 않도록 했습니다.
+*   **Calendar Category 매칭 fallback 수정**: AI가 알 수 없는 카테고리명을 반환하면(과거엔 존재하지 않는 "기타" 카테고리를 하드코딩해서 항상 실패 처리) 이제 `unclassified`로 별도 집계하고, 존재하지 않는 카테고리를 만들어내지 않습니다. 실행 중 오류가 나도 이미 반영된 색상 변경분(부분 성공)은 그대로 결과에 남습니다.
+*   **사용자 지정 캘린더 색상 보호**: 사용자가 옵션 페이지에서 카테고리 색상을 직접 바꾸면 `colorSource: "user"`로 표시되고, 이후 AI로 카테고리를 다시 생성해도 그 색상은 덮어쓰지 않습니다.
+*   **Google Drive 백업/복원이 새 중앙 설정을 반영하지 않던 문제 수정**: v1/v2 시절 flat key만 백업하던 로직을 `appSettings`(ai.credentials, google.oauth 포함) 전체를 백업하도록 확장했습니다. API Key/Client Secret 등 민감 정보는 기본 백업본에서는 제거되고, "자격 증명 포함" 옵션을 켰을 때만 암호화 대상에 포함됩니다.
+*   **문구 수정**: 언어 선택 드롭다운에서 "System Default" 항목을 제거했습니다(언어는 4개 지원 언어 중 하나로 저장되며, 마이그레이션/최초 설치 시 브라우저 언어로 자동 결정됩니다). "Client Secret (Optional)"을 "Client Secret"으로 수정했습니다.
+
+### 알려진 제한 사항 (Known Limitations)
+
+다음 항목은 이번 수정에서 다루지 않았으며, 실제 코드가 아직 요구사항을 완전히 만족하지 못합니다. 향후 별도 작업이 필요합니다.
+
+*   **모델 목록 동적 조회 미구현**: `AIProviderRegistry.SUPPORTED_MODELS`는 여전히 정적 하드코딩 목록입니다. Provider별 `listModels(apiKey)` 같은 동적 조회는 구현되지 않았습니다.
+*   **Gmail 분류 배치/스로틀링이 Gemini 전용 상수에 고정**: `background.js`의 `GEMINI_RPM_LIMIT` 등은 여전히 전역 상수로 배치 크기와 호출 간격을 계산합니다. 여러 Provider별로 다른 rate limit을 반영하려면 이 계산을 Provider metadata 기반으로 재설계해야 하는데, 기존 Gmail 자동 분류 동작을 깨뜨릴 위험이 커서 이번 작업 범위에서 제외했습니다.
+*   **Side Panel 자동 활성화/비활성화 로직 미검증**: Gmail 탭 감지, SPA 라우팅 대응, `chrome.sidePanel` API 제약 준수 여부는 이번에 별도로 검토하지 않았습니다.
+*   **Calendar PATCH 동시성/백오프 미구현**: 이벤트별 색상 PATCH는 여전히 순차 처리이며, 429/5xx에 대한 재시도·동시성 제한은 추가하지 않았습니다.
+*   **Options 섹션별 오류 격리(safeInit) 미구현**: 특정 탭 초기화 중 예외가 나면 이후 탭 초기화가 중단될 수 있는 구조가 그대로 남아 있습니다.
+*   **API Key 저장 시 암호화 미적용**: `ai.credentials[].apiKey`는 여전히 평문으로 `chrome.storage.local`에 저장됩니다.
+*   **실제 Chrome 수동 테스트 미실행**: 이 저장소는 정적 코드 검증(`node --check`, i18n 키 대조)만 수행했으며, 실제 Chrome에 로드해 Settings/AI/Calendar/Side Panel/Popup 전체 시나리오를 수동으로 확인하지 못했습니다. 배포 전 최소한 아래 절차로 수동 검증이 필요합니다: Options의 모든 탭 클릭, 4개 언어 전환, Gemini/OpenAI/Anthropic 각각 키 등록 후 분류 1회 실행, 우선순위 다른 Credential 2개로 Failover 확인, Calendar Category 생성 및 색상 적용, Popup 상태 표시 확인.
+
+---
+
 ## 향후 작업 (Next Steps)
 
 현재 백엔드 및 핵심 인프라 공사는 성공적으로 완료되었으며, 향후 다음과 같은 기능들을 추가로 작업할 수 있는 기반이 마련되어 있습니다.

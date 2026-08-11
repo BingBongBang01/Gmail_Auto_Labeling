@@ -12,6 +12,7 @@ async function runCalendarClassification({ calendarId, startDate, endDate, overw
     skipped: 0,
     updatedColors: 0,
     unchanged: 0,
+    unclassified: 0,
     failed: 0
   };
 
@@ -44,12 +45,14 @@ async function runCalendarClassification({ calendarId, startDate, endDate, overw
         const event = chunk.find(e => e.id === res.eventId);
         if (!event) continue;
 
-        const category = categories.find(c => c.name === res.category);
+        const category = resolveCalendarCategory(res.category, categories);
         if (!category) {
-          calendarClassificationResult.failed++;
+          // 존재하지 않는 category 이름을 만들어내지 않는다. 매칭되는 category가 전혀 없으면
+          // "실패"가 아니라 "미분류"로 남긴다(사용자가 category를 새로 만들거나 나중에 재분류할 수 있음).
+          calendarClassificationResult.unclassified++;
           continue;
         }
-        
+
         calendarClassificationResult.classified++;
 
         if (!category.enabled) {
@@ -95,6 +98,26 @@ async function runCalendarClassification({ calendarId, startDate, endDate, overw
 
   } catch (error) {
     console.error("Calendar Engine Error:", error);
-    throw error;
+    // 이미 PATCH가 끝난 이벤트들은 Google Calendar에 실제로 반영된 상태이므로(배치별 즉시 적용),
+    // 여기서 rethrow만 하면 "지금까지 완료된 항목"의 집계 결과가 호출자에게 전달되지 않는다.
+    // quota 소진 등으로 중단되더라도 지금까지의 결과는 그대로 반환한다.
+    calendarClassificationResult.error = error.message || String(error);
+    return calendarClassificationResult;
   }
+}
+
+/**
+ * AI가 반환한 category 이름으로 실제 저장된 category를 찾는다.
+ * 정확히 일치하는 게 없다고 해서 존재하지 않는 category("기타" 등)를 임의로 만들어내지 않는다.
+ * 1) 이름이 정확히 일치하는 활성 category
+ * 2) 그것도 없으면, 명시적으로 fallback으로 지정된 활성 category
+ * 3) 그것도 없으면 null (해당 이벤트는 "미분류"로 남긴다)
+ */
+function resolveCalendarCategory(categoryName, categories) {
+  if (!categoryName) return null;
+  const exact = categories.find(c => c.name === categoryName && c.enabled !== false);
+  if (exact) return exact;
+  const fallback = categories.find(c => c.fallback === true && c.enabled !== false);
+  if (fallback) return fallback;
+  return null;
 }

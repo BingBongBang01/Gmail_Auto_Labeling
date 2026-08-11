@@ -1,5 +1,30 @@
 // ai/providers/anthropic_provider.js
 
+// Claude는 markdown 코드펜스나 앞뒤 설명을 함께 출력하는 경우가 있어, 순수 JSON.parse()만으로는
+// 부서지기 쉽다. 코드펜스를 벗겨내고, 그래도 실패하면 첫 '{'~마지막 '}' 구간만 다시 추출해 재시도한다.
+function parseJsonFromModelText(rawText) {
+  let text = rawText.trim();
+
+  const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
+  if (fenced) text = fenced[1].trim();
+
+  try {
+    return JSON.parse(text);
+  } catch (e) {
+    // 앞뒤에 설명 문장이 섞여 있거나 응답이 중간에 잘린 경우, 가장 바깥 JSON 객체 구간만 추출해본다.
+    const start = text.indexOf("{");
+    const end = text.lastIndexOf("}");
+    if (start !== -1 && end !== -1 && end > start) {
+      try {
+        return JSON.parse(text.slice(start, end + 1));
+      } catch (e2) {
+        // fall through
+      }
+    }
+    throw new Error(`Failed to parse JSON from Anthropic response: ${e.message}`);
+  }
+}
+
 class AnthropicProvider {
   id = "anthropic";
   name = "Anthropic Claude";
@@ -44,15 +69,12 @@ ${JSON.stringify(schema)}
       throw new Error("No content returned from Anthropic");
     }
 
-    let text = data.content[0].text;
-    
-    // Clean up potential markdown formatting if the model disobeys
-    text = text.trim();
-    if (text.startsWith("```json")) text = text.substring(7);
-    if (text.startsWith("```")) text = text.substring(3);
-    if (text.endsWith("```")) text = text.substring(0, text.length - 3);
-    
-    return JSON.parse(text.trim());
+    const text = data.content[0]?.text;
+    if (!text || !text.trim()) {
+      throw new Error("Empty response text from Anthropic");
+    }
+
+    return parseJsonFromModelText(text);
   }
 
   normalizeError(error) {

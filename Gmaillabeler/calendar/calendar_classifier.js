@@ -2,7 +2,9 @@
 
 async function classifyCalendarEventsWithAI(events, categories, currentLocale) {
   if (!events || events.length === 0) return [];
-  if (!categories || categories.length === 0) return events.map(e => ({ eventId: e.id, category: "기타", confidence: "low" }));
+  // category가 하나도 설정되어 있지 않으면 AI를 호출할 이유가 없다. 존재하지 않는 category 이름을
+  // 임의로 만들어내지 않고(예: "기타"), null로 남겨 호출자가 "미분류"로 처리하게 한다.
+  if (!categories || categories.length === 0) return events.map(e => ({ eventId: e.id, category: null, confidence: "low" }));
 
   // Format categories for prompt
   const categoryContext = categories.filter(c => c.enabled).map(c => `- ${c.name}: ${c.criteria}`).join("\n");
