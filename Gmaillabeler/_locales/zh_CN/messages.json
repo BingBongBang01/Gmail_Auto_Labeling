@@ -3173,5 +3173,74 @@
   },
   "calendarGeneratingStatus": {
     "message": "正在生成（最多可能需要一分钟）..."
+  },
+  "navGeneral": {
+    "message": "常规"
+  },
+  "navConnections": {
+    "message": "账户与连接"
+  },
+  "navGmail": {
+    "message": "Gmail"
+  },
+  "navAi": {
+    "message": "AI"
+  },
+  "navAutomation": {
+    "message": "自动化"
+  },
+  "navNotifications": {
+    "message": "通知"
+  },
+  "navDataBackup": {
+    "message": "数据与备份"
+  },
+  "navAdvanced": {
+    "message": "高级"
+  },
+  "connGoogleAccountTitle": {
+    "message": "Google 账户"
+  },
+  "connOauthConfigTitle": {
+    "message": "Google OAuth 配置"
+  },
+  "gmailClassificationTitle": {
+    "message": "分类设置"
+  },
+  "gmailCategoriesTitle": {
+    "message": "分类"
+  },
+  "gmailImportanceCriteriaTitle": {
+    "message": "重要性标准"
+  },
+  "gmailPersonalizationTitle": {
+    "message": "个性化"
+  },
+  "gmailFilterRulesTitle": {
+    "message": "过滤规则"
+  },
+  "gmailMailFetchingTitle": {
+    "message": "邮件抓取与学习"
+  },
+  "autoGmailClassificationTitle": {
+    "message": "Gmail 自动分类"
+  },
+  "autoSummaryTitle": {
+    "message": "自动摘要"
+  },
+  "notifDiscordTitle": {
+    "message": "Discord 通知"
+  },
+  "dataLocalTitle": {
+    "message": "本地数据"
+  },
+  "dataDriveSyncTitle": {
+    "message": "Google Drive 同步"
+  },
+  "advDebuggingTitle": {
+    "message": "调试"
+  },
+  "advDangerZoneTitle": {
+    "message": "危险区域"
   }
 }

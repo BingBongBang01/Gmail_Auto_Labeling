@@ -49,18 +49,29 @@ async function migrateToLatestSettings() {
       migratedSettings.ai.credentials = [];
       let priorityCounter = 1;
 
+      // Provider의 등록된(존재하는) 모델 중 첫 번째를 검증된 fallback으로 사용한다.
+      // "${providerId}-default-model" 같은 존재하지 않는 모델 ID를 임의로 만들어내지 않는다.
+      function validatedFallbackModel(providerId) {
+        const knownModels = (typeof AIProviderRegistry !== "undefined" && AIProviderRegistry.SUPPORTED_MODELS?.[providerId]) || [];
+        return knownModels[0]?.id || null;
+      }
+
       // Try migrating from v2 providers structure
       if (existing.ai?.providers) {
         Object.keys(existing.ai.providers).forEach(providerId => {
           const provider = existing.ai.providers[providerId];
           if (provider.apiKeys && Array.isArray(provider.apiKeys)) {
             provider.apiKeys.forEach(k => {
+              const knownModels = (typeof AIProviderRegistry !== "undefined" && AIProviderRegistry.SUPPORTED_MODELS?.[providerId]) || [];
+              const isKnownModel = provider.selectedModel && knownModels.some(m => m.id === provider.selectedModel);
+              const model = isKnownModel ? provider.selectedModel : validatedFallbackModel(providerId);
               migratedSettings.ai.credentials.push({
                 id: k.id || (crypto.randomUUID ? crypto.randomUUID() : Math.random().toString()),
                 provider: providerId,
                 name: k.label || k.name || `Migrated ${providerId} Key`,
                 apiKey: k.key || k.apiKey,
-                model: provider.selectedModel || `${providerId}-default-model`,
+                model,
+                modelNeedsSelection: !model,
                 enabled: k.enabled !== false,
                 priority: priorityCounter++,
                 status: "Ready"

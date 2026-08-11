@@ -1,5 +1,27 @@
 // ai/providers/google_provider.js
 
+// 저장소 여기저기서 schema를 표준 JSON Schema(소문자 "object"/"string"/"array")로 만드는 곳과
+// Gemini 방식(대문자 "OBJECT"/"STRING"/"ARRAY")으로 만드는 곳이 섞여 있다. Gemini REST API의
+// responseSchema는 대문자 enum을 기대하므로, 어느 쪽으로 오든 여기서 대문자로 정규화해 보낸다.
+function normalizeSchemaForGemini(schema) {
+  if (!schema || typeof schema !== "object") return schema;
+  if (Array.isArray(schema)) return schema.map(normalizeSchemaForGemini);
+
+  const out = { ...schema };
+  if (typeof out.type === "string") out.type = out.type.toUpperCase();
+
+  if (out.properties && typeof out.properties === "object") {
+    const props = {};
+    for (const key of Object.keys(out.properties)) {
+      props[key] = normalizeSchemaForGemini(out.properties[key]);
+    }
+    out.properties = props;
+  }
+  if (out.items) out.items = normalizeSchemaForGemini(out.items);
+
+  return out;
+}
+
 class GoogleProvider {
   id = "google";
   name = "Google Gemini";
@@ -10,7 +32,7 @@ class GoogleProvider {
       contents: [{ role: "user", parts: [{ text: prompt }] }],
       generationConfig: {
         responseMimeType: "application/json",
-        responseSchema: schema
+        responseSchema: normalizeSchemaForGemini(schema)
       }
     };
 

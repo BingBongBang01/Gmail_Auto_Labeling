@@ -3173,5 +3173,74 @@
   },
   "calendarGeneratingStatus": {
     "message": "生成中です（最大1分程度かかります）..."
+  },
+  "navGeneral": {
+    "message": "一般"
+  },
+  "navConnections": {
+    "message": "アカウントと連携"
+  },
+  "navGmail": {
+    "message": "Gmail"
+  },
+  "navAi": {
+    "message": "AI"
+  },
+  "navAutomation": {
+    "message": "自動化"
+  },
+  "navNotifications": {
+    "message": "通知"
+  },
+  "navDataBackup": {
+    "message": "データとバックアップ"
+  },
+  "navAdvanced": {
+    "message": "詳細設定"
+  },
+  "connGoogleAccountTitle": {
+    "message": "Googleアカウント"
+  },
+  "connOauthConfigTitle": {
+    "message": "Google OAuth設定"
+  },
+  "gmailClassificationTitle": {
+    "message": "分類設定"
+  },
+  "gmailCategoriesTitle": {
+    "message": "カテゴリ"
+  },
+  "gmailImportanceCriteriaTitle": {
+    "message": "重要度基準"
+  },
+  "gmailPersonalizationTitle": {
+    "message": "パーソナライズ"
+  },
+  "gmailFilterRulesTitle": {
+    "message": "フィルタルール"
+  },
+  "gmailMailFetchingTitle": {
+    "message": "メール取得と学習"
+  },
+  "autoGmailClassificationTitle": {
+    "message": "Gmail自動分類"
+  },
+  "autoSummaryTitle": {
+    "message": "自動要約"
+  },
+  "notifDiscordTitle": {
+    "message": "Discord通知"
+  },
+  "dataLocalTitle": {
+    "message": "ローカルデータ"
+  },
+  "dataDriveSyncTitle": {
+    "message": "Google Drive同期"
+  },
+  "advDebuggingTitle": {
+    "message": "デバッグ"
+  },
+  "advDangerZoneTitle": {
+    "message": "危険な操作"
   }
 }

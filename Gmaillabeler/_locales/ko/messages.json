@@ -3173,5 +3173,74 @@
   },
   "calendarGeneratingStatus": {
     "message": "생성 중입니다 (최대 1분 정도 소요)..."
+  },
+  "navGeneral": {
+    "message": "일반"
+  },
+  "navConnections": {
+    "message": "계정 및 연결"
+  },
+  "navGmail": {
+    "message": "Gmail"
+  },
+  "navAi": {
+    "message": "AI"
+  },
+  "navAutomation": {
+    "message": "자동화"
+  },
+  "navNotifications": {
+    "message": "알림"
+  },
+  "navDataBackup": {
+    "message": "데이터 및 백업"
+  },
+  "navAdvanced": {
+    "message": "고급"
+  },
+  "connGoogleAccountTitle": {
+    "message": "Google 계정"
+  },
+  "connOauthConfigTitle": {
+    "message": "Google OAuth 설정"
+  },
+  "gmailClassificationTitle": {
+    "message": "분류 설정"
+  },
+  "gmailCategoriesTitle": {
+    "message": "카테고리"
+  },
+  "gmailImportanceCriteriaTitle": {
+    "message": "중요도 기준"
+  },
+  "gmailPersonalizationTitle": {
+    "message": "개인화"
+  },
+  "gmailFilterRulesTitle": {
+    "message": "필터 규칙"
+  },
+  "gmailMailFetchingTitle": {
+    "message": "메일 수집 및 학습"
+  },
+  "autoGmailClassificationTitle": {
+    "message": "Gmail 자동 분류"
+  },
+  "autoSummaryTitle": {
+    "message": "자동 요약"
+  },
+  "notifDiscordTitle": {
+    "message": "Discord 알림"
+  },
+  "dataLocalTitle": {
+    "message": "로컬 데이터"
+  },
+  "dataDriveSyncTitle": {
+    "message": "Google Drive 동기화"
+  },
+  "advDebuggingTitle": {
+    "message": "디버깅"
+  },
+  "advDangerZoneTitle": {
+    "message": "위험 구역"
   }
 }

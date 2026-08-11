@@ -108,8 +108,11 @@ try {
 
 // 파이프라인: 인증 -> 메일 수집 -> (배치 단위) AI 분석(필요시 신규 카테고리 생성) -> 라벨 확인/생성 -> 라벨 즉시 적용(배타적) -> 진행도/로그 기록
 
-const GEMINI_MODEL = "gemini-3.1-flash-lite";
-
+// 이하 GEMINI_* 상수는 AIRequestRouter 도입 이전, Gemini 단일 Provider 시절의 배치 크기/호출 간격
+// 계산에 여전히 쓰인다(BATCH_SIZE, MIN_CALL_INTERVAL_MS). Provider별로 다른 rate limit을 반영하려면
+// 이 계산을 Provider capability 기반으로 재설계해야 하지만, 기존 Gmail 자동 분류 동작을 깨뜨릴
+// 위험이 있어 이번 단계에서는 유지한다(README "알려진 제한 사항" 참고). 실제로 쓰이지 않던
+// GEMINI_MODEL 상수만 제거했다.
 const GEMINI_RPM_LIMIT = 15;
 const GEMINI_TPM_LIMIT = 250000;
 const GEMINI_RPD_LIMIT = 500;
@@ -123,9 +126,9 @@ const BATCH_SIZE = Math.max(
 );
 
 const MIN_CALL_INTERVAL_MS = Math.ceil(60000 / GEMINI_RPM_LIMIT) + 200;
-// 네트워크가 연결된 채 응답을 돌려주지 않는 경우가 있어, 작업이 영구히 running
-// 상태로 남지 않도록 Gemini 요청의 상한을 둔다.
-const GEMINI_REQUEST_TIMEOUT_MS = 60000;
+// (예전에 선언되어 있던 GEMINI_REQUEST_TIMEOUT_MS는 실제로 어떤 fetch에도 연결되어 있지 않던
+// 죽은 상수였다. AI Provider들의 fetch() 호출에는 여전히 명시적 timeout/AbortController가 없어서,
+// 네트워크가 응답을 영영 안 주는 경우 요청이 무기한 대기할 수 있다 - 알려진 제한 사항으로 남긴다.)
 const MAX_BATCH_COUNT_PER_RUN = 50; // UI 상 설정 가능한 상한. 실제 안전 제한은 computeSafeEmailCount()가 그날 남은 RPD 추정치로 별도 수행
 const MAX_EMAIL_COUNT_PER_RUN = BATCH_SIZE * MAX_BATCH_COUNT_PER_RUN;
 const MAX_MESSAGES_PER_LABEL_FETCH = 1000; // 라벨 하나에서 메일을 조회할 때 한 번에 가져올 상한 (전체 재작업/라벨 정리용)
@@ -174,9 +177,9 @@ function sleep(ms) {
 // 사용자당 초당 할당량(250 quota units/s, messages.get = 5 units) 안에서 안전한 수준으로만 동시에 보낸다.
 const GMAIL_FETCH_CONCURRENCY = 8;
 
-// Gemini 분류 배치를 몇 개까지 겹쳐서 진행할지.
-// 분당 요청 수 상한은 throttleGeminiCall()이 따로 지키므로, 이 값은 "응답 대기 시간을 얼마나
-// 겹쳐서 감출지"만 결정한다(값을 올려도 RPM을 더 쓰지는 않는다).
+// AI 분류 배치를 몇 개까지 겹쳐서 진행할지.
+// RPM 상한은 AIRequestRouter/AIQuotaManager가 오류 발생 시 반응적으로 관리하므로, 이 값은
+// "응답 대기 시간을 얼마나 겹쳐서 감출지"만 결정한다.
 const GEMINI_BATCH_CONCURRENCY = 3;
 
 // items를 최대 concurrency개씩 동시에 worker에 넘긴다. 결과는 입력 순서를 그대로 유지한다.
@@ -1215,12 +1218,9 @@ async function applyLabelExclusive(token, detail, newLabel, allCategories, label
   return removeLabelIds.length > 0;
 }
 
-let lastGeminiCallAt = 0;
-let currentCallIntervalMs = MIN_CALL_INTERVAL_MS; // 429를 맞으면 늘어나고, 성공이 이어지면 서서히 기본값으로 회복됨
-const MAX_CALL_INTERVAL_MS = MIN_CALL_INTERVAL_MS * 6; // 무한정 늘어나지 않도록 상한
-const INTERVAL_BACKOFF_MULTIPLIER = 1.6;
-const INTERVAL_RECOVERY_MULTIPLIER = 0.92;
-const DAILY_QUOTA_TEXT_PATTERN = /(per\s*day|daily|quota[^"]*day)/i;
+// (예전에는 여기서 lastGeminiCallAt/currentCallIntervalMs로 호출 간 간격을 직접 조절하는
+// 선제적 스로틀을 구현했으나, 실제로는 어디서도 참조되지 않는 죽은 코드였다. Rate limit 대응은
+// 이제 AIRequestRouter -> AIFailoverManager -> AIQuotaManager가 오류 발생 시 반응적으로 처리한다.)
 
 // RPM 슬롯 확보는 반드시 한 번에 하나씩 순서대로 이뤄져야 한다.
 // ---------------- AI Provider Migration Adapter ----------------
@@ -1247,7 +1247,7 @@ async function getQuotaUsage() {
   };
 }
 
-async function callGeminiForJson(requestBody) {
+async function callAiForJson(requestBody) {
   const prompt = requestBody.contents[0].parts[0].text;
   const schema = requestBody.generationConfig?.responseSchema;
   return await AIRequestRouter.generateStructured(prompt, schema);
@@ -1298,7 +1298,7 @@ async function classifyTopLevelBatch(items, categoryDefs, correctionHint) {
     },
   };
 
-  const parsedArray = await callGeminiForJson(requestBody);
+  const parsedArray = await callAiForJson(requestBody);
   if (!Array.isArray(parsedArray)) throw new Error(t("errGeminiNotArray"));
   return parsedArray.filter((e) => typeof e.idx === "number" && e.labelName);
 }
@@ -1924,7 +1924,7 @@ async function applyLearnedCategoryDescription(pattern) {
       },
     };
 
-    const result = await callGeminiForJson(requestBody);
+    const result = await callAiForJson(requestBody);
     requestConsumed = true;
     const newNote = (result && result.description && result.description.trim()) || "";
     if (!newNote) return requestConsumed;
@@ -1990,7 +1990,7 @@ async function processTranslateCategories(targetLocale) {
     },
   };
 
-  const result = await callGeminiForJson(requestBody);
+  const result = await callAiForJson(requestBody);
   if (!Array.isArray(result) || !result.length) throw new Error(t("errTranslateNoResult"));
 
   const translatedDefs = categoryDefs.map((c, i) => {
@@ -2135,7 +2135,7 @@ async function analyzeOneLabelCriteria(token, categoryDefs, labelName) {
     },
   };
 
-  const result = await callGeminiForJson(requestBody);
+  const result = await callAiForJson(requestBody);
   const suggestion = (result && result.description && result.description.trim()) || "";
   if (!suggestion) throw new Error(t("errAnalysisNoSuggestion"));
 
@@ -2292,7 +2292,7 @@ async function generateSummaryCriteriaWithAI(labelName, sampleCount) {
     },
   };
 
-  const parsed = await callGeminiForJson(requestBody);
+  const parsed = await callAiForJson(requestBody);
   await addLog(`[기준 생성] 메일 ${details.length}건을 근거로 요약 판단 기준 초안을 만들었습니다.`);
 
   return {
@@ -2383,7 +2383,7 @@ async function learnFromSummaryFeedback() {
     },
   };
 
-  const parsed = await callGeminiForJson(requestBody);
+  const parsed = await callAiForJson(requestBody);
 
   const updated = {
     lastSummaryCriteria: parsed.filterCriteria || stored.lastSummaryCriteria || "",
@@ -2582,7 +2582,7 @@ async function processSummarizeLabelEmails(labelName, maxEmails, filterCriteria)
     },
   };
 
-  const parsedResult = await callGeminiForJson(requestBody);
+  const parsedResult = await callAiForJson(requestBody);
 
   // 커스텀 웹훅의 '분류(라벨) 조건'이 쓸 수 있도록, 각 메일이 실제로 달고 있는 라벨 이름을 함께 담는다.
   // (라벨 ID는 그대로 두면 사람이 읽을 수 없으므로 목록을 한 번 받아 이름으로 바꾼다)
@@ -3200,8 +3200,7 @@ async function classifyAndLabelMessages(token, categoryDefs, labelCache, message
   if (excludeLabel) await addLog(t("logSplitModeExclude", [excludeLabel]));
   await reportProgress(1, 3);
 
-  // 배치끼리는 서로 의존하지 않으므로 겹쳐서 보낸다.
-  // RPM 상한은 throttleGeminiCall()이 지키고, 이렇게 하면 앞 요청의 응답 대기 시간 동안
+  // 배치끼리는 서로 의존하지 않으므로 겹쳐서 보낸다. 이렇게 하면 앞 요청의 응답 대기 시간 동안
   // 다음 요청이 출발해서 "간격 + 응답지연"이 배치마다 누적되던 것을 없앨 수 있다.
   let stopClassifying = false;
   let fatalClassifyError = null;

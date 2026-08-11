@@ -12,6 +12,11 @@ class AIQuotaManager {
   static _restored = false;
   static _restorePromise = null;
 
+  // 공개 진입점: 호출부(Router 등)는 quota를 판단하기 전에 반드시 이걸 await해야 한다.
+  static async initialize() {
+    return this._restoreFromStorage();
+  }
+
   static async _restoreFromStorage() {
     if (this._restored) return;
     if (!this._restorePromise) {
@@ -64,10 +69,9 @@ class AIQuotaManager {
     this._persist();
   }
 
-  static isAvailable(keyId) {
-    // 복원이 아직 끝나지 않았을 수 있지만(비동기), 이 메서드는 라우터 루프에서 동기적으로 호출되므로
-    // 최선을 다해 이미 로드된 상태만 확인한다. 백그라운드에서 복원을 트리거해둔다.
-    if (!this._restored) this._restoreFromStorage();
+  static async isAvailable(keyId) {
+    // storage 복원이 끝나기 전에는 판단하지 않는다(서비스 워커 재시작 직후 race 방지).
+    await this._restoreFromStorage();
 
     const q = this.quotaMap.get(keyId);
     if (!q) return true;

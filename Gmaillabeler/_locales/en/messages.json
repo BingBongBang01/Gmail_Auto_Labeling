@@ -3173,5 +3173,74 @@
   },
   "calendarGeneratingStatus": {
     "message": "Generating (may take a minute)..."
+  },
+  "navGeneral": {
+    "message": "General"
+  },
+  "navConnections": {
+    "message": "Account & Connections"
+  },
+  "navGmail": {
+    "message": "Gmail"
+  },
+  "navAi": {
+    "message": "AI"
+  },
+  "navAutomation": {
+    "message": "Automation"
+  },
+  "navNotifications": {
+    "message": "Notifications"
+  },
+  "navDataBackup": {
+    "message": "Data & Backup"
+  },
+  "navAdvanced": {
+    "message": "Advanced"
+  },
+  "connGoogleAccountTitle": {
+    "message": "Google Account"
+  },
+  "connOauthConfigTitle": {
+    "message": "Google OAuth Configuration"
+  },
+  "gmailClassificationTitle": {
+    "message": "Classification Settings"
+  },
+  "gmailCategoriesTitle": {
+    "message": "Categories"
+  },
+  "gmailImportanceCriteriaTitle": {
+    "message": "Importance Criteria"
+  },
+  "gmailPersonalizationTitle": {
+    "message": "Personalization"
+  },
+  "gmailFilterRulesTitle": {
+    "message": "Filter Rules"
+  },
+  "gmailMailFetchingTitle": {
+    "message": "Mail Fetching & Learning"
+  },
+  "autoGmailClassificationTitle": {
+    "message": "Automatic Gmail Classification"
+  },
+  "autoSummaryTitle": {
+    "message": "Automatic Summary"
+  },
+  "notifDiscordTitle": {
+    "message": "Discord Notifications"
+  },
+  "dataLocalTitle": {
+    "message": "Local Data"
+  },
+  "dataDriveSyncTitle": {
+    "message": "Google Drive Sync"
+  },
+  "advDebuggingTitle": {
+    "message": "Debugging"
+  },
+  "advDangerZoneTitle": {
+    "message": "Danger Zone"
   }
 }

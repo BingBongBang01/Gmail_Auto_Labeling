@@ -28,15 +28,15 @@
       </div>
 
       <ul class="nav-menu" id="navMenu">
-        <li><button class="nav-item active" data-target="panel-general">General</button></li>
-        <li><button class="nav-item" data-target="panel-connections">Account & Connections</button></li>
-        <li><button class="nav-item" data-target="panel-gmail">Gmail</button></li>
-        <li><button class="nav-item" data-target="panel-calendar">Calendar</button></li>
-        <li><button class="nav-item" data-target="panel-ai">AI</button></li>
-        <li><button class="nav-item" data-target="panel-automation">Automation</button></li>
-        <li><button class="nav-item" data-target="panel-notifications">Notifications</button></li>
-        <li><button class="nav-item" data-target="panel-data">Data & Backup</button></li>
-        <li><button class="nav-item" data-target="panel-advanced">Advanced</button></li>
+        <li><button class="nav-item active" data-target="panel-general" data-i18n="navGeneral">General</button></li>
+        <li><button class="nav-item" data-target="panel-connections" data-i18n="navConnections">Account & Connections</button></li>
+        <li><button class="nav-item" data-target="panel-gmail" data-i18n="navGmail">Gmail</button></li>
+        <li><button class="nav-item" data-target="panel-calendar" data-i18n="optionsMenuCalendar">Calendar</button></li>
+        <li><button class="nav-item" data-target="panel-ai" data-i18n="navAi">AI</button></li>
+        <li><button class="nav-item" data-target="panel-automation" data-i18n="navAutomation">Automation</button></li>
+        <li><button class="nav-item" data-target="panel-notifications" data-i18n="navNotifications">Notifications</button></li>
+        <li><button class="nav-item" data-target="panel-data" data-i18n="navDataBackup">Data & Backup</button></li>
+        <li><button class="nav-item" data-target="panel-advanced" data-i18n="navAdvanced">Advanced</button></li>
       </ul>
     </nav>
 
@@ -89,12 +89,12 @@
       <!-- Connections Panel -->
       <section id="panel-connections" class="tab-panel">
         <div class="panel-header">
-          <h1 class="headline-small">Account & Connections</h1>
+          <h1 class="headline-small" data-i18n="navConnections">Account & Connections</h1>
           <p class="body-medium" style="color:var(--md-sys-color-on-surface-variant);">Connect to Google and Gemini.</p>
         </div>
         
         <div class="card">
-          <h3 class="title-medium" style="margin-bottom:8px;">Google Account</h3>
+          <h3 class="title-medium" style="margin-bottom:8px;" data-i18n="connGoogleAccountTitle">Google Account</h3>
           <div class="status-box" id="googleAccountStatus">
             <!-- Dynamically populated -->
             Checking status...
@@ -106,7 +106,7 @@
         </div>
 
         <div class="card">
-          <h3 class="title-medium" style="margin-bottom:8px;">Google OAuth Configuration</h3>
+          <h3 class="title-medium" style="margin-bottom:8px;" data-i18n="connOauthConfigTitle">Google OAuth Configuration</h3>
           <div class="form-row">
             <label class="body-medium" style="flex:1;">Client ID</label>
             <input type="text" id="inputOAuthClientId" class="form-input" style="flex:2;" placeholder="Enter Client ID">
@@ -123,12 +123,12 @@
       <!-- Gmail Panel -->
       <section id="panel-gmail" class="tab-panel">
         <div class="panel-header">
-          <h1 class="headline-small">Gmail</h1>
+          <h1 class="headline-small" data-i18n="navGmail">Gmail</h1>
           <p class="body-medium" style="color:var(--md-sys-color-on-surface-variant);">Configure how emails are analyzed and categorized.</p>
         </div>
         
         <div class="card">
-          <h3 class="title-medium" style="margin-bottom:12px;">Classification Settings</h3>
+          <h3 class="title-medium" style="margin-bottom:12px;" data-i18n="gmailClassificationTitle">Classification Settings</h3>
           <label class="checkbox-container">
             <input type="checkbox" id="checkGmailClassificationEnabled">
             <span class="body-medium">Enable AI Classification</span>
@@ -144,7 +144,7 @@
         </div>
 
         <div class="card">
-          <h3 class="title-medium" style="margin-bottom:12px;">Categories</h3>
+          <h3 class="title-medium" style="margin-bottom:12px;" data-i18n="gmailCategoriesTitle">Categories</h3>
           <div id="gmailCategoriesList">
             <!-- Dynamically populated -->
           </div>
@@ -152,7 +152,7 @@
         </div>
 
         <div class="card">
-          <h3 class="title-medium" style="margin-bottom:12px;">Importance Criteria</h3>
+          <h3 class="title-medium" style="margin-bottom:12px;" data-i18n="gmailImportanceCriteriaTitle">Importance Criteria</h3>
           <div class="form-row" style="align-items:flex-start;">
             <label class="body-medium" style="flex:1; padding-top:10px; color:var(--md-sys-color-error)">🔴 High Importance</label>
             <textarea id="textareaImportanceHigh" class="form-input" style="flex:3; resize:vertical; min-height:60px;" placeholder="e.g. requires immediate action, outage, contract"></textarea>
@@ -168,7 +168,7 @@
         </div>
 
         <div class="card">
-          <h3 class="title-medium" style="margin-bottom:12px;">Personalization</h3>
+          <h3 class="title-medium" style="margin-bottom:12px;" data-i18n="gmailPersonalizationTitle">Personalization</h3>
           <p class="body-medium" style="margin-bottom:12px; color:var(--md-sys-color-on-surface-variant);">Help the AI understand what emails are directly related to you.</p>
           <div class="form-row" style="flex-direction:column; align-items:stretch;">
             <label class="body-medium">Identity Hints (Names, Roles, Aliases)</label>
@@ -181,7 +181,7 @@
         </div>
 
         <div class="card">
-          <h3 class="title-medium" style="margin-bottom:12px;">Filter Rules</h3>
+          <h3 class="title-medium" style="margin-bottom:12px;" data-i18n="gmailFilterRulesTitle">Filter Rules</h3>
           <p class="body-medium" style="margin-bottom:12px; color:var(--md-sys-color-on-surface-variant);">Manual rules to force classifications without using AI.</p>
           <div id="gmailFiltersList">
             <!-- Dynamically populated -->
@@ -190,7 +190,7 @@
         </div>
 
         <div class="card">
-          <h3 class="title-medium" style="margin-bottom:12px;">Mail Fetching & Learning</h3>
+          <h3 class="title-medium" style="margin-bottom:12px;" data-i18n="gmailMailFetchingTitle">Mail Fetching & Learning</h3>
           <label class="checkbox-container">
             <input type="checkbox" id="checkLightweightFetching">
             <span class="body-medium">Lightweight Fetching (Headers only when possible)</span>
@@ -335,12 +335,12 @@
       <!-- Automation Panel -->
       <section id="panel-automation" class="tab-panel">
         <div class="panel-header">
-          <h1 class="headline-small">Automation</h1>
+          <h1 class="headline-small" data-i18n="navAutomation">Automation</h1>
           <p class="body-medium" style="color:var(--md-sys-color-on-surface-variant);">Configure automatic background tasks.</p>
         </div>
         
         <div class="card">
-          <h3 class="title-medium" style="margin-bottom:12px;">Automatic Gmail Classification</h3>
+          <h3 class="title-medium" style="margin-bottom:12px;" data-i18n="autoGmailClassificationTitle">Automatic Gmail Classification</h3>
           <label class="checkbox-container">
             <input type="checkbox" id="checkAutoClassifyEnabled">
             <span class="body-medium">Enable automatic background classification</span>
@@ -356,7 +356,7 @@
         </div>
 
         <div class="card">
-          <h3 class="title-medium" style="margin-bottom:12px;">Automatic Summary</h3>
+          <h3 class="title-medium" style="margin-bottom:12px;" data-i18n="autoSummaryTitle">Automatic Summary</h3>
           <label class="checkbox-container">
             <input type="checkbox" id="checkAutoSummaryEnabled">
             <span class="body-medium">Enable automatic email summarization</span>
@@ -383,12 +383,12 @@
       <!-- Notifications Panel -->
       <section id="panel-notifications" class="tab-panel">
         <div class="panel-header">
-          <h1 class="headline-small">Notifications</h1>
+          <h1 class="headline-small" data-i18n="navNotifications">Notifications</h1>
           <p class="body-medium" style="color:var(--md-sys-color-on-surface-variant);">Configure Discord webhooks and browser alerts.</p>
         </div>
         
         <div class="card">
-          <h3 class="title-medium" style="margin-bottom:12px;">Discord Notifications</h3>
+          <h3 class="title-medium" style="margin-bottom:12px;" data-i18n="notifDiscordTitle">Discord Notifications</h3>
           <label class="checkbox-container">
             <input type="checkbox" id="checkDiscordEnabled">
             <span class="body-medium">Enable Discord Integration</span>
@@ -423,12 +423,12 @@
       <!-- Data & Backup Panel -->
       <section id="panel-data" class="tab-panel">
         <div class="panel-header">
-          <h1 class="headline-small">Data & Backup</h1>
+          <h1 class="headline-small" data-i18n="navDataBackup">Data & Backup</h1>
           <p class="body-medium" style="color:var(--md-sys-color-on-surface-variant);">Manage your settings data.</p>
         </div>
         
         <div class="card">
-          <h3 class="title-medium" style="margin-bottom:12px;">Local Data</h3>
+          <h3 class="title-medium" style="margin-bottom:12px;" data-i18n="dataLocalTitle">Local Data</h3>
           <div class="btn-group">
             <button class="btn btn-secondary" id="btnExportSettings">Export Settings (JSON)</button>
             <button class="btn btn-secondary" id="btnImportSettings">Import Settings</button>
@@ -436,7 +436,7 @@
         </div>
 
         <div class="card">
-          <h3 class="title-medium" style="margin-bottom:12px;">Google Drive Sync</h3>
+          <h3 class="title-medium" style="margin-bottom:12px;" data-i18n="dataDriveSyncTitle">Google Drive Sync</h3>
           <label class="checkbox-container">
             <input type="checkbox" id="checkDriveAutoBackup">
             <span class="body-medium">Automatically backup settings to Google Drive</span>
@@ -454,12 +454,12 @@
       <!-- Advanced Panel -->
       <section id="panel-advanced" class="tab-panel">
         <div class="panel-header">
-          <h1 class="headline-small">Advanced</h1>
+          <h1 class="headline-small" data-i18n="navAdvanced">Advanced</h1>
           <p class="body-medium" style="color:var(--md-sys-color-on-surface-variant);">Developer options and experimental features.</p>
         </div>
         
         <div class="card">
-          <h3 class="title-medium" style="margin-bottom:12px;">Debugging</h3>
+          <h3 class="title-medium" style="margin-bottom:12px;" data-i18n="advDebuggingTitle">Debugging</h3>
           <label class="checkbox-container">
             <input type="checkbox" id="checkDebugMode">
             <span class="body-medium">Enable Debug Mode (Extra logging)</span>
@@ -471,7 +471,7 @@
         </div>
 
         <div class="card">
-          <h3 class="title-medium" style="margin-bottom:12px; color:var(--md-sys-color-error)">Danger Zone</h3>
+          <h3 class="title-medium" style="margin-bottom:12px; color:var(--md-sys-color-error)" data-i18n="advDangerZoneTitle">Danger Zone</h3>
           <p class="body-medium" style="margin-bottom:12px; color:var(--md-sys-color-on-surface-variant);">These actions cannot be undone.</p>
           <button class="btn btn-outlined danger" id="btnResetAllSettings">Reset All Settings to Default</button>
         </div>
