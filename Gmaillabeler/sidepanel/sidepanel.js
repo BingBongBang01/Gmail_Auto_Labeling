@@ -7,39 +7,59 @@ async function initSidePanel() {
     i18nApplyToDom(document);
   }
   
-  initTheme();
+  if (typeof SettingsStore !== 'undefined') {
+    SettingsStore.getSettings(settings => {
+      initTheme(settings);
+    });
+  } else {
+    initTheme();
+  }
+  
   initActionButtons();
   
-  // Listen for context updates from background/content script
   chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     if (msg.type === "context.update") {
       updateContextUI(msg.context);
     }
   });
 
-  // Query current tab to get initial context
   chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
     if (tabs.length > 0) {
       const activeTab = tabs[0];
       if (activeTab.url && activeTab.url.includes("mail.google.com")) {
-        updateContextUI({ service: "Gmail", title: "Inbox", desc: "Ready to assist" });
+        // We might need the content script to tell us if it's an inbox or a thread
+        updateContextUI({ service: "Gmail", pageType: "inbox", title: "Inbox", desc: "Ready to assist" });
       } else if (activeTab.url && activeTab.url.includes("calendar.google.com")) {
-        updateContextUI({ service: "Calendar", title: "Schedule", desc: "Ready to assist" });
+        updateContextUI({ service: "Calendar", pageType: "schedule", title: "Schedule", desc: "Ready to assist" });
       } else {
-        updateContextUI({ service: "Web", title: activeTab.title, desc: "No specific AI actions available for this page." });
+        updateContextUI({ service: "Web", pageType: "other", title: activeTab.title, desc: "No specific AI actions available for this page." });
       }
     }
   });
 }
 
-function initTheme() {
-  chrome.storage.local.get("dashboardTheme", (data) => {
-    const theme = data.dashboardTheme || "system";
-    if (theme === "dark" || (theme === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches)) {
-      document.documentElement.setAttribute("data-theme", "dark");
-    }
-  });
+function initTheme(settings) {
+  const theme = settings?.general?.themeMode || "system";
+  if (theme === "dark" || (theme === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches)) {
+    document.documentElement.setAttribute("data-theme", "dark");
+  }
 }
+
+// Action Registry
+const ACTION_REGISTRY = {
+  "gmail.inbox": [
+    { id: "action_classify_visible", label: "Classify Visible Mail", cls: "btn-primary", handler: () => chrome.runtime.sendMessage({ action: "job.start", jobType: "gmail_classify" }) },
+    { id: "action_summarize_all", label: "Summarize", cls: "btn-secondary", handler: () => chrome.runtime.sendMessage({ action: "job.start", jobType: "gmail_summarize" }) }
+  ],
+  "gmail.thread": [
+    { id: "action_classify_thread", label: "Classify Thread", cls: "btn-primary", handler: () => chrome.runtime.sendMessage({ action: "job.start", jobType: "gmail_classify_thread" }) },
+    { id: "action_summarize_thread", label: "Summarize Thread", cls: "btn-secondary", handler: () => chrome.runtime.sendMessage({ action: "job.start", jobType: "gmail_summarize_thread" }) }
+  ],
+  "calendar.schedule": [
+    { id: "action_classify_schedule", label: "Classify Schedule", cls: "btn-primary", handler: () => chrome.runtime.sendMessage({ action: "job.start", jobType: "calendar_classify" }) },
+    { id: "action_apply_colors", label: "Apply Colors", cls: "btn-secondary", handler: () => chrome.runtime.sendMessage({ action: "job.start", jobType: "calendar_apply_colors" }) }
+  ]
+};
 
 function updateContextUI(context) {
   $("contextService").textContent = context.service || "Web";
@@ -49,20 +69,20 @@ function updateContextUI(context) {
   const actionsContainer = $("dynamicActions");
   actionsContainer.innerHTML = "";
 
-  if (context.service === "Gmail") {
-    actionsContainer.innerHTML = `
-      <button class="btn btn-primary action-btn">Classify Current Page</button>
-      <button class="btn btn-secondary action-btn">Summarize</button>
-    `;
-  } else if (context.service === "Calendar") {
-    actionsContainer.innerHTML = `
-      <button class="btn btn-primary action-btn">Classify Schedule</button>
-      <button class="btn btn-secondary action-btn">Apply Colors</button>
-    `;
+  const registryKey = `${(context.service || "Web").toLowerCase()}.${context.pageType || "other"}`;
+  const actions = ACTION_REGISTRY[registryKey] || [];
+
+  if (actions.length === 0) {
+    actionsContainer.innerHTML = `<button class="btn btn-outlined action-btn">Analyze Page</button>`;
   } else {
-    actionsContainer.innerHTML = `
-      <button class="btn btn-outlined action-btn">Analyze Page</button>
-    `;
+    actions.forEach(act => {
+      const btn = document.createElement("button");
+      btn.className = `btn action-btn ${act.cls}`;
+      btn.id = act.id;
+      btn.textContent = act.label;
+      btn.addEventListener("click", act.handler);
+      actionsContainer.appendChild(btn);
+    });
   }
 }
 

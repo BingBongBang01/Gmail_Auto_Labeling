@@ -565,8 +565,12 @@ const TAB_PANEL_MAP = {
 };
 
 function initDashTabSwitching() {
-  const navBtns = document.querySelectorAll(".dash-nav-btn");
+  const navBtns = document.querySelectorAll(".dash-nav-btn[data-dash-tab]");
   const subControls = $("summarySubcontrols");
+
+  $("btnOpenOptionsFromDash")?.addEventListener("click", () => {
+    chrome.runtime.openOptionsPage();
+  });
 
   navBtns.forEach((btn) => {
     btn.addEventListener("click", () => {
@@ -590,7 +594,7 @@ function initDashTabSwitching() {
         renderDashAnalysisChecklist();
       }
       if (tab === "relabel") loadDashboardRelabelOptions();
-      if (tab === "settings") loadDashboardSettingsData();
+      if (tab === "relabel") loadDashboardRelabelOptions();
       if (tab === "logs") loadDashboardLogs();
     });
   });
@@ -823,196 +827,7 @@ function collectCustomWebhooksFromDom() {
   });
 }
 
-function loadDashboardSettingsData() {
-  chrome.storage.local.get(
-    [
-      "geminiApiKeys",
-      "geminiApiKey",
-      "discordWebhookUrl",
-      "discordWebhookUrlHigh",
-      "discordWebhookUrlMedium",
-      "discordWebhookUrlLow",
-      "customDiscordWebhooks",
-      "personalIdentityHints",
-      "personalExclusionRules",
-      "importanceCriteria",
-      "discordSendPerEmail",
-      "autoSummaryEnabled",
-      "autoSummaryLabel",
-      "autoSummaryMaxCount",
-      "autoSummaryCriteria",
-      "autoSummarySendDiscord",
-    ],
-    (stored) => {
-      if (Array.isArray(stored.geminiApiKeys) && stored.geminiApiKeys.length) {
-        // 예전 버전이 문자열 배열로 저장했을 수 있으므로 둘 다 받아준다
-        dashApiKeys = stored.geminiApiKeys.map((k) =>
-          typeof k === "string" ? { label: "", key: k } : { label: k.label || "", key: k.key || "" }
-        );
-      } else if (stored.geminiApiKey) {
-        dashApiKeys = [{ label: "", key: stored.geminiApiKey }];
-      } else {
-        dashApiKeys = [];
-      }
-      renderApiKeyInputs();
 
-      const webhookFields = {
-        dashDiscordWebhookUrl: stored.discordWebhookUrl,
-        dashDiscordWebhookHigh: stored.discordWebhookUrlHigh,
-        dashDiscordWebhookMedium: stored.discordWebhookUrlMedium,
-        dashDiscordWebhookLow: stored.discordWebhookUrlLow,
-        dashPersonalIdentityHints: stored.personalIdentityHints,
-        dashPersonalExclusionRules: stored.personalExclusionRules,
-      };
-      Object.keys(webhookFields).forEach((id) => {
-        const el = $(id);
-        if (el) el.value = webhookFields[id] || "";
-      });
-
-      dashCustomWebhooks = Array.isArray(stored.customDiscordWebhooks) ? stored.customDiscordWebhooks : [];
-      renderCustomWebhooks();
-
-      // 자동 요약 설정
-      const autoLabelSelect = $("dashAutoSummaryLabelSelect");
-      if (autoLabelSelect) {
-        autoLabelSelect.innerHTML =
-          `<option value=""></option>` +
-          currentCategoryDefs.map((c) => `<option value="${escapeHtml(c.name)}">${escapeHtml(c.name)}</option>`).join("");
-        autoLabelSelect.value = stored.autoSummaryLabel || "";
-      }
-      const perEmailBox = $("dashDiscordSendPerEmail");
-      if (perEmailBox) perEmailBox.checked = stored.discordSendPerEmail !== false;
-
-      const autoEnabled = $("dashAutoSummaryEnabled");
-      if (autoEnabled) autoEnabled.checked = stored.autoSummaryEnabled === true;
-      const autoMaxCount = $("dashAutoSummaryMaxCount");
-      if (autoMaxCount) autoMaxCount.value = stored.autoSummaryMaxCount || 20;
-      const autoCriteria = $("dashAutoSummaryCriteria");
-      if (autoCriteria) autoCriteria.value = stored.autoSummaryCriteria || "";
-      const autoSendDiscord = $("dashAutoSummarySendDiscord");
-      if (autoSendDiscord) autoSendDiscord.checked = stored.autoSummarySendDiscord !== false;
-
-      loadSummaryFeedback();
-      setupSettingsAutoSave();
-
-      const criteria = stored.importanceCriteria || {};
-      const criteriaFields = {
-        dashCriteriaHigh: criteria.high,
-        dashCriteriaMedium: criteria.medium,
-        dashCriteriaLow: criteria.low,
-      };
-      Object.keys(criteriaFields).forEach((id) => {
-        const el = $(id);
-        if (el) el.value = criteriaFields[id] || "";
-      });
-    }
-  );
-}
-
-// 설정 탭의 Discord/자동요약/중요도 기준 값을 한 번에 저장한다.
-// 자동 저장과 '저장' 버튼이 같은 경로를 쓰도록 함수로 뽑아 두었다.
-// (API 키는 잘못 입력된 중간 상태가 저장되면 곤란하므로 여기서 건드리지 않고 전용 저장 버튼만 쓴다)
-function collectDashboardSettings() {
-  const val = (id) => {
-    const el = $(id);
-    return el ? el.value.trim() : "";
-  };
-  const checked = (id) => {
-    const el = $(id);
-    return !!(el && el.checked);
-  };
-
-  collectCustomWebhooksFromDom();
-
-  return {
-    discordWebhookUrl: val("dashDiscordWebhookUrl"),
-    discordWebhookUrlHigh: val("dashDiscordWebhookHigh"),
-    discordWebhookUrlMedium: val("dashDiscordWebhookMedium"),
-    discordWebhookUrlLow: val("dashDiscordWebhookLow"),
-    personalIdentityHints: val("dashPersonalIdentityHints"),
-    personalExclusionRules: val("dashPersonalExclusionRules"),
-    customDiscordWebhooks: dashCustomWebhooks,
-    discordSendPerEmail: checked("dashDiscordSendPerEmail"),
-    autoSummaryEnabled: checked("dashAutoSummaryEnabled"),
-    autoSummaryLabel: val("dashAutoSummaryLabelSelect"),
-    autoSummaryMaxCount: Math.max(1, Math.min(100, parseInt(val("dashAutoSummaryMaxCount"), 10) || 20)),
-    autoSummaryCriteria: val("dashAutoSummaryCriteria"),
-    autoSummarySendDiscord: checked("dashAutoSummarySendDiscord"),
-    importanceCriteria: {
-      high: val("dashCriteriaHigh"),
-      medium: val("dashCriteriaMedium"),
-      low: val("dashCriteriaLow"),
-    },
-  };
-}
-
-let settingsAutoSaveTimer = null;
-let settingsAutoSaveBound = false;
-
-function showSettingsAutoSaveMark() {
-  const mark = $("dashSettingsSavedMark");
-  if (!mark) return;
-  mark.textContent = t("msgSettingsAutoSaved");
-  mark.style.opacity = "1";
-  clearTimeout(showSettingsAutoSaveMark._timer);
-  showSettingsAutoSaveMark._timer = setTimeout(() => {
-    mark.style.opacity = "0";
-  }, 1600);
-}
-
-// 타이핑이 멈춘 뒤 저장한다. 매 글자마다 저장하면 반쯤 입력된 URL이 계속 기록된다.
-function setupSettingsAutoSave() {
-  if (settingsAutoSaveBound) return;
-  const panel = $("dashPanelSettings");
-  if (!panel) return;
-  settingsAutoSaveBound = true;
-
-  const scheduleSave = (event) => {
-    // API 키 입력은 전용 저장 버튼으로만 반영한다.
-    if (event.target && event.target.closest && event.target.closest(".apikey-row")) return;
-    clearTimeout(settingsAutoSaveTimer);
-    settingsAutoSaveTimer = setTimeout(() => {
-      chrome.storage.local.set(collectDashboardSettings(), showSettingsAutoSaveMark);
-    }, 700);
-  };
-
-  panel.addEventListener("input", scheduleSave);
-  panel.addEventListener("change", scheduleSave);
-}
-
-function renderApiKeyInputs() {
-  const wrap = $("dashApiKeyInputsWrap");
-  if (!wrap) return;
-
-  wrap.innerHTML = dashApiKeys
-    .map(
-      (entry, idx) => `
-      <div class="form-row apikey-row" data-idx="${idx}">
-        <input type="text" class="dash-api-label-input" value="${escapeHtml(entry.label || "")}" placeholder=t("dashPlaceholderKeyAlias")>
-        <input type="password" class="dash-api-key-input" value="${escapeHtml(entry.key || "")}" placeholder="Gemini API Key (AIza...)">
-        <button class="dash-btn dash-btn-secondary del-key-btn" data-idx="${idx}">✕</button>
-      </div>`
-    )
-    .join("");
-
-  wrap.querySelectorAll(".del-key-btn").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      collectApiKeysFromDom();
-      dashApiKeys.splice(parseInt(btn.getAttribute("data-idx"), 10), 1);
-      renderApiKeyInputs();
-    });
-  });
-}
-
-function collectApiKeysFromDom() {
-  const wrap = $("dashApiKeyInputsWrap");
-  if (!wrap) return;
-  const rows = wrap.querySelectorAll(".apikey-row");
-  dashApiKeys = Array.from(rows).map((row) => ({
-    label: row.querySelector(".dash-api-label-input").value.trim(),
-    key: row.querySelector(".dash-api-key-input").value.trim(),
-  }));
-}
 
 // ---------------- 로그 탭 ----------------
 function loadDashboardLogs() {
@@ -1035,53 +850,7 @@ function loadDashboardLogs() {
 }
 
 // ---------------- 개인 필터 규칙 (예전에는 팝업에만 있어서 대시보드에서 볼 수 없었다) ----------------
-let dashFilterRules = [];
 
-function renderDashFilterRules() {
-  const list = $("dashFilterRulesList");
-  if (!list) return;
-  list.innerHTML = dashFilterRules
-    .map(
-      (rule, idx) => `
-      <div class="dash-rule-row" data-idx="${idx}">
-        <select class="dash-select dash-rule-type">
-          <option value="from"${rule.matchType !== "subject" ? " selected" : ""}>${escapeHtml(t("matchTypeFrom"))}</option>
-          <option value="subject"${rule.matchType === "subject" ? " selected" : ""}>${escapeHtml(t("matchTypeSubject"))}</option>
-        </select>
-        <input type="text" class="dash-input-text dash-rule-value" value="${escapeHtml(rule.matchValue || "")}" placeholder="${escapeHtml(t("dashPlaceholderMatchValue"))}">
-        <input type="text" class="dash-input-text dash-rule-target" value="${escapeHtml(rule.targetLabel || "")}" placeholder="${escapeHtml(t("dashPlaceholderTargetLabel"))}">
-        <button class="dash-btn dash-btn-secondary dash-del-rule-btn">${escapeHtml(t("dashBtnDeleteRule"))}</button>
-      </div>`
-    )
-    .join("");
-
-  list.querySelectorAll(".dash-del-rule-btn").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      collectDashFilterRules();
-      const idx = parseInt(btn.closest(".dash-rule-row").getAttribute("data-idx"), 10);
-      dashFilterRules.splice(idx, 1);
-      renderDashFilterRules();
-    });
-  });
-}
-
-function collectDashFilterRules() {
-  const list = $("dashFilterRulesList");
-  if (!list) return;
-  dashFilterRules = [...list.querySelectorAll(".dash-rule-row")].map((row) => ({
-    matchType: row.querySelector(".dash-rule-type").value,
-    matchValue: row.querySelector(".dash-rule-value").value.trim(),
-    targetLabel: row.querySelector(".dash-rule-target").value.trim(),
-  }));
-}
-
-function loadDashFilterRules() {
-  chrome.storage.local.get(["filterRules"], (result) => {
-    // 백그라운드가 기대하는 스키마({matchType, matchValue, targetLabel})를 그대로 읽고 쓴다
-    dashFilterRules = Array.isArray(result.filterRules) ? result.filterRules.map((r) => ({ ...r })) : [];
-    renderDashFilterRules();
-  });
-}
 
 // ---------------- 라벨 분석 + 분류 기준 임시저장 ----------------
 function renderDashAnalysisChecklist() {

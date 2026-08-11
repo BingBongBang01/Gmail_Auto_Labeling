@@ -1,179 +1,445 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="system">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Gmail AI Labeler - Settings</title>
+  <title data-i18n="optionsTitle">Gmail AI Labeler - Settings</title>
   
-  <!-- Design Tokens -->
   <link rel="stylesheet" href="../ui/tokens/colors.css">
   <link rel="stylesheet" href="../ui/tokens/typography.css">
   <link rel="stylesheet" href="../ui/tokens/components.css">
   <link rel="stylesheet" href="options.css">
+  
+  <!-- Settings Architecture -->
+  <script src="../settings/settings_schema.js"></script>
+  <script src="../settings/settings_defaults.js"></script>
+  <script src="../settings/settings_store.js"></script>
 </head>
 <body>
-  <div class="options-layout">
+
+  <div class="layout">
+    
     <!-- Sidebar Navigation -->
-    <nav class="options-sidebar">
+    <nav class="sidebar">
       <div class="sidebar-header">
-        <img src="../icon48.png" alt="Logo" class="sidebar-logo">
-        <div class="sidebar-title">
-          <div class="title-large" style="font-size:16px; font-weight:600;">Settings</div>
-          <div class="label-small">Gmail AI Labeler</div>
-        </div>
-      </div>
-      
-      <div class="search-box">
-        <input type="text" id="settingsSearch" class="form-input" placeholder="🔍 Search settings...">
+        <img src="../icon32.png" alt="Logo" class="logo">
+        <h2 class="title-medium" data-i18n="optionsHeader">Settings</h2>
       </div>
 
-      <div class="nav-section">
-        <button class="nav-btn active" data-target="panel-general">General</button>
-        <button class="nav-btn" data-target="panel-connections">Connections</button>
-        <button class="nav-btn" data-target="panel-gmail">Gmail</button>
-        <button class="nav-btn" data-target="panel-calendar">Calendar</button>
-        <button class="nav-btn" data-target="panel-ai">AI Settings</button>
-        <button class="nav-btn" data-target="panel-automation">Automation</button>
-        <button class="nav-btn" data-target="panel-notifications">Notifications</button>
-        <button class="nav-btn" data-target="panel-data">Data & Backup</button>
-        <button class="nav-btn" data-target="panel-advanced">Advanced</button>
+      <div class="search-container" style="padding: 0 16px 16px 16px;">
+        <input type="text" id="settingsSearch" class="form-input" placeholder="Search settings..." style="width:100%;">
       </div>
+
+      <ul class="nav-menu" id="navMenu">
+        <li><button class="nav-item active" data-target="panel-general">General</button></li>
+        <li><button class="nav-item" data-target="panel-connections">Account & Connections</button></li>
+        <li><button class="nav-item" data-target="panel-gmail">Gmail</button></li>
+        <li><button class="nav-item" data-target="panel-calendar">Calendar</button></li>
+        <li><button class="nav-item" data-target="panel-ai">AI</button></li>
+        <li><button class="nav-item" data-target="panel-automation">Automation</button></li>
+        <li><button class="nav-item" data-target="panel-notifications">Notifications</button></li>
+        <li><button class="nav-item" data-target="panel-data">Data & Backup</button></li>
+        <li><button class="nav-item" data-target="panel-advanced">Advanced</button></li>
+      </ul>
     </nav>
 
     <!-- Main Content Area -->
-    <main class="options-content">
-      <div class="content-header">
-        <h2 id="currentSectionTitle" class="headline-medium">General</h2>
-      </div>
-
-      <div class="panels-container">
-        <!-- General Panel -->
-        <section id="panel-general" class="settings-panel active">
-          <div class="card card-elevated" style="margin-bottom:16px;">
-            <h3 class="title-medium">Appearance</h3>
-            <div class="form-group" style="margin-top:12px;">
-              <label class="form-label">Theme</label>
-              <div style="display:flex; gap:8px; margin-top:8px;">
-                <button class="btn btn-outlined active" id="themeSystemBtn">System</button>
-                <button class="btn btn-outlined" id="themeLightBtn">Light</button>
-                <button class="btn btn-outlined" id="themeDarkBtn">Dark</button>
-              </div>
-            </div>
-          </div>
-          
-          <div class="card card-elevated">
-            <h3 class="title-medium">Language</h3>
-            <div class="form-group" style="margin-top:12px;">
-              <label class="form-label">Display Language</label>
-              <select id="languageSelect" class="form-input" style="width:200px;">
-                <option value="system">Match Browser</option>
-                <option value="en">English</option>
-                <option value="ko">한국어</option>
-                <option value="ja">日本語</option>
-                <option value="zh_CN">简体中文</option>
-              </select>
-            </div>
-          </div>
-        </section>
-
-        <!-- Connections Panel -->
-        <section id="panel-connections" class="settings-panel">
-          <div class="card card-elevated" style="margin-bottom:16px;">
-            <div style="display:flex; justify-content:space-between; align-items:center;">
-              <div>
-                <h3 class="title-medium">Google Account</h3>
-                <p class="body-small" style="color:var(--md-sys-color-on-surface-variant)">Connect your Google account to manage Gmail and Calendar.</p>
-              </div>
-              <span class="badge" id="oauthStatusBadge">Not Connected</span>
-            </div>
-            
-            <div class="form-group" style="margin-top:16px;">
-              <label class="form-label">OAuth Client ID</label>
-              <input type="text" id="oauthClientIdInput" class="form-input" placeholder="xxxxxxxx.apps.googleusercontent.com">
-            </div>
-            <div class="form-group">
-              <label class="form-label">OAuth Client Secret (Optional)</label>
-              <input type="password" id="oauthClientSecretInput" class="form-input" placeholder="GOCSPX-...">
-            </div>
-            <div style="display:flex; gap:8px; margin-top:16px;">
-              <button class="btn btn-primary" id="connectOAuthBtn">Connect</button>
-              <button class="btn btn-danger" id="disconnectOAuthBtn" style="display:none;">Disconnect</button>
-              <button class="btn btn-secondary" id="saveOAuthBtn">Save Credentials</button>
-            </div>
-          </div>
-
-          <div class="card card-elevated">
-            <div style="display:flex; justify-content:space-between; align-items:center;">
-              <div>
-                <h3 class="title-medium">Gemini API Keys</h3>
-                <p class="body-small" style="color:var(--md-sys-color-on-surface-variant)">API keys used for AI classification and summaries.</p>
-              </div>
-              <button class="btn btn-text" id="openAiStudioBtn">Get a key</button>
-            </div>
-            <div id="apiKeysList" style="margin-top:16px;"></div>
-            <div style="display:flex; gap:8px; margin-top:12px;">
-              <button class="btn btn-outlined" id="addApiKeyBtn">+ Add Key</button>
-              <button class="btn btn-primary" id="saveKeyBtn">Save Keys</button>
-            </div>
-          </div>
-        </section>
-
-        <!-- Gmail Panel -->
-        <section id="panel-gmail" class="settings-panel">
-          <div class="card card-elevated" style="margin-bottom:16px;">
-            <h3 class="title-medium">Label Categories</h3>
-            <p class="body-small" style="color:var(--md-sys-color-on-surface-variant)">Define the categories for AI classification.</p>
-            <div id="categoriesList" style="margin-top:16px;"></div>
-            <div style="display:flex; gap:8px; margin-top:12px;">
-              <button class="btn btn-outlined" id="addCategoryBtn">+ Add Category</button>
-              <button class="btn btn-primary" id="saveCategoriesBtn">Save</button>
-            </div>
-          </div>
-          
-          <div class="card card-elevated">
-            <h3 class="title-medium">Importance Criteria</h3>
-            <div class="form-group" style="margin-top:12px;">
-              <label class="form-label" style="color:var(--md-sys-color-error)">High Importance</label>
-              <textarea id="criteriaHighInput" class="form-input" rows="2"></textarea>
-            </div>
-            <div class="form-group">
-              <label class="form-label" style="color:var(--md-sys-color-warning)">Medium Importance</label>
-              <textarea id="criteriaMediumInput" class="form-input" rows="2"></textarea>
-            </div>
-            <div class="form-group">
-              <label class="form-label" style="color:var(--md-sys-color-success)">Low Importance</label>
-              <textarea id="criteriaLowInput" class="form-input" rows="2"></textarea>
-            </div>
-            <div style="display:flex; gap:8px; margin-top:12px;">
-              <button class="btn btn-primary" id="saveCriteriaBtn">Save Criteria</button>
-            </div>
-          </div>
-        </section>
+    <main class="content">
+      
+      <!-- General Panel -->
+      <section id="panel-general" class="tab-panel active">
+        <div class="panel-header">
+          <h1 class="headline-small">General</h1>
+          <p class="body-medium" style="color:var(--md-sys-color-on-surface-variant);">Appearance and basic preferences.</p>
+        </div>
         
-        <!-- Calendar Panel -->
-        <section id="panel-calendar" class="settings-panel">
-          <div class="card card-elevated">
-            <h3 class="title-medium">Calendar Color Mapping</h3>
-            <p class="body-small" style="color:var(--md-sys-color-on-surface-variant)">Map AI categories to Google Calendar colors.</p>
-            <div style="margin-top:16px;">
-               <!-- Colors will be managed via script or hardcoded in calendar_colors.js for now -->
-               <p class="body-small">Colors are currently managed by the built-in Semantic Palette.</p>
-            </div>
+        <div class="card">
+          <h3 class="title-medium" style="margin-bottom:12px;">Theme</h3>
+          <div class="form-row">
+            <select id="selectThemeMode" class="form-select">
+              <option value="system">System Default</option>
+              <option value="light">Light</option>
+              <option value="dark">Dark</option>
+            </select>
           </div>
-        </section>
+        </div>
+        
+        <div class="card">
+          <h3 class="title-medium" style="margin-bottom:12px;">Language</h3>
+          <div class="form-row">
+            <select id="selectUiLanguage" class="form-select">
+              <option value="system">System Default</option>
+              <option value="en">English</option>
+              <option value="ko">한국어</option>
+              <option value="ja">日本語</option>
+              <option value="zh_CN">简体中文</option>
+            </select>
+          </div>
+        </div>
 
-        <!-- Other panels (AI, Automation, Notifications, Data, Advanced) are placeholders for now to fit the architecture -->
-        <section id="panel-ai" class="settings-panel"><div class="card card-elevated"><h3>AI Settings</h3><p>Model selection, token limits, and privacy.</p></div></section>
-        <section id="panel-automation" class="settings-panel"><div class="card card-elevated"><h3>Automation</h3><p>Manage auto-classification triggers.</p></div></section>
-        <section id="panel-notifications" class="settings-panel"><div class="card card-elevated"><h3>Notifications</h3><p>Discord webhooks and browser alerts.</p></div></section>
-        <section id="panel-data" class="settings-panel"><div class="card card-elevated"><h3>Data & Backup</h3><p>Export and import settings.</p></div></section>
-        <section id="panel-advanced" class="settings-panel"><div class="card card-elevated"><h3>Advanced</h3><p>Developer options and logs.</p></div></section>
-      </div>
+        <div class="card">
+          <h3 class="title-medium" style="margin-bottom:12px;">Startup Behavior</h3>
+          <label class="checkbox-container">
+            <input type="checkbox" id="checkOpenSidePanelOnGmail">
+            <span class="body-medium">Open Side Panel automatically when Gmail is opened</span>
+          </label>
+          <label class="checkbox-container">
+            <input type="checkbox" id="checkShowStatusOnGmail">
+            <span class="body-medium">Show extension status badge when Gmail is opened</span>
+          </label>
+        </div>
+      </section>
+
+      <!-- Connections Panel -->
+      <section id="panel-connections" class="tab-panel">
+        <div class="panel-header">
+          <h1 class="headline-small">Account & Connections</h1>
+          <p class="body-medium" style="color:var(--md-sys-color-on-surface-variant);">Connect to Google and Gemini.</p>
+        </div>
+        
+        <div class="card">
+          <h3 class="title-medium" style="margin-bottom:8px;">Google Account</h3>
+          <div class="status-box" id="googleAccountStatus">
+            <!-- Dynamically populated -->
+            Checking status...
+          </div>
+          <div class="btn-group" style="margin-top:12px;">
+            <button class="btn btn-primary" id="btnConnectGoogle">Connect Google Account</button>
+            <button class="btn btn-outlined danger" id="btnDisconnectGoogle">Disconnect</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3 class="title-medium" style="margin-bottom:8px;">Gemini API Keys</h3>
+          <div id="geminiApiKeysList" style="margin-bottom:12px;">
+            <!-- Dynamically populated -->
+          </div>
+          <button class="btn btn-secondary" id="btnAddGeminiKey">+ Add API Key</button>
+        </div>
+      </section>
+
+      <!-- Gmail Panel -->
+      <section id="panel-gmail" class="tab-panel">
+        <div class="panel-header">
+          <h1 class="headline-small">Gmail</h1>
+          <p class="body-medium" style="color:var(--md-sys-color-on-surface-variant);">Configure how emails are analyzed and categorized.</p>
+        </div>
+        
+        <div class="card">
+          <h3 class="title-medium" style="margin-bottom:12px;">Classification Settings</h3>
+          <label class="checkbox-container">
+            <input type="checkbox" id="checkGmailClassificationEnabled">
+            <span class="body-medium">Enable AI Classification</span>
+          </label>
+          <div class="form-row">
+            <label class="body-medium" style="flex:1;">Classification Threshold (How many new mails trigger it?)</label>
+            <input type="number" id="inputGmailThreshold" class="form-input" style="width:80px;" min="1" max="50">
+          </div>
+          <div class="form-row">
+            <label class="body-medium" style="flex:1;">Batch Size</label>
+            <input type="number" id="inputGmailBatchSize" class="form-input" style="width:80px;" min="1" max="100">
+          </div>
+        </div>
+
+        <div class="card">
+          <h3 class="title-medium" style="margin-bottom:12px;">Categories</h3>
+          <div id="gmailCategoriesList">
+            <!-- Dynamically populated -->
+          </div>
+          <button class="btn btn-secondary" id="btnAddCategory" style="margin-top:12px;">+ Add Category</button>
+        </div>
+
+        <div class="card">
+          <h3 class="title-medium" style="margin-bottom:12px;">Importance Criteria</h3>
+          <div class="form-row" style="align-items:flex-start;">
+            <label class="body-medium" style="flex:1; padding-top:10px; color:var(--md-sys-color-error)">🔴 High Importance</label>
+            <textarea id="textareaImportanceHigh" class="form-input" style="flex:3; resize:vertical; min-height:60px;" placeholder="e.g. requires immediate action, outage, contract"></textarea>
+          </div>
+          <div class="form-row" style="align-items:flex-start;">
+            <label class="body-medium" style="flex:1; padding-top:10px; color:var(--md-sys-color-warning)">🟡 Medium Importance</label>
+            <textarea id="textareaImportanceMedium" class="form-input" style="flex:3; resize:vertical; min-height:60px;" placeholder="e.g. daily reports, schedule changes"></textarea>
+          </div>
+          <div class="form-row" style="align-items:flex-start;">
+            <label class="body-medium" style="flex:1; padding-top:10px; color:var(--md-sys-color-success)">🟢 Low Importance</label>
+            <textarea id="textareaImportanceLow" class="form-input" style="flex:3; resize:vertical; min-height:60px;" placeholder="e.g. marketing, newsletters"></textarea>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3 class="title-medium" style="margin-bottom:12px;">Personalization</h3>
+          <p class="body-medium" style="margin-bottom:12px; color:var(--md-sys-color-on-surface-variant);">Help the AI understand what emails are directly related to you.</p>
+          <div class="form-row" style="flex-direction:column; align-items:stretch;">
+            <label class="body-medium">Identity Hints (Names, Roles, Aliases)</label>
+            <input type="text" id="inputIdentityHints" class="form-input" placeholder="e.g. John Doe, Lead Developer, jd@example.com">
+          </div>
+          <div class="form-row" style="flex-direction:column; align-items:stretch; margin-top:8px;">
+            <label class="body-medium">Exclusion Rules (Things to ignore)</label>
+            <textarea id="textareaExclusionRules" class="form-input" style="resize:vertical; min-height:60px;" placeholder="One rule per line"></textarea>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3 class="title-medium" style="margin-bottom:12px;">Filter Rules</h3>
+          <p class="body-medium" style="margin-bottom:12px; color:var(--md-sys-color-on-surface-variant);">Manual rules to force classifications without using AI.</p>
+          <div id="gmailFiltersList">
+            <!-- Dynamically populated -->
+          </div>
+          <button class="btn btn-secondary" id="btnAddFilter" style="margin-top:12px;">+ Add Filter</button>
+        </div>
+
+        <div class="card">
+          <h3 class="title-medium" style="margin-bottom:12px;">Mail Fetching & Learning</h3>
+          <label class="checkbox-container">
+            <input type="checkbox" id="checkLightweightFetching">
+            <span class="body-medium">Lightweight Fetching (Headers only when possible)</span>
+          </label>
+          <label class="checkbox-container">
+            <input type="checkbox" id="checkCorrectionLearning">
+            <span class="body-medium">Learn from my manual label corrections</span>
+          </label>
+        </div>
+      </section>
+      
+      <!-- Calendar Panel -->
+      <section id="panel-calendar" class="tab-panel">
+        <div class="panel-header">
+          <h1 class="headline-small">Calendar</h1>
+          <p class="body-medium" style="color:var(--md-sys-color-on-surface-variant);">Configure calendar event analysis and colors.</p>
+        </div>
+        
+        <div class="card">
+          <h3 class="title-medium" style="margin-bottom:12px;">Calendar AI Settings</h3>
+          <label class="checkbox-container">
+            <input type="checkbox" id="checkCalendarEnabled">
+            <span class="body-medium">Enable Calendar AI Integration</span>
+          </label>
+          <label class="checkbox-container">
+            <input type="checkbox" id="checkCalendarClassificationEnabled">
+            <span class="body-medium">Enable Automatic Classification</span>
+          </label>
+          <div class="form-row">
+            <label class="body-medium" style="flex:1;">Classification Date Range</label>
+            <select id="selectCalendarDateRange" class="form-select" style="flex:2;">
+              <option value="today">Today</option>
+              <option value="week">This Week</option>
+              <option value="month">This Month</option>
+            </select>
+          </div>
+          <label class="checkbox-container">
+            <input type="checkbox" id="checkCalendarApplyColors">
+            <span class="body-medium">Apply Colors to Events</span>
+          </label>
+        </div>
+
+        <div class="card">
+          <h3 class="title-medium" style="margin-bottom:12px;">Calendar Colors</h3>
+          <p class="body-medium" style="margin-bottom:12px; color:var(--md-sys-color-on-surface-variant);">Map categories to Google Calendar color IDs.</p>
+          <div id="calendarColorsList">
+            <!-- Dynamically populated based on categories -->
+          </div>
+        </div>
+      </section>
+
+      <!-- AI Panel -->
+      <section id="panel-ai" class="tab-panel">
+        <div class="panel-header">
+          <h1 class="headline-small">AI</h1>
+          <p class="body-medium" style="color:var(--md-sys-color-on-surface-variant);">Select models and processing limits.</p>
+        </div>
+        
+        <div class="card">
+          <h3 class="title-medium" style="margin-bottom:12px;">Model Settings</h3>
+          <div class="form-row">
+            <label class="body-medium" style="flex:1;">AI Provider</label>
+            <select id="selectAiProvider" class="form-select" style="flex:2;" disabled>
+              <option value="gemini">Google Gemini</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <label class="body-medium" style="flex:1;">Model Version</label>
+            <select id="selectAiModel" class="form-select" style="flex:2;">
+              <option value="gemini-1.5-flash">Gemini 1.5 Flash (Fast & Cheap)</option>
+              <option value="gemini-1.5-pro">Gemini 1.5 Pro (Advanced)</option>
+              <option value="gemini-2.0-flash">Gemini 2.0 Flash</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3 class="title-medium" style="margin-bottom:12px;">Reliability & Limits</h3>
+          <label class="checkbox-container">
+            <input type="checkbox" id="checkAiRetry">
+            <span class="body-medium">Automatically retry failed requests</span>
+          </label>
+          <div class="form-row">
+            <label class="body-medium" style="flex:1;">Max Retries</label>
+            <input type="number" id="inputAiMaxRetries" class="form-input" style="width:80px;" min="0" max="5">
+          </div>
+          <label class="checkbox-container">
+            <input type="checkbox" id="checkAiFallbackKey">
+            <span class="body-medium">Use fallback API key on quota exhaustion</span>
+          </label>
+          <div class="form-row" style="margin-top:12px;">
+            <label class="body-medium" style="flex:1;">Concurrent Requests</label>
+            <input type="number" id="inputAiConcurrency" class="form-input" style="width:80px;" min="1" max="10">
+          </div>
+        </div>
+      </section>
+
+      <!-- Automation Panel -->
+      <section id="panel-automation" class="tab-panel">
+        <div class="panel-header">
+          <h1 class="headline-small">Automation</h1>
+          <p class="body-medium" style="color:var(--md-sys-color-on-surface-variant);">Configure automatic background tasks.</p>
+        </div>
+        
+        <div class="card">
+          <h3 class="title-medium" style="margin-bottom:12px;">Automatic Gmail Classification</h3>
+          <label class="checkbox-container">
+            <input type="checkbox" id="checkAutoClassifyEnabled">
+            <span class="body-medium">Enable automatic background classification</span>
+          </label>
+          <div class="form-row">
+            <label class="body-medium" style="flex:1;">Trigger Threshold (New Unread)</label>
+            <input type="number" id="inputAutoClassifyThreshold" class="form-input" style="width:80px;" min="1" max="100">
+          </div>
+          <label class="checkbox-container">
+            <input type="checkbox" id="checkAutoClassifyNewOnly">
+            <span class="body-medium">Only process new unread mail</span>
+          </label>
+        </div>
+
+        <div class="card">
+          <h3 class="title-medium" style="margin-bottom:12px;">Automatic Summary</h3>
+          <label class="checkbox-container">
+            <input type="checkbox" id="checkAutoSummaryEnabled">
+            <span class="body-medium">Enable automatic email summarization</span>
+          </label>
+          <div class="form-row">
+            <label class="body-medium" style="flex:1;">Target Label / Category</label>
+            <input type="text" id="inputAutoSummaryLabel" class="form-input" style="flex:2;" placeholder="e.g. Work">
+          </div>
+          <div class="form-row">
+            <label class="body-medium" style="flex:1;">Max emails to summarize at once</label>
+            <input type="number" id="inputAutoSummaryMaxCount" class="form-input" style="width:80px;" min="1" max="50">
+          </div>
+          <div class="form-row" style="align-items:flex-start;">
+            <label class="body-medium" style="flex:1; padding-top:10px;">Summary Criteria / Prompt</label>
+            <textarea id="textareaAutoSummaryCriteria" class="form-input" style="flex:2; min-height:80px; resize:vertical;" placeholder="What do you want the AI to extract?"></textarea>
+          </div>
+          <label class="checkbox-container" style="margin-top:12px;">
+            <input type="checkbox" id="checkAutoSummarySendDiscord">
+            <span class="body-medium">Send summary results to Discord (if configured)</span>
+          </label>
+        </div>
+      </section>
+
+      <!-- Notifications Panel -->
+      <section id="panel-notifications" class="tab-panel">
+        <div class="panel-header">
+          <h1 class="headline-small">Notifications</h1>
+          <p class="body-medium" style="color:var(--md-sys-color-on-surface-variant);">Configure Discord webhooks and browser alerts.</p>
+        </div>
+        
+        <div class="card">
+          <h3 class="title-medium" style="margin-bottom:12px;">Discord Notifications</h3>
+          <label class="checkbox-container">
+            <input type="checkbox" id="checkDiscordEnabled">
+            <span class="body-medium">Enable Discord Integration</span>
+          </label>
+          <div class="form-row">
+            <label class="body-medium" style="flex:1;">Default Webhook URL</label>
+            <input type="password" id="inputDiscordDefault" class="form-input" style="flex:2;" placeholder="https://discord.com/api/webhooks/...">
+          </div>
+          
+          <h4 class="title-small" style="margin:24px 0 12px 0;">Importance Routing</h4>
+          <p class="body-medium" style="margin-bottom:12px; color:var(--md-sys-color-on-surface-variant);">Override default webhook based on email importance.</p>
+          <div class="form-row">
+            <label class="body-medium" style="flex:1; color:var(--md-sys-color-error)">🔴 High Importance Webhook</label>
+            <input type="password" id="inputDiscordHigh" class="form-input" style="flex:2;">
+          </div>
+          <div class="form-row">
+            <label class="body-medium" style="flex:1; color:var(--md-sys-color-warning)">🟡 Medium Importance Webhook</label>
+            <input type="password" id="inputDiscordMedium" class="form-input" style="flex:2;">
+          </div>
+          <div class="form-row">
+            <label class="body-medium" style="flex:1; color:var(--md-sys-color-success)">🟢 Low Importance Webhook</label>
+            <input type="password" id="inputDiscordLow" class="form-input" style="flex:2;">
+          </div>
+          
+          <label class="checkbox-container" style="margin-top:16px;">
+            <input type="checkbox" id="checkDiscordPerEmail">
+            <span class="body-medium">Send individual notifications per email (instead of batch)</span>
+          </label>
+        </div>
+      </section>
+
+      <!-- Data & Backup Panel -->
+      <section id="panel-data" class="tab-panel">
+        <div class="panel-header">
+          <h1 class="headline-small">Data & Backup</h1>
+          <p class="body-medium" style="color:var(--md-sys-color-on-surface-variant);">Manage your settings data.</p>
+        </div>
+        
+        <div class="card">
+          <h3 class="title-medium" style="margin-bottom:12px;">Local Data</h3>
+          <div class="btn-group">
+            <button class="btn btn-secondary" id="btnExportSettings">Export Settings (JSON)</button>
+            <button class="btn btn-secondary" id="btnImportSettings">Import Settings</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3 class="title-medium" style="margin-bottom:12px;">Google Drive Sync</h3>
+          <label class="checkbox-container">
+            <input type="checkbox" id="checkDriveAutoBackup">
+            <span class="body-medium">Automatically backup settings to Google Drive</span>
+          </label>
+          <div class="btn-group" style="margin-top:12px;">
+            <button class="btn btn-primary" id="btnDriveBackupNow">Backup Now</button>
+            <button class="btn btn-outlined" id="btnDriveRestore">Restore from Drive</button>
+          </div>
+          <p class="body-small" style="margin-top:12px; color:var(--md-sys-color-on-surface-variant);">
+            Last Backup: <span id="labelLastBackup">Never</span>
+          </p>
+        </div>
+      </section>
+
+      <!-- Advanced Panel -->
+      <section id="panel-advanced" class="tab-panel">
+        <div class="panel-header">
+          <h1 class="headline-small">Advanced</h1>
+          <p class="body-medium" style="color:var(--md-sys-color-on-surface-variant);">Developer options and experimental features.</p>
+        </div>
+        
+        <div class="card">
+          <h3 class="title-medium" style="margin-bottom:12px;">Debugging</h3>
+          <label class="checkbox-container">
+            <input type="checkbox" id="checkDebugMode">
+            <span class="body-medium">Enable Debug Mode (Extra logging)</span>
+          </label>
+          <label class="checkbox-container">
+            <input type="checkbox" id="checkVerboseLogging">
+            <span class="body-medium">Verbose Logging (Very noisy)</span>
+          </label>
+        </div>
+
+        <div class="card">
+          <h3 class="title-medium" style="margin-bottom:12px; color:var(--md-sys-color-error)">Danger Zone</h3>
+          <p class="body-medium" style="margin-bottom:12px; color:var(--md-sys-color-on-surface-variant);">These actions cannot be undone.</p>
+          <button class="btn btn-outlined danger" id="btnResetAllSettings">Reset All Settings to Default</button>
+        </div>
+      </section>
+
     </main>
   </div>
 
+  <!-- Global Save Snackbar -->
+  <div id="saveSnackbar" class="snackbar">
+    Changes saved successfully.
+  </div>
+
   <script src="../i18n.js"></script>
-  <script src="../crypto-helper.js"></script>
   <script src="options.js"></script>
 </body>
 </html>

@@ -9,6 +9,10 @@
   <link rel="stylesheet" href="../ui/tokens/typography.css">
   <link rel="stylesheet" href="../ui/tokens/components.css">
   <link rel="stylesheet" href="popup.css">
+  
+  <script src="../settings/settings_schema.js"></script>
+  <script src="../settings/settings_defaults.js"></script>
+  <script src="../settings/settings_store.js"></script>
 </head>
 <body>
   
@@ -66,14 +70,8 @@
     <section class="recent-jobs">
       <div class="section-title label-small">Recent Activity</div>
       <div class="job-list" id="recentJobsList">
-        <div class="job-item">
-          <div class="job-name">Gmail Classify</div>
-          <div class="job-status success">Completed</div>
-        </div>
-        <div class="job-item">
-          <div class="job-name">Calendar Classify</div>
-          <div class="job-status success">12 events</div>
-        </div>
+        <!-- Dynamically populated -->
+        <div class="label-small" style="text-align:center; color:var(--md-sys-color-on-surface-variant); padding:12px;">No recent activity</div>
       </div>
     </section>
 

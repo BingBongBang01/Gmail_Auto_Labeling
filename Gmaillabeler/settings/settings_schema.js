@@ -1,0 +1,141 @@
+// settings/settings_schema.js
+
+/**
+ * Single Source of Truth for the structure of all settings.
+ * This defines the nested object structure that will be saved to chrome.storage.
+ */
+const SETTINGS_SCHEMA = {
+  general: {
+    language: "string", // "system", "ko", "en", etc.
+    themeMode: "string", // "system", "light", "dark"
+    startupBehavior: {
+      openSidePanelOnGmail: "boolean",
+      showStatusOnGmail: "boolean",
+      restoreLastWorkspace: "boolean"
+    }
+  },
+  
+  google: {
+    oauth: {
+      clientId: "string",
+      clientSecret: "string" // Should eventually be moved out for security, but keeping for compatibility
+    }
+  },
+  
+  ai: {
+    provider: "string", // "gemini"
+    geminiApiKeys: "array", // Array of { label: string, key: string, active: boolean }
+    model: "string", // "gemini-1.5-flash"
+    retry: {
+      enabled: "boolean",
+      maxRetries: "number",
+      useFallbackKey: "boolean"
+    },
+    processing: {
+      batchSize: "number",
+      concurrency: "number"
+    }
+  },
+  
+  gmail: {
+    classification: {
+      enabled: "boolean",
+      threshold: "number",
+      batchSize: "number",
+      processingMode: "string", // "standard", "fast"
+      duplicateHandling: "string" // "skip", "reclassify"
+    },
+    categories: "array", // Array of { name, description, color, enabled, importance, keywords }
+    importance: {
+      high: "string",
+      medium: "string",
+      low: "string",
+      mode: "string" // "criteria-based", "ai-assisted"
+    },
+    personalization: {
+      identityHints: "string",
+      exclusionRules: "string"
+    },
+    filters: "array", // Array of manual filter rules
+    fetching: {
+      lightweight: "boolean",
+      limit: "number",
+      unreadOnly: "boolean"
+    },
+    correctionLearning: {
+      enabled: "boolean",
+      patterns: "array"
+    }
+  },
+  
+  calendar: {
+    general: {
+      enabled: "boolean",
+      defaultCalendar: "string"
+    },
+    classification: {
+      enabled: "boolean",
+      dateRange: "string", // "today", "week", "custom"
+      applyColors: "boolean"
+    },
+    filters: "array",
+    colors: "object" // Mapping of CategoryName -> Calendar Color ID
+  },
+  
+  automation: {
+    autoClassify: {
+      enabled: "boolean",
+      threshold: "number",
+      newMailOnly: "boolean",
+      isPaused: "boolean"
+    },
+    autoSummary: {
+      enabled: "boolean",
+      label: "string",
+      maxCount: "number",
+      criteria: "string",
+      sendToDiscord: "boolean"
+    }
+  },
+  
+  notifications: {
+    browser: {
+      enabled: "boolean",
+      onClassifyComplete: "boolean",
+      onClassifyError: "boolean",
+      onSummaryComplete: "boolean"
+    },
+    discord: {
+      enabled: "boolean",
+      defaultWebhook: "string",
+      highWebhook: "string",
+      mediumWebhook: "string",
+      lowWebhook: "string",
+      sendPerEmail: "boolean"
+    },
+    customWebhooks: "array" // Array of { name, url, categories, importance, enabled }
+  },
+  
+  data: {
+    backup: {
+      autoBackupToDrive: "boolean",
+      includeCredentials: "boolean",
+      lastBackupAt: "string"
+    }
+  },
+  
+  advanced: {
+    logging: {
+      debugMode: "boolean",
+      verbose: "boolean"
+    },
+    experimentalFeatures: "boolean"
+  }
+};
+
+if (typeof window !== "undefined") {
+  window.SETTINGS_SCHEMA = SETTINGS_SCHEMA;
+}
+if (typeof module !== "undefined" && module.exports) {
+  module.exports = SETTINGS_SCHEMA;
+}
