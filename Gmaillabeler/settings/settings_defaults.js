@@ -108,7 +108,9 @@ const SETTINGS_DEFAULTS = {
   
   notifications: {
     browser: {
-      enabled: false,
+      // 지금까지 이 설정을 아무도 읽지 않아서 알림은 항상 떴다.
+      // 이제 실제로 반영되므로, 기본값을 true로 둬서 기존 동작을 유지한다.
+      enabled: true,
       onClassifyComplete: true,
       onClassifyError: true,
       onSummaryComplete: true

@@ -331,7 +331,16 @@ async function hasUsableAiCredential() {
 // chrome.identity.getAuthToken()은 manifest에 박혀있는 client_id로만 동작해서, 사용자마다 각자의 GCP
 // OAuth 클라이언트를 쓰게 할 수가 없다. 그래서 launchWebAuthFlow + authorization code 교환 + refresh_token
 // 방식을 직접 구현해서, 설정 탭에서 입력한 사용자 개인 client_id/secret으로 인증하도록 한다.
-const GOOGLE_OAUTH_SCOPE = "https://www.googleapis.com/auth/gmail.modify https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/calendar.events";
+// calendar.events는 일정 조회/수정만 허용한다. 캘린더 "목록"(calendarList.list)은
+// 포함되지 않아서 대시보드의 캘린더 선택 새로고침이 403을 받는다. 그래서 읽기 전용 스코프를 함께 요청한다.
+// 주의: 이 목록이 바뀌면 기존 사용자의 refresh token으로는 새 권한이 없으므로 재연결이 필요하다.
+// (calendar_api.js가 403을 감지해 재연결 안내 메시지를 띄운다)
+const GOOGLE_OAUTH_SCOPE = [
+  "https://www.googleapis.com/auth/gmail.modify",
+  "https://www.googleapis.com/auth/drive.file",
+  "https://www.googleapis.com/auth/calendar.events",
+  "https://www.googleapis.com/auth/calendar.readonly",
+].join(" ");
 
 async function getOAuthCredentials() {
   const settings = await SettingsStore.getSettings();
@@ -581,37 +590,34 @@ async function gmailFetch(url, options) {
 // 백업 파일은 사용자 드라이브 최상위에 평범한 보이는 파일로 저장돼서, 사용자가 직접 열어보거나 지울 수도 있다.
 const DRIVE_BACKUP_FILENAME = "gmail-ai-labeler-backup.json";
 
-// 백업에 포함할 전체 사용자 설정 및 데이터 키 목록
-const BACKUP_SETTING_KEYS = [
-  "categoryDefinitions",
-  "filterRules",
-  "autoClassifyEnabled",
-  "autoClassifyThreshold",
-  "themeMode",
-  "uiLanguage",
-  "showQuotaOnMain",
-  "correctionLearningEnabled",
-  "importanceCriteria",
-  "discordWebhookUrl",
-  "discordWebhookUrlHigh",
-  "discordWebhookUrlMedium",
-  "discordWebhookUrlLow",
-  "customDiscordWebhooks",
-  "discordSendPerEmail",
-  "personalIdentityHints",
-  "personalExclusionRules",
+// 설정 본체는 appSettings 하나로 백업한다. 예전에 여기 있던 평면 키 목록
+// (categoryDefinitions, filterRules, discordWebhookUrl* 등)은 v3에서 더 이상
+// 쓰이지 않는 저장 위치라서, 그것만 백업하면 실제 설정이 하나도 담기지 않았다.
+
+// v2 백업 파일을 복원할 때만 쓰는 옛 평면 키 목록(하위 호환).
+const BACKUP_LEGACY_CREDENTIAL_KEYS = ["geminiApiKeys", "oauthClientId", "oauthClientSecret"];
+
+// appSettings에 들어가지 않는, 순수 런타임/작업 데이터. 이건 평면 키 그대로 백업한다.
+const BACKUP_RUNTIME_KEYS = [
   "summaryFeedback",
   "lastSummaryLabel",
   "lastSummaryCriteria",
-  "autoSummaryEnabled",
-  "autoSummaryLabel",
-  "autoSummaryMaxCount",
-  "autoSummaryCriteria",
-  "autoSummarySendDiscord",
   "lastLabelSummary",
-  "criteriaScratchpad"
+  "criteriaScratchpad",
 ];
-const BACKUP_CREDENTIAL_KEYS = ["geminiApiKeys", "oauthClientId", "oauthClientSecret"];
+
+// 설정 blob에서 자격 증명을 떼어낸다.
+// API 키와 OAuth 시크릿이 평문으로 드라이브에 올라가지 않게 하기 위한 분리다.
+function splitSettingsAndCredentials(settings) {
+  const clone = JSON.parse(JSON.stringify(settings || {}));
+  const credentials = {
+    aiCredentials: clone.ai?.credentials || [],
+    oauth: clone.google?.oauth || {},
+  };
+  if (clone.ai) clone.ai.credentials = [];
+  if (clone.google) clone.google.oauth = { clientId: "", clientSecret: "" };
+  return { safeSettings: clone, credentials };
+}
 
 async function findOrCreateDriveBackupFileId() {
   const cached = await new Promise((resolve) => chrome.storage.local.get(["driveBackupFileId"], resolve));
@@ -654,25 +660,44 @@ async function findOrCreateDriveBackupFileId() {
 
 async function processBackupToDrive(includeCredentials, passphrase) {
   await addLog(t("logDriveBackupStart"));
-  const stored = await new Promise((resolve) => chrome.storage.local.get([...BACKUP_SETTING_KEYS, ...BACKUP_CREDENTIAL_KEYS], resolve));
 
-  const settings = {};
-  const credentials = {};
-  for (const key of BACKUP_SETTING_KEYS) if (key in stored) settings[key] = stored[key];
-  for (const key of BACKUP_CREDENTIAL_KEYS) if (key in stored) credentials[key] = stored[key];
+  // 설정 본체는 appSettings 하나다. 예전에는 이 키가 백업 목록에 아예 없어서
+  // v3 설정(카테고리, 필터, 웹훅, ai.credentials 전체)이 백업되지 않았고,
+  // 대신 이미 쓰이지 않는 옛 평면 키만 올라가고 있었다.
+  const allSettings = await SettingsStore.getSettings();
+  const { safeSettings, credentials } = splitSettingsAndCredentials(allSettings);
+
+  const storedRuntime = await new Promise((resolve) =>
+    chrome.storage.local.get(BACKUP_RUNTIME_KEYS, resolve)
+  );
+  const runtime = {};
+  for (const key of BACKUP_RUNTIME_KEYS) if (key in storedRuntime) runtime[key] = storedRuntime[key];
+
+  const hasCredentials =
+    (credentials.aiCredentials && credentials.aiCredentials.length) ||
+    credentials.oauth?.clientId ||
+    credentials.oauth?.clientSecret;
 
   const payload = {
-    backupVersion: 2,
+    backupVersion: 3,
     createdAt: new Date().toISOString(),
-    includesCredentials: !!includeCredentials,
-    settings,
+    includesCredentials: false,
+    appSettings: safeSettings,
+    runtime,
   };
 
-  if (includeCredentials && Object.keys(credentials).length) {
+  if (includeCredentials && hasCredentials) {
     if (passphrase) {
       payload.encryptedCredentials = await encryptWithPassphrase(passphrase, credentials);
+      payload.includesCredentials = true;
     } else {
-      payload.settings = { ...payload.settings, ...credentials }; // 암호 없으면 예전처럼 평문 저장
+      // 예전에는 암호가 없으면 자격 증명을 평문으로 그대로 넣었다(그리고 UI에는 암호를
+      // 입력할 경로가 없어서 사실상 항상 평문이었다). API 키와 OAuth 시크릿을
+      // 드라이브에 평문으로 올리는 건 위험하므로, 암호가 없으면 아예 제외한다.
+      await addLog(
+        "[백업] 암호를 입력하지 않아 API 키와 OAuth 정보는 백업에서 제외했습니다(평문 저장 방지).",
+        "warn"
+      );
     }
   }
 
@@ -691,9 +716,10 @@ async function processBackupToDrive(includeCredentials, passphrase) {
   }
 
   await chrome.storage.local.set({ lastDriveBackupAt: Date.now() });
+  await SettingsStore.setSetting("data.backup.lastBackupAt", new Date().toISOString());
   await addLog(
     t(payload.encryptedCredentials ? "logDriveBackupDoneEncrypted" : "logDriveBackupDone", [
-      Object.keys(payload.settings).length,
+      Object.keys(payload.appSettings || {}).length,
     ])
   );
   return { total: 1, success: 1, failMessages: [], requestsUsed: 0, batchSize: 1, cancelled: false, quotaExhausted: false };
@@ -718,24 +744,60 @@ async function processRestoreFromDrive(passphrase) {
     throw new Error(t("errDriveBackupInvalid"));
   }
 
-  const settings = { ...(payload.settings || {}) };
-  let restoredCount = Object.keys(settings).length;
-
+  // 자격 증명을 먼저 복호화한다(암호가 틀리면 아무것도 덮어쓰지 않고 중단해야 한다).
+  let credentials = null;
   if (payload.encryptedCredentials) {
     if (!passphrase) {
       throw new Error(t("errBackupPassphraseNeeded"));
     }
-    let credentials;
     try {
       credentials = await decryptWithPassphrase(passphrase, payload.encryptedCredentials);
     } catch (e) {
       throw new Error(t("errBackupPassphraseWrong"));
     }
-    Object.assign(settings, credentials);
-    restoredCount += Object.keys(credentials).length;
   }
 
-  await chrome.storage.local.set(settings);
+  let restoredCount = 0;
+
+  if (payload.appSettings) {
+    // v3 백업. 스키마로 걸러서 병합한다.
+    const { value } = validateSettingsAgainstSchema(payload.appSettings);
+    if (credentials) {
+      if (Array.isArray(credentials.aiCredentials) && credentials.aiCredentials.length) {
+        value.ai = { ...(value.ai || {}), credentials: sanitizeCredentialList(credentials.aiCredentials) };
+      }
+      if (credentials.oauth && (credentials.oauth.clientId || credentials.oauth.clientSecret)) {
+        value.google = { oauth: { ...credentials.oauth } };
+      }
+    }
+    value.schemaVersion = SETTINGS_DEFAULTS.schemaVersion;
+    await SettingsStore.setSettings(value);
+    restoredCount += Object.keys(value).length;
+
+    if (payload.runtime && typeof payload.runtime === "object") {
+      const runtime = {};
+      for (const key of BACKUP_RUNTIME_KEYS) {
+        if (key in payload.runtime) runtime[key] = payload.runtime[key];
+      }
+      if (Object.keys(runtime).length) {
+        await chrome.storage.local.set(runtime);
+        restoredCount += Object.keys(runtime).length;
+      }
+    }
+  } else {
+    // v2 이하 백업(평면 키). 그대로 되돌려놓고 마이그레이션이 새 구조로 옮기게 한다.
+    const flat = { ...(payload.settings || {}) };
+    if (credentials) {
+      for (const key of BACKUP_LEGACY_CREDENTIAL_KEYS) {
+        if (key in credentials) flat[key] = credentials[key];
+      }
+    }
+    restoredCount = Object.keys(flat).length;
+    if (restoredCount) await chrome.storage.local.set(flat);
+    // schemaVersion을 내려서 마이그레이션이 다시 돌도록 한 뒤 즉시 실행한다.
+    await SettingsStore.setSetting("schemaVersion", 1);
+    await migrateToLatestSettings();
+  }
   await addLog(t("logDriveRestoreDone", [payload.createdAt || t("logUnknownTime"), restoredCount]));
   return {
     total: 1,
@@ -975,6 +1037,22 @@ async function fetchLabelCache(token) {
     if (label.type === "system") systemNames.add(label.name);
   });
   return { exact, normalized, systemNames };
+}
+
+// "부모/자식" 형태로 존재하는 Gmail 라벨에서 자식 부분의 이름만 모아준다.
+// 부모 라벨을 이름 변경/삭제할 때 그 아래 하위 라벨까지 함께 처리하기 위해 쓴다.
+// 호출부는 반환된 각 값을 `${parent}/${child}`로 다시 조립해 라벨 ID를 찾으므로,
+// 2단 이상 깊은 라벨(parent/a/b)도 "a/b" 형태로 그대로 돌려주면 된다.
+function getSubLabelCandidates(parentName, labelCache) {
+  if (!labelCache || !labelCache.exact) return [];
+  const prefix = `${parentName}/`;
+  const children = new Set();
+  for (const name of labelCache.exact.keys()) {
+    if (typeof name !== "string" || !name.startsWith(prefix)) continue;
+    const child = name.slice(prefix.length);
+    if (child) children.add(child);
+  }
+  return Array.from(children);
 }
 
 // 사용자가 Gmail에서 직접 만든(이 확장이 모르는) 최상위 라벨을 찾아서 카테고리 목록에 자동으로 편입한다.
@@ -3963,7 +4041,23 @@ function summaryMessage(summary) {
   return base;
 }
 
-function notifyCompletion(title, summary) {
+// 알림 설정(notifications.browser.*)은 스키마와 옵션 UI에 있었지만 아무도 읽지 않아서,
+// 사용자가 브라우저 알림을 꺼도 계속 알림이 떴다.
+async function isBrowserNotificationEnabled(kind) {
+  try {
+    const settings = await SettingsStore.getSettings();
+    const browser = settings.notifications?.browser;
+    if (!browser || browser.enabled !== true) return false;
+    if (kind === "error") return browser.onClassifyError !== false;
+    if (kind === "summary") return browser.onSummaryComplete !== false;
+    return browser.onClassifyComplete !== false;
+  } catch (e) {
+    return false;
+  }
+}
+
+async function notifyCompletion(title, summary) {
+  if (!(await isBrowserNotificationEnabled("complete"))) return;
   chrome.notifications.create(`gmail-labeler-${Date.now()}`, {
     type: "basic",
     iconUrl: chrome.runtime.getURL("icon128.png"),
@@ -3973,7 +4067,8 @@ function notifyCompletion(title, summary) {
   });
 }
 
-function notifyError(title, errMsg) {
+async function notifyError(title, errMsg) {
+  if (!(await isBrowserNotificationEnabled("error"))) return;
   chrome.notifications.create(`gmail-labeler-error-${Date.now()}`, {
     type: "basic",
     iconUrl: chrome.runtime.getURL("icon128.png"),
@@ -4011,6 +4106,22 @@ async function markJobRunning(jobKind) {
   });
 }
 
+const MAX_RECENT_JOBS = 10;
+
+// 팝업의 "최근 활동" 카드가 읽는 목록.
+// 예전에는 팝업이 recentJobs를 읽기만 하고 쓰는 코드가 아예 없어서
+// 항상 "No recent activity"만 표시됐다.
+async function recordRecentJob(name, status, resultText) {
+  try {
+    const stored = await new Promise((resolve) => chrome.storage.local.get(["recentJobs"], resolve));
+    const jobs = Array.isArray(stored.recentJobs) ? stored.recentJobs : [];
+    jobs.unshift({ name, status, result: resultText || "", at: Date.now() });
+    await chrome.storage.local.set({ recentJobs: jobs.slice(0, MAX_RECENT_JOBS) });
+  } catch (e) {
+    // 기록 실패가 작업 결과에 영향을 주면 안 된다.
+  }
+}
+
 async function runJob(jobFn, notifyTitleKey, notifyTitleParams) {
   await i18nInit();
   const notifyTitle = t(notifyTitleKey, notifyTitleParams);
@@ -4027,7 +4138,8 @@ async function runJob(jobFn, notifyTitleKey, notifyTitleParams) {
     await addLog(
       summary.quotaExhausted ? t("logJobQuotaExceeded") : summary.cancelled ? t("logJobCancelled") : t("logJobDone")
     );
-    notifyCompletion(notifyTitle, summary);
+    await notifyCompletion(notifyTitle, summary);
+    await recordRecentJob(notifyTitle, finalStatus === "done" ? "done" : finalStatus, summaryMessage(summary));
   } catch (err) {
     const errMsg = String(err.message || err);
     const apiService = /gemini/i.test(errMsg) ? "Gemini API" : /oauth|google sign-in/i.test(errMsg) ? "Google OAuth" : /gmail/i.test(errMsg) ? "Gmail API" : "";
@@ -4040,11 +4152,13 @@ async function runJob(jobFn, notifyTitleKey, notifyTitleParams) {
       const summary = { total: 0, success: 0, failMessages: [], requestsUsed: 0, cancelled: true, quotaExhausted: false };
       await chrome.storage.local.set({ jobStatus: "cancelled", jobResult: summary, jobFinishedAt: Date.now() });
       await addLog(t("logJobCancelled"));
-      notifyCompletion(notifyTitle, summary);
+      await notifyCompletion(notifyTitle, summary);
+      await recordRecentJob(notifyTitle, "cancelled", t("logJobCancelled"));
     } else {
       await chrome.storage.local.set({ jobStatus: "error", jobError: errMsg, jobFinishedAt: Date.now() });
       await addLog(t("logJobError", [errMsg]), "error");
-      notifyError(t("notifyTitleErrorSuffix", [notifyTitle]), errMsg);
+      await notifyError(t("notifyTitleErrorSuffix", [notifyTitle]), errMsg);
+      await recordRecentJob(notifyTitle, "error", errMsg.slice(0, 200));
     }
   } finally {
     stopKeepAlive();
@@ -4060,45 +4174,204 @@ function isJobRunning() {
   });
 }
 
+// ---------------- job.start 디스패처 ----------------
+// 팝업/사이드패널/옵션은 모두 { action: "job.start", jobType, payload } 하나로 작업을 시작한다.
+// 예전 구현에는 두 가지 문제가 있었다.
+//  1. gmail_classify / gmail_summarize 분기가 정의되지 않은 startClassification() /
+//     startLabelSummary()를 불러서 즉시 ReferenceError로 죽었다.
+//  2. 사이드패널이 보내는 gmail_classify_thread / gmail_summarize_thread /
+//     calendar_apply_colors는 분기가 아예 없어서 sendResponse 없이 리스너를 빠져나갔다.
+//     팝업은 응답 콜백에서 창을 닫으므로, 아무것도 시작되지 않은 채 그냥 닫혔다.
+const JOB_TYPE_ALIASES = {
+  "gmail.classification": "gmail_classify",
+  "gmail.summary": "gmail_summarize",
+  "calendar.classification": "calendar_classify",
+};
+
+// 설정의 dateRange를 실제 기간으로 바꾼다.
+// 예전에는 이 설정을 아무도 읽지 않고 항상 "오늘 ~ +7일"로 고정돼 있었다.
+function resolveCalendarRange(payload, settings) {
+  if (payload.startDate && payload.endDate) {
+    return { startDate: payload.startDate, endDate: payload.endDate };
+  }
+
+  const range = settings.calendar?.classification?.dateRange || "week";
+  const start = new Date();
+  start.setHours(0, 0, 0, 0);
+  const end = new Date(start);
+
+  if (range === "today") end.setDate(end.getDate() + 1);
+  else if (range === "month") end.setMonth(end.getMonth() + 1);
+  else end.setDate(end.getDate() + 7); // week, custom(기간 미지정) 기본값
+
+  return { startDate: start.toISOString(), endDate: end.toISOString() };
+}
+
+// 콘텐츠 스크립트가 저장해둔 "지금 Gmail에서 열려 있는 메일" 정보를 읽는다.
+async function resolveOpenThreadMessageIds() {
+  const stored = await new Promise((resolve) => chrome.storage.local.get(["gmailPageContext"], resolve));
+  const context = stored.gmailPageContext;
+  if (!context || !Array.isArray(context.messageIds) || !context.messageIds.length) return [];
+  // 오래된 컨텍스트로 엉뚱한 메일을 건드리지 않도록 유효 시간을 둔다.
+  if (!context.at || Date.now() - context.at > 10 * 60 * 1000) return [];
+  return context.messageIds;
+}
+
+async function processGenerateCalendarCategories(calendarId) {
+  if (!(await hasUsableAiCredential())) throw new Error(t("errNoApiKey"));
+
+  const settings = await SettingsStore.getSettings();
+  const targetCalendar = calendarId || settings.calendar?.general?.defaultCalendar || "primary";
+
+  // 최근 30일 일정을 표본으로 카테고리 초안을 만든다.
+  await addLog("[캘린더] 최근 일정을 분석해 카테고리를 생성합니다...");
+  const events = await calendarEventsListAll(
+    targetCalendar,
+    {
+      timeMin: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
+      timeMax: new Date().toISOString(),
+      singleEvents: true,
+      orderBy: "startTime",
+      maxResults: 250,
+    },
+    100
+  );
+
+  if (!events.length) {
+    throw new Error("최근 30일 안에 분석할 일정이 없습니다. 캘린더에 일정을 추가한 뒤 다시 시도하세요.");
+  }
+
+  // getAvailableCalendarColors()는 { "1": {background, foreground, name}, ... } 맵을 돌려준다.
+  // 예전에는 Object.keys(colorsData.event)로 만든 배열을 넘겨서 colorId가 한 칸씩 밀렸다.
+  const availableColors = await getAvailableCalendarColors();
+  const categories = await initializeCalendarCategoriesWithAI(events, availableColors, i18nCurrentLocale());
+
+  if (!categories.length) {
+    throw new Error("AI가 카테고리를 만들지 못했습니다. 잠시 후 다시 시도하세요.");
+  }
+
+  await SettingsStore.setSetting("calendar.categories", categories);
+  await addLog(`[캘린더] 카테고리 ${categories.length}개를 생성했습니다.`);
+
+  return {
+    total: categories.length,
+    success: categories.length,
+    failMessages: [],
+    requestsUsed: 1,
+    batchSize: 1,
+    cancelled: false,
+    quotaExhausted: false,
+  };
+}
+
+async function startJobByType(jobType, payload) {
+  const normalized = JOB_TYPE_ALIASES[jobType] || jobType;
+
+  if (await isJobRunning()) {
+    return { ok: false, messageKey: "errorAlreadyRunning" };
+  }
+
+  const settings = await SettingsStore.getSettings();
+
+  switch (normalized) {
+    case "gmail_classify": {
+      const requested = Number(payload.count) > 0
+        ? Number(payload.count)
+        : Number(settings.gmail?.fetching?.limit) || BATCH_SIZE;
+      const count = Math.max(1, Math.min(MAX_EMAIL_COUNT_PER_RUN, Math.floor(requested)));
+      await markJobRunning("classify");
+      runJob(() => processRecentEmails(count), "notifyTitleClassify");
+      return { ok: true, started: true, messageKey: "resultRequesting", messageParams: [count] };
+    }
+
+    case "gmail_classify_thread": {
+      const messageIds = Array.isArray(payload.messageIds) && payload.messageIds.length
+        ? payload.messageIds
+        : await resolveOpenThreadMessageIds();
+      if (!messageIds.length) {
+        return { ok: false, error: "열려 있는 메일을 찾지 못했습니다. Gmail에서 메일을 열고 다시 시도하세요." };
+      }
+      await markJobRunning("classify");
+      runJob(() => processSpecificMessages(messageIds), "notifyTitleClassify");
+      return { ok: true, started: true };
+    }
+
+    case "gmail_summarize": {
+      const labelName = String(payload.labelName || settings.automation?.autoSummary?.label || "").trim();
+      if (!labelName) {
+        return { ok: false, messageKey: "errorSelectSummaryLabel" };
+      }
+      await markJobRunning("labelSummary");
+      runJob(
+        () => processSummarizeLabelEmails(labelName, payload.count, payload.filterCriteria),
+        "notifyTitleSummary"
+      );
+      return { ok: true, started: true, messageKey: "summaryRequesting" };
+    }
+
+    case "gmail_summarize_thread": {
+      const messageIds = Array.isArray(payload.messageIds) && payload.messageIds.length
+        ? payload.messageIds
+        : await resolveOpenThreadMessageIds();
+      if (!messageIds.length) {
+        return { ok: false, error: "열려 있는 메일을 찾지 못했습니다. Gmail에서 메일을 열고 다시 시도하세요." };
+      }
+      await markJobRunning("labelSummary");
+      runJob(
+        () =>
+          processSummarizeLabelEmails("", messageIds.length, payload.filterCriteria, { messageIds }),
+        "notifyTitleSummary"
+      );
+      return { ok: true, started: true };
+    }
+
+    case "calendar_classify":
+    case "calendar_apply_colors": {
+      const range = resolveCalendarRange(payload, settings);
+      const calendarId =
+        payload.calendarId || settings.calendar?.general?.defaultCalendar || "primary";
+      // "색상 적용"은 이미 색이 지정된 일정까지 다시 칠하는 것이 사용자 의도다.
+      const overwrite =
+        normalized === "calendar_apply_colors"
+          ? true
+          : payload.overwriteExistingColors !== undefined
+          ? !!payload.overwriteExistingColors
+          : undefined;
+
+      await markJobRunning("calendarClassify");
+      runJob(
+        () =>
+          runCalendarClassification({
+            calendarId,
+            startDate: range.startDate,
+            endDate: range.endDate,
+            overwriteExistingColors: overwrite,
+            applyColors: normalized === "calendar_apply_colors" ? true : undefined,
+          }),
+        "notifyTitleCalendarClassify"
+      );
+      return { ok: true, started: true };
+    }
+
+    case "calendar_init_categories": {
+      await markJobRunning("calendarCategories");
+      runJob(() => processGenerateCalendarCategories(payload.calendarId), "notifyTitleCalendarCategories");
+      return { ok: true, started: true };
+    }
+
+    default:
+      return { ok: false, error: `지원하지 않는 작업 유형입니다: ${jobType}` };
+  }
+}
+
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === "job.start") {
-    const jobType = request.jobType;
-    if (jobType === "gmail.classification" || jobType === "gmail_classify") {
-      startClassification().then(res => sendResponse(res)).catch(e => sendResponse({ error: e.message }));
-      return true;
-    } else if (jobType === "gmail.summary" || jobType === "gmail_summarize") {
-      startLabelSummary().then(res => sendResponse(res)).catch(e => sendResponse({ error: e.message }));
-      return true;
-    } else if (jobType === "calendar.classification" || jobType === "calendar_classify") {
-      const payload = request.payload || {};
-      const startDate = payload.startDate || new Date(new Date().setHours(0,0,0,0)).toISOString();
-      const endDate = payload.endDate || new Date(Date.now() + 7*24*60*60*1000).toISOString();
-      runCalendarClassification({
-        calendarId: payload.calendarId || "primary",
-        startDate,
-        endDate,
-        overwriteExistingColors: payload.overwriteExistingColors || false
-      }).then(res => sendResponse(res)).catch(e => sendResponse({ error: e.message }));
-      return true;
-    } else if (jobType === "calendar_init_categories") {
-      runJob(async () => {
-        const events = await fetchCalendarEvents("primary", 
-          new Date(Date.now() - 30*24*60*60*1000).toISOString(),
-          new Date().toISOString(),
-          100
-        );
-        const colorsData = await fetchCalendarColors();
-        const availableColors = Object.keys(colorsData.event || {});
-        const categories = await initializeCalendarCategoriesWithAI(events, availableColors, i18nCurrentLocale());
-        
-        const settings = await SettingsStore.getSettings();
-        settings.calendar.categories = categories;
-        await SettingsStore.setSetting('calendar.categories', categories);
-        
-        return { total: categories.length, success: categories.length, failMessages: [], requestsUsed: 1, batchSize: 1, cancelled: false, quotaExhausted: false };
-      }, "Generate Calendar Categories").then(res => sendResponse(res)).catch(e => sendResponse({ error: e.message }));
-      return true;
-    }
+    // 알 수 없는 jobType도 반드시 응답한다. 응답이 없으면 포트가 닫히면서
+    // 팝업이 "시작됐다"고 착각한 채 닫힌다.
+    startJobByType(request.jobType, request.payload || {})
+      .then((res) => sendResponse(res))
+      .catch((e) => sendResponse({ ok: false, error: String(e.message || e) }));
+    return true;
   }
 
   if (request.action === "authorizeOAuth") {
@@ -4145,7 +4418,25 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
 
   if (request.action === "getQuotaUsage") {
-    getQuotaUsage().then((usage) => sendResponse(usage));
+    getQuotaUsage()
+      .then((usage) => sendResponse(usage))
+      .catch((e) => sendResponse({ error: String(e.message || e) }));
+    return true;
+  }
+
+  // 대시보드의 캘린더 목록 새로고침. 예전에는 이 액션에 핸들러가 없어서
+  // (응답이 undefined) 버튼을 눌러도 조용히 아무 일도 일어나지 않았다.
+  if (request.action === "listCalendars") {
+    calendarList({ minAccessRole: "writer", maxResults: 250 })
+      .then((data) => {
+        const calendars = (data.items || []).map((cal) => ({
+          id: cal.id,
+          summary: cal.summary || cal.id,
+          primary: !!cal.primary,
+        }));
+        sendResponse({ ok: true, calendars });
+      })
+      .catch((e) => sendResponse({ ok: false, error: String(e.message || e) }));
     return true;
   }
 
@@ -4441,8 +4732,18 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === "backupToDrive") {
     isJobRunning().then(async (running) => {
       if (running) { sendResponse({ messageKey: "errorAlreadyRunning", ok: false }); return; }
+      // 예전에는 includeCredentials를 무조건 false로, 암호는 빈 문자열로 넘겨서
+      // 설정의 "자격 증명 포함" 옵션과 암호 입력이 전혀 반영되지 않았다.
+      const settings = await SettingsStore.getSettings();
+      const includeCredentials =
+        request.includeCredentials !== undefined
+          ? !!request.includeCredentials
+          : settings.data?.backup?.includeCredentials === true;
       await markJobRunning("driveBackup");
-      runJob(() => processBackupToDrive(false, ""), "notifyTitleDriveBackup");
+      runJob(
+        () => processBackupToDrive(includeCredentials, request.passphrase || ""),
+        "notifyTitleDriveBackup"
+      );
       sendResponse({ messageKey: "driveBackupRequesting", ok: true, started: true });
     });
     return true;

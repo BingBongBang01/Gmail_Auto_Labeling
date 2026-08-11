@@ -8,6 +8,7 @@
   <link rel="stylesheet" href="../ui/tokens/typography.css">
   <link rel="stylesheet" href="../ui/tokens/components.css">
   <link rel="stylesheet" href="dashboard.css">
+</head>
 <body>
 
   <!-- Top Header Navigation Bar -->
@@ -283,6 +284,13 @@
     </main>
   </div>
 
+<!-- 대시보드도 다른 화면과 같은 설정 저장소를 쓴다.
+     예전에는 이 세 스크립트를 로드하지 않아서 SettingsStore를 쓸 수 없었고,
+     그래서 카테고리/필터/웹훅/테마를 평면 키에 따로 저장했다.
+     background.js는 appSettings만 읽으므로 대시보드에서 바꾼 값이 반영되지 않았다. -->
+<script src="../settings/settings_schema.js"></script>
+<script src="../settings/settings_defaults.js"></script>
+<script src="../settings/settings_store.js"></script>
 <script src="../i18n.js"></script>
 <script src="../crypto-helper.js"></script>
 <script src="dashboard.js"></script>

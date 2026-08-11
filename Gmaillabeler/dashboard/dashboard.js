@@ -55,27 +55,26 @@ function applyTheme(mode) {
   document.documentElement.setAttribute("data-theme", effective);
 }
 
+// 테마는 settings.general.themeMode 한 곳에서 읽는다.
+// 예전에는 대시보드와 로그 창만 평면 키 themeMode를 쓰고 팝업/사이드패널/옵션은
+// settings.general.themeMode를 써서, 대시보드에서 테마를 바꿔도 다른 화면에는
+// 전혀 반영되지 않았다(반대 방향도 마찬가지).
 function initTheme() {
-  chrome.storage.local.get(["themeMode"], (result) => {
-    applyTheme(result.themeMode || "system");
-  });
+  SettingsStore.getSetting("general.themeMode").then((mode) => applyTheme(mode || "system"));
 
   const themeToggleBtn = $("dashThemeToggleBtn");
   if (themeToggleBtn) {
-    themeToggleBtn.addEventListener("click", () => {
-      chrome.storage.local.get(["themeMode"], (result) => {
-        const current = result.themeMode || "system";
-        const next = current === "dark" ? "light" : "dark";
-        chrome.storage.local.set({ themeMode: next });
-        applyTheme(next);
-      });
+    themeToggleBtn.addEventListener("click", async () => {
+      const current = (await SettingsStore.getSetting("general.themeMode")) || "system";
+      const next = current === "dark" ? "light" : "dark";
+      await SettingsStore.setSetting("general.themeMode", next);
+      applyTheme(next);
     });
   }
 
-  darkModeMql.addEventListener("change", () => {
-    chrome.storage.local.get(["themeMode"], (result) => {
-      if ((result.themeMode || "system") === "system") applyTheme("system");
-    });
+  darkModeMql.addEventListener("change", async () => {
+    const mode = (await SettingsStore.getSetting("general.themeMode")) || "system";
+    if (mode === "system") applyTheme("system");
   });
 }
 
@@ -113,15 +112,20 @@ function getLocalizedDefaultCategoryDefs() {
 }
 
 function loadCategories() {
-  chrome.storage.local.get(["categoryDefinitions", "labelCategories", "lastSummaryLabel", "lastSummaryCriteria"], (result) => {
-    if (Array.isArray(result.categoryDefinitions) && result.categoryDefinitions.length) {
-      currentCategoryDefs = result.categoryDefinitions.map((c) => ({
+  // 카테고리는 settings.gmail.categories가 유일한 저장 위치다.
+  // 예전에는 대시보드가 평면 키 categoryDefinitions를 읽고 썼는데, background.js는
+  // settings.gmail.categories를 읽어서 여기서 편집한 카테고리가 분류에 반영되지 않았다.
+  return Promise.all([
+    SettingsStore.getSettings(),
+    new Promise((resolve) => chrome.storage.local.get(["lastSummaryLabel", "lastSummaryCriteria"], resolve)),
+  ]).then(([settings, result]) => {
+    const stored = settings.gmail && settings.gmail.categories;
+    if (Array.isArray(stored) && stored.length) {
+      currentCategoryDefs = stored.map((c) => ({
         name: c.name,
         description: c.description || "",
         autoLearned: !!c.autoLearned,
       }));
-    } else if (Array.isArray(result.labelCategories) && result.labelCategories.length) {
-      currentCategoryDefs = result.labelCategories.map((name) => ({ name, description: "" }));
     } else {
       currentCategoryDefs = getLocalizedDefaultCategoryDefs();
     }
@@ -646,7 +650,7 @@ function renderDashboardCategories() {
         alert(t("msgCategoriesMin"));
         return;
       }
-      chrome.storage.local.set({ categoryDefinitions: validDefs }, () => {
+      SettingsStore.setSetting("gmail.categories", validDefs).then(() => {
         currentCategoryDefs = validDefs;
         renderDashboardCategories();
         renderSidebarLabels();
@@ -685,8 +689,100 @@ function loadDashboardRelabelOptions() {
   if (prev) select.value = prev;
 }
 
+// ---------------- 개인 필터 규칙 ----------------
+// AI 분류 전에 먼저 확인해서, 매칭되면 AI 호출 없이 바로 그 라벨을 붙인다.
+// 필드 이름은 background.js의 matchesFilterRule()이 읽는 것과 같아야 한다.
+//
+// 이 네 함수(dashFilterRules / loadDashFilterRules / renderDashFilterRules /
+// collectDashFilterRules)는 참조만 있고 정의가 없었다. main()이 loadDashFilterRules()를
+// 부르는 지점에서 ReferenceError가 나서 그 뒤의 모든 초기화(스크래치패드 복원,
+// getConfig 조회, 마지막 요약 리포트 렌더링, pollStatus)가 실행되지 않았다.
+let dashFilterRules = [];
+
+const FILTER_MATCH_TYPES = ["from", "subject"];
+
+function normalizeDashFilterRule(rule) {
+  return {
+    matchType: FILTER_MATCH_TYPES.includes(rule && rule.matchType) ? rule.matchType : "from",
+    matchValue: typeof (rule && rule.matchValue) === "string" ? rule.matchValue : "",
+    targetLabel: typeof (rule && rule.targetLabel) === "string" ? rule.targetLabel : "",
+  };
+}
+
+async function loadDashFilterRules() {
+  const settings = await SettingsStore.getSettings();
+  const stored = Array.isArray(settings.gmail && settings.gmail.filters) ? settings.gmail.filters : [];
+  dashFilterRules = stored.map(normalizeDashFilterRule);
+  renderDashFilterRules();
+}
+
+function renderDashFilterRules() {
+  const wrap = $("dashFilterRulesList");
+  if (!wrap) return;
+
+  if (!dashFilterRules.length) {
+    wrap.innerHTML = `<p class="dash-desc">${escapeHtml(t("dashFilterRulesEmpty"))}</p>`;
+    return;
+  }
+
+  const labelOptions = (currentCategoryDefs || []).map((c) => c.name).filter(Boolean);
+
+  wrap.innerHTML =
+    dashFilterRules
+      .map(
+        (rule, idx) => `
+      <div class="dash-filter-rule-row" data-idx="${idx}" style="display:flex; gap:8px; align-items:center; margin-bottom:8px;">
+        <select class="dash-input filter-match-type" style="flex:0 0 120px;">
+          <option value="from" ${rule.matchType === "from" ? "selected" : ""}>${escapeHtml(t("dashFilterMatchFrom"))}</option>
+          <option value="subject" ${rule.matchType === "subject" ? "selected" : ""}>${escapeHtml(t("dashFilterMatchSubject"))}</option>
+        </select>
+        <input type="text" class="dash-input filter-match-value" style="flex:1;"
+               value="${escapeHtml(rule.matchValue)}" placeholder="${escapeHtml(t("dashFilterValuePlaceholder"))}">
+        <input type="text" class="dash-input filter-target-label" style="flex:1;" list="dashFilterLabelOptions"
+               value="${escapeHtml(rule.targetLabel)}" placeholder="${escapeHtml(t("dashFilterLabelPlaceholder"))}">
+        <button class="dash-btn dash-btn-secondary filter-rule-remove" data-idx="${idx}" title="✕">✕</button>
+      </div>`
+      )
+      .join("") +
+    `<datalist id="dashFilterLabelOptions">${labelOptions
+      .map((name) => `<option value="${escapeHtml(name)}"></option>`)
+      .join("")}</datalist>`;
+
+  wrap.querySelectorAll(".filter-rule-remove").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      collectDashFilterRules();
+      dashFilterRules.splice(parseInt(btn.getAttribute("data-idx"), 10), 1);
+      renderDashFilterRules();
+    });
+  });
+}
+
+// 화면에 입력된 값을 dashFilterRules에 다시 담는다(행 추가/삭제/저장 직전에 호출).
+function collectDashFilterRules() {
+  const wrap = $("dashFilterRulesList");
+  if (!wrap) return;
+  const rows = wrap.querySelectorAll(".dash-filter-rule-row");
+  if (!rows.length) return;
+
+  dashFilterRules = Array.from(rows).map((row) => ({
+    matchType: row.querySelector(".filter-match-type")?.value === "subject" ? "subject" : "from",
+    matchValue: (row.querySelector(".filter-match-value")?.value || "").trim(),
+    targetLabel: (row.querySelector(".filter-target-label")?.value || "").trim(),
+  }));
+}
+
+// 설정이 자동 저장됐음을 알리는 표시. storage.set 콜백으로 넘겨 쓴다.
+function showSettingsAutoSaveMark() {
+  const box = $("dashSettingsAutoSaveMark") || $("dashFilterRulesResultBox");
+  if (!box) return;
+  box.textContent = t("msgSettingsAutoSaved");
+}
+
 // ---------------- 설정 탭 ----------------
-let dashApiKeys = []; // [{label, key}] - background.js가 기대하는 형식과 동일하게 유지
+// API 키 관리 UI는 옵션 페이지(설정 > AI 공급자)로 옮겨졌다.
+// 여기 남아 있던 dashApiKeys / dashAddApiKeyBtn / dashSaveKeyBtn 코드는 대응하는 DOM이
+// dashboard.html에서 이미 제거돼 실행되지 않았고, 저장 대상도 아무도 읽지 않는
+// 평면 키 geminiApiKeys였다.
 
 // 사용자가 원하는 만큼 추가하는 커스텀 Discord 웹훅.
 // background.js의 matchesCustomWebhookRule()이 읽는 필드 이름과 반드시 같아야 한다.
@@ -787,7 +883,10 @@ function renderCustomWebhooks() {
 
 // 목록 자체가 바뀌는 조작(추가/삭제)은 자동 저장을 기다리지 않고 즉시 반영한다.
 function persistCustomWebhooks() {
-  chrome.storage.local.set({ customDiscordWebhooks: dashCustomWebhooks }, showSettingsAutoSaveMark);
+  // background.js는 settings.notifications.customWebhooks를 읽는다.
+  SettingsStore.setSetting("notifications.customWebhooks", dashCustomWebhooks).then(
+    showSettingsAutoSaveMark
+  );
 }
 
 // 화면에 입력된 값을 dashCustomWebhooks에 다시 담는다(행 추가/삭제/저장 직전에 호출).
@@ -931,7 +1030,9 @@ function initDashboardExtraFeatureEvents() {
     saveRulesBtn.addEventListener("click", () => {
       collectDashFilterRules();
       const valid = dashFilterRules.filter((r) => r.matchValue && r.targetLabel);
-      chrome.storage.local.set({ filterRules: valid }, () => {
+      // background.js는 settings.gmail.filters를 읽는다. 예전에는 평면 키 filterRules에
+      // 저장해서, 여기서 만든 규칙이 분류에 전혀 반영되지 않았다.
+      SettingsStore.setSetting("gmail.filters", valid).then(() => {
         dashFilterRules = valid;
         renderDashFilterRules();
         setText("dashFilterRulesResultBox", t("dashMsgFilterRulesSaved", [valid.length]));
@@ -1002,7 +1103,7 @@ function initDashboardExtraFeatureEvents() {
         setText("dashAnalysisResultBox", t("dashMsgScratchpadNotFound"));
         return;
       }
-      chrome.storage.local.set({ categoryDefinitions: currentCategoryDefs }, () => {
+      SettingsStore.setSetting("gmail.categories", currentCategoryDefs).then(() => {
         renderDashboardCategories();
         setText("dashAnalysisResultBox", t("dashMsgScratchpadApplied", [applied]));
       });
@@ -1149,21 +1250,20 @@ function initEvents() {
         alert(t("dashMsgNoReport"));
         return;
       }
-      chrome.storage.local.get(
-        [
-          "discordWebhookUrl",
-          "discordWebhookUrlHigh",
-          "discordWebhookUrlMedium",
-          "discordWebhookUrlLow",
-          "customDiscordWebhooks",
-        ],
-        (stored) => {
-          const customs = Array.isArray(stored.customDiscordWebhooks) ? stored.customDiscordWebhooks : [];
+      // 웹훅 설정은 settings.notifications에 있다. 예전에는 평면 키
+      // discordWebhookUrl* / customDiscordWebhooks를 읽어서, 옵션 페이지에서 등록한
+      // 웹훅이 여기서는 항상 빈 값으로 보였다.
+      SettingsStore.getSettings().then(
+        (settings) => {
+          const discord = (settings.notifications && settings.notifications.discord) || {};
+          const customs = Array.isArray(settings.notifications && settings.notifications.customWebhooks)
+            ? settings.notifications.customWebhooks
+            : [];
           const webhookInput = {
-            defaultUrl: stored.discordWebhookUrl || "",
-            highUrl: stored.discordWebhookUrlHigh || "",
-            mediumUrl: stored.discordWebhookUrlMedium || "",
-            lowUrl: stored.discordWebhookUrlLow || "",
+            defaultUrl: discord.defaultWebhook || "",
+            highUrl: discord.highWebhook || "",
+            mediumUrl: discord.mediumWebhook || "",
+            lowUrl: discord.lowWebhook || "",
             custom: customs,
           };
           const hasCustom = customs.some((w) => w && w.enabled !== false && w.url);
@@ -1221,7 +1321,7 @@ function initEvents() {
     resetCategoriesBtn.addEventListener("click", () => {
       if (!confirm(t("dashConfirmResetCategories"))) return;
       const defs = getLocalizedDefaultCategoryDefs();
-      chrome.storage.local.set({ categoryDefinitions: defs }, () => {
+      SettingsStore.setSetting("gmail.categories", defs).then(() => {
         currentCategoryDefs = defs;
         renderDashboardCategories();
         renderSidebarLabels();
@@ -1267,32 +1367,8 @@ function initEvents() {
   }
 
   // --- 설정 탭 ---
-  const addApiKeyBtn = $("dashAddApiKeyBtn");
-  if (addApiKeyBtn) {
-    addApiKeyBtn.addEventListener("click", () => {
-      collectApiKeysFromDom();
-      dashApiKeys.push({ label: "", key: "" });
-      renderApiKeyInputs();
-    });
-  }
-
-  const saveKeyBtn = $("dashSaveKeyBtn");
-  if (saveKeyBtn) {
-    saveKeyBtn.addEventListener("click", () => {
-      collectApiKeysFromDom();
-      const validKeys = dashApiKeys.filter((k) => k.key);
-      if (!validKeys.length) {
-        alert(t("dashMsgNeedApiKey"));
-        return;
-      }
-      // background.js의 getGeminiApiKeys()가 기대하는 [{key, label}] 형식으로 저장
-      chrome.storage.local.set({ geminiApiKeys: validKeys, geminiApiKey: null }, () => {
-        dashApiKeys = validKeys;
-        renderApiKeyInputs();
-        alert(t("dashMsgKeysSaved", [validKeys.length]));
-      });
-    });
-  }
+  // API 키 추가/저장 핸들러는 제거했다. 대응하는 버튼이 dashboard.html에 없어서
+  // 애초에 연결되지 않았고, 지금은 옵션 페이지가 ai.credentials로 키를 관리한다.
 
   const addCustomWebhookBtn = $("dashAddCustomWebhookBtn");
   if (addCustomWebhookBtn) {
@@ -1357,13 +1433,9 @@ function initEvents() {
     });
   }
 
-  const saveDiscordSettingsBtn = $("dashSaveDiscordSettingsBtn");
-  if (saveDiscordSettingsBtn) {
-    // 자동 저장이 있어도 "지금 저장됐다"는 확인이 필요할 때가 있어 버튼은 남겨둔다.
-    saveDiscordSettingsBtn.addEventListener("click", () => {
-      chrome.storage.local.set(collectDashboardSettings(), () => alert(t("dashMsgDiscordSettingsSaved")));
-    });
-  }
+  // Discord 설정 저장 버튼 핸들러는 제거했다. 대응하는 버튼이 dashboard.html에 없어서
+  // 연결되지 않았고, 정의조차 없는 collectDashboardSettings()를 호출하고 있었다.
+  // Discord 설정은 옵션 페이지(설정 > 알림)에서 관리한다.
 
   const backupDriveBtn = $("dashBackupDriveBtn");
   if (backupDriveBtn) {
@@ -1391,12 +1463,22 @@ function initEvents() {
         alert("Please select start and end dates."); // can be localized later
         return;
       }
-      startJob({ 
-        action: "startCalendarClassification", 
-        calendarId: calId, 
-        startDate: startDate, 
-        endDate: endDate 
-      }, "Calendar classification started");
+      // 캘린더 분류도 다른 작업과 같은 job.start 경로를 쓴다.
+      // 예전에는 핸들러가 없는 "startCalendarClassification"을 보내서 아무 일도 일어나지 않았고,
+      // 파라미터도 payload가 아니라 최상위에 실어 보내서 무시됐다.
+      startJob(
+        {
+          action: "job.start",
+          jobType: "calendar_classify",
+          payload: {
+            calendarId: calId,
+            // <input type="date">는 "YYYY-MM-DD"를 준다. 종료일은 그날 전체를 포함시킨다.
+            startDate: new Date(`${startDate}T00:00:00`).toISOString(),
+            endDate: new Date(`${endDate}T23:59:59`).toISOString(),
+          },
+        },
+        "Calendar classification started"
+      );
     });
   }
 
@@ -1444,11 +1526,12 @@ async function main() {
   initTheme();
   // 저장된 판정을 먼저 읽어야 요약 리포트의 피드백 버튼이 눌린 상태로 그려진다.
   loadSummaryFeedback();
-  loadCategories();
+  // 필터 규칙 행의 라벨 자동완성이 카테고리 목록을 쓰므로 카테고리를 먼저 읽는다.
+  await loadCategories();
   initEvents();
   initDashTabSwitching();
   initDashboardExtraFeatureEvents();
-  loadDashFilterRules();
+  await loadDashFilterRules();
   loadDashScratchpad();
 
   // 반복 분류 힌트에 쓸 실제 배치 크기를 받아온다
@@ -1470,9 +1553,15 @@ async function main() {
 
   pollStatus();
 
-  // 팝업에서 언어를 바꾸면 열려 있는 대시보드에도 반영한다
+  // 다른 화면에서 언어를 바꾸면 열려 있는 대시보드에도 반영한다.
+  // 언어 설정은 appSettings.general.language로 옮겨졌다(예전 평면 키 uiLanguage 아님).
   chrome.storage.onChanged.addListener(async (changes, areaName) => {
-    if (areaName !== "local" || !changes.uiLanguage) return;
+    if (areaName !== "local") return;
+    const langChanged =
+      changes.uiLanguage ||
+      (changes.appSettings &&
+        changes.appSettings.oldValue?.general?.language !== changes.appSettings.newValue?.general?.language);
+    if (!langChanged) return;
     await i18nInit(true);
     i18nApplyToDom(document);
     pollStatus(); // 상태 pill과 진행/결과 문구를 새 언어로 다시 채운다

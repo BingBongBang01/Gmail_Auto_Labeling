@@ -418,6 +418,12 @@
       }
     }
   },
+  "notifyTitleCalendarClassify": {
+    "message": "日历分类"
+  },
+  "notifyTitleCalendarCategories": {
+    "message": "生成日历类别"
+  },
   "notifyTitleClassify": {
     "message": "Gmail AI Labeler"
   },
@@ -3131,5 +3137,20 @@
   },
   "aiConfirmDelete": {
     "message": "您确定要删除此凭证吗？"
+  },
+  "dashFilterRulesEmpty": {
+    "message": "暂无筛选规则。添加后可跳过 AI 直接贴标签。"
+  },
+  "dashFilterMatchFrom": {
+    "message": "发件人"
+  },
+  "dashFilterMatchSubject": {
+    "message": "主题"
+  },
+  "dashFilterValuePlaceholder": {
+    "message": "要匹配的文本（不区分大小写）"
+  },
+  "dashFilterLabelPlaceholder": {
+    "message": "要应用的标签"
   }
 }
