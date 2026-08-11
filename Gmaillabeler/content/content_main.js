@@ -54,6 +54,7 @@ function observeGmailNavigation() {
 
 function handleRouteChange(url) {
   if (!isExtensionContextValid()) return;
+  broadcastContext(url);
 
   try {
     chrome.storage.local.get(["latestAiData"], (result) => {
@@ -70,6 +71,24 @@ function handleRouteChange(url) {
   } catch (e) {
     // "Extension context invalidated" 등 - 탭을 새로고침하기 전까지는 무시하고 넘어감
   }
+}
+
+function broadcastContext(url) {
+  let context = { service: "Gmail", title: "Inbox", desc: "" };
+  if (url.includes("/#inbox/") || /#(inbox|all|sent)\/[^/]+$/.test(url)) {
+    context.title = "Message View";
+    context.desc = "Reading a specific email";
+  } else {
+    context.title = "Inbox List";
+    context.desc = "Browsing emails";
+  }
+  
+  try {
+    chrome.runtime.sendMessage({
+      type: "context.update",
+      context: context
+    }).catch(() => {});
+  } catch (e) {}
 }
 
 // 백그라운드에서 분류가 끝나 storage가 갱신되면, 이미 열려 있는 Gmail 탭에도 바로 반영

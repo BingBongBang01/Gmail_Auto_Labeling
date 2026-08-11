@@ -1977,10 +1977,10 @@
     "message": "<li><a class=\"btn\" href=\"https://console.cloud.google.com/projectcreate\" target=\"_blank\">Create a new project in Google Cloud Console</a></li><li class=\"note\"><span class=\"warn\">If this is your first time visiting Cloud Console with this account</span>, a \"select country + accept terms of service\" welcome screen may appear before the project creation screen. Check the box and click \"Agree and continue\" to be taken automatically to the project creation screen.</li><li>Any project name is fine (e.g. \"gmail-labeler-personal\"). Click \"Create\" and wait a few seconds (progress shows in the bell icon top right).</li><li>Once created, check that the project you just made is selected in the project dropdown at the top (click it and select manually if not).</li>"
   },
   "guideStep2Title": {
-    "message": "Step 2. Enable Gmail API + Google Drive API"
+    "message": "Step 2. Enable Gmail, Google Drive, Google Calendar API"
   },
   "guideStep2List": {
-    "message": "<li><a class=\"btn\" href=\"https://console.cloud.google.com/apis/library/gmail.googleapis.com\" target=\"_blank\">Open the Gmail API library page</a></li><li>(with the project you just made selected) Click the blue <strong>\"ENABLE\"</strong> button. Takes a few seconds.</li><li><a class=\"btn\" href=\"https://console.cloud.google.com/apis/library/drive.googleapis.com\" target=\"_blank\">Open the Google Drive API library page</a></li><li>Click <strong>\"ENABLE\"</strong> here too (needed for the settings backup feature - skip if you won't use it)</li>"
+    "message": "<li><a class=\"btn\" href=\"https://console.cloud.google.com/apis/library/gmail.googleapis.com\" target=\"_blank\">Open the Gmail API library page</a></li><li>(with the project you just made selected) Click the blue <strong>\"ENABLE\"</strong> button. Takes a few seconds.</li><li><a class=\"btn\" href=\"https://console.cloud.google.com/apis/library/drive.googleapis.com\" target=\"_blank\">Open the Google Drive API library page</a></li><li>Click <strong>\"ENABLE\"</strong> here too (needed for the settings backup feature - skip if you won't use it)</li><li><a class=\"btn\" href=\"https://console.cloud.google.com/apis/library/calendar-json.googleapis.com\" target=\"_blank\">Open the Google Calendar API library page</a></li><li>Click <strong>\"ENABLE\"</strong> here too (needed for calendar AI classification)</li>"
   },
   "guideStep2Box": {
     "message": "This extension only uses the <span class=\"mono\">drive.file</span> scope - it can only access the one backup file it created itself, and can't see any other files in your Drive. Under Google's policy this is a \"non-sensitive\" scope, so it can be used as-is without a separate security review."
@@ -2909,5 +2909,41 @@
   },
   "dashPlaceholderExclusionRules": {
     "message": "One rule per line, e.g. router/network device alerts from the Singapore office are not mine"
+  },
+  "dashNavCalendar": {
+    "message": "Calendar AI"
+  },
+  "dashPanelCalendarTitle": {
+    "message": "📅 Calendar AI Auto-Labeling"
+  },
+  "dashCalendarHeading": {
+    "message": "Select Range to Classify"
+  },
+  "dashCalendarDesc": {
+    "message": "Select a calendar and date range to automatically classify and colorize events using Gemini AI."
+  },
+  "dashLabelCalendarSelect": {
+    "message": "Select Calendar"
+  },
+  "dashOptionPrimaryCalendar": {
+    "message": "Primary Calendar (Default)"
+  },
+  "dashLabelCalendarStart": {
+    "message": "Start Date"
+  },
+  "dashLabelCalendarEnd": {
+    "message": "End Date"
+  },
+  "dashBtnStartCalendar": {
+    "message": "🚀 Start Calendar Classification"
+  },
+  "dashBtnStopCalendar": {
+    "message": "🛑 Stop"
+  },
+  "dashProgressCalendar": {
+    "message": "Classifying events..."
+  },
+  "checkboxAutoCalendar": {
+    "message": "Automatically classify new Calendar events"
   }
 }

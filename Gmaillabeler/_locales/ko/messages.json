@@ -1977,10 +1977,10 @@
     "message": "<li><a class=\"btn\" href=\"https://console.cloud.google.com/projectcreate\" target=\"_blank\">Google Cloud Console에서 새 프로젝트 만들기</a></li><li class=\"note\"><span class=\"warn\">이 계정으로 Cloud Console을 처음 방문하신 거라면</span>, 프로젝트 생성 화면 대신 \"국가 선택 + 서비스 약관 동의\" 웰컴 화면이 먼저 뜰 수 있습니다. 약관에 체크하고 \"동의 및 계속\"을 누르면 원래 가려던 프로젝트 생성 화면으로 자동 이동합니다.</li><li>프로젝트 이름은 아무거나 괜찮습니다 (예: \"gmail-labeler-personal\"). \"만들기\"를 누르고 몇 초 기다립니다(우측 상단 종 모양 알림에 진행 상황이 표시됩니다).</li><li>생성이 끝나면 화면 상단 프로젝트 선택 드롭다운에서 방금 만든 프로젝트가 선택되어 있는지 확인합니다(자동으로 안 잡혀있으면 직접 클릭해서 선택).</li>"
   },
   "guideStep2Title": {
-    "message": "2단계. Gmail API + Google Drive API 사용 설정"
+    "message": "2단계. Gmail, Google Drive, Google Calendar API 사용 설정"
   },
   "guideStep2List": {
-    "message": "<li><a class=\"btn\" href=\"https://console.cloud.google.com/apis/library/gmail.googleapis.com\" target=\"_blank\">Gmail API 라이브러리 페이지 열기</a></li><li>(방금 만든 프로젝트가 선택된 상태에서) 파란색 <strong>\"사용 설정(ENABLE)\"</strong> 버튼 클릭. 몇 초 걸립니다.</li><li><a class=\"btn\" href=\"https://console.cloud.google.com/apis/library/drive.googleapis.com\" target=\"_blank\">Google Drive API 라이브러리 페이지 열기</a></li><li>마찬가지로 <strong>\"사용 설정\"</strong> 클릭 (설정 백업 기능을 쓰기 위함 - 안 쓸 거면 건너뛰어도 됨)</li>"
+    "message": "<li><a class=\"btn\" href=\"https://console.cloud.google.com/apis/library/gmail.googleapis.com\" target=\"_blank\">Gmail API 라이브러리 페이지 열기</a></li><li>(방금 만든 프로젝트가 선택된 상태에서) 파란색 <strong>\"사용 설정(ENABLE)\"</strong> 버튼 클릭. 몇 초 걸립니다.</li><li><a class=\"btn\" href=\"https://console.cloud.google.com/apis/library/drive.googleapis.com\" target=\"_blank\">Google Drive API 라이브러리 페이지 열기</a></li><li>마찬가지로 <strong>\"사용 설정\"</strong> 클릭 (설정 백업 기능을 쓰기 위함 - 안 쓸 거면 건너뛰어도 됨)</li><li><a class=\"btn\" href=\"https://console.cloud.google.com/apis/library/calendar-json.googleapis.com\" target=\"_blank\">Google Calendar API 라이브러리 페이지 열기</a></li><li>마찬가지로 <strong>\"사용 설정\"</strong> 클릭 (캘린더 일정 분류를 쓰기 위함)</li>"
   },
   "guideStep2Box": {
     "message": "이 확장은 Drive의 <span class=\"mono\">drive.file</span> 범위만 사용합니다 - 이 확장이 직접 만든 백업 파일 하나만 접근할 수 있고, 드라이브의 다른 파일은 전혀 볼 수 없습니다. Google 정책상 \"민감하지 않은\" 범위라 별도 보안 심사 없이 그대로 쓸 수 있습니다."
@@ -2909,5 +2909,41 @@
   },
   "dashPlaceholderExclusionRules": {
     "message": "한 줄에 규칙 하나. 예: 싱가포르 지사 라우터/네트워크 장비 알림은 내 담당이 아님"
+  },
+  "dashNavCalendar": {
+    "message": "캘린더 AI"
+  },
+  "dashPanelCalendarTitle": {
+    "message": "📅 캘린더 AI 자동 분류"
+  },
+  "dashCalendarHeading": {
+    "message": "분류할 기간 선택"
+  },
+  "dashCalendarDesc": {
+    "message": "캘린더와 기간을 선택하여 Gemini AI로 일정을 자동 분류하고 색상을 적용합니다."
+  },
+  "dashLabelCalendarSelect": {
+    "message": "캘린더 선택"
+  },
+  "dashOptionPrimaryCalendar": {
+    "message": "기본 캘린더 (기본값)"
+  },
+  "dashLabelCalendarStart": {
+    "message": "시작일"
+  },
+  "dashLabelCalendarEnd": {
+    "message": "종료일"
+  },
+  "dashBtnStartCalendar": {
+    "message": "🚀 캘린더 자동 분류 시작"
+  },
+  "dashBtnStopCalendar": {
+    "message": "🛑 중지"
+  },
+  "dashProgressCalendar": {
+    "message": "일정을 분류하는 중..."
+  },
+  "checkboxAutoCalendar": {
+    "message": "새로운 캘린더 일정 자동 분류"
   }
 }

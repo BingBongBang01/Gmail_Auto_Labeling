@@ -1,0 +1,62 @@
+/* ui/tokens/typography.css */
+
+:root {
+  --md-sys-typescale-font-family: "Google Sans", "Segoe UI", Roboto, Arial, sans-serif;
+
+  /* Display */
+  --md-sys-typescale-display-large-size: 57px;
+  --md-sys-typescale-display-medium-size: 45px;
+  --md-sys-typescale-display-small-size: 36px;
+
+  /* Headline */
+  --md-sys-typescale-headline-large-size: 32px;
+  --md-sys-typescale-headline-medium-size: 28px;
+  --md-sys-typescale-headline-small-size: 24px;
+  
+  /* Title */
+  --md-sys-typescale-title-large-size: 22px;
+  --md-sys-typescale-title-medium-size: 16px;
+  --md-sys-typescale-title-medium-weight: 500;
+  --md-sys-typescale-title-small-size: 14px;
+  --md-sys-typescale-title-small-weight: 500;
+
+  /* Body */
+  --md-sys-typescale-body-large-size: 16px;
+  --md-sys-typescale-body-medium-size: 14px;
+  --md-sys-typescale-body-small-size: 12px;
+
+  /* Label */
+  --md-sys-typescale-label-large-size: 14px;
+  --md-sys-typescale-label-large-weight: 500;
+  --md-sys-typescale-label-medium-size: 12px;
+  --md-sys-typescale-label-medium-weight: 500;
+  --md-sys-typescale-label-small-size: 11px;
+  --md-sys-typescale-label-small-weight: 500;
+}
+
+body {
+  font-family: var(--md-sys-typescale-font-family);
+  font-size: var(--md-sys-typescale-body-medium-size);
+  color: var(--md-sys-color-on-background);
+  background-color: var(--md-sys-color-background);
+  margin: 0;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  margin-top: 0;
+  margin-bottom: 0.5em;
+  color: var(--md-sys-color-on-surface);
+}
+
+.title-large { font-size: var(--md-sys-typescale-title-large-size); font-weight: normal; }
+.title-medium { font-size: var(--md-sys-typescale-title-medium-size); font-weight: var(--md-sys-typescale-title-medium-weight); }
+.title-small { font-size: var(--md-sys-typescale-title-small-size); font-weight: var(--md-sys-typescale-title-small-weight); }
+
+.body-large { font-size: var(--md-sys-typescale-body-large-size); }
+.body-medium { font-size: var(--md-sys-typescale-body-medium-size); }
+.body-small { font-size: var(--md-sys-typescale-body-small-size); }
+
+.label-large { font-size: var(--md-sys-typescale-label-large-size); font-weight: var(--md-sys-typescale-label-large-weight); }
+.label-medium { font-size: var(--md-sys-typescale-label-medium-size); font-weight: var(--md-sys-typescale-label-medium-weight); }
+.label-small { font-size: var(--md-sys-typescale-label-small-size); font-weight: var(--md-sys-typescale-label-small-weight); }

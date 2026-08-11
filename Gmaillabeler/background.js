@@ -1,7 +1,7 @@
 // background.js
 // Gmail AI Labeler - Copyright (c) 2026 김태형 (thk7410@gmail.com). All rights reserved.
 // See LICENSE file at the extension root for terms. Unauthorized redistribution or resale is prohibited.
-importScripts("i18n.js", "crypto-helper.js");
+importScripts("i18n.js", "crypto-helper.js", "calendar/calendar_api.js");
 
 // ---------------- 투명 배경 고시인성 왕 편지봉투 + AI Sparkle 아이콘 드로잉 ----------------
 function drawIconCodeData(size) {
@@ -310,7 +310,7 @@ async function saveGeminiApiKeys(keys) {
 // chrome.identity.getAuthToken()은 manifest에 박혀있는 client_id로만 동작해서, 사용자마다 각자의 GCP
 // OAuth 클라이언트를 쓰게 할 수가 없다. 그래서 launchWebAuthFlow + authorization code 교환 + refresh_token
 // 방식을 직접 구현해서, 설정 탭에서 입력한 사용자 개인 client_id/secret으로 인증하도록 한다.
-const GOOGLE_OAUTH_SCOPE = "https://www.googleapis.com/auth/gmail.modify https://www.googleapis.com/auth/drive.file";
+const GOOGLE_OAUTH_SCOPE = "https://www.googleapis.com/auth/gmail.modify https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/calendar.events";
 
 async function getOAuthCredentials() {
   const result = await new Promise((resolve) =>

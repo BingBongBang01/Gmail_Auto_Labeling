@@ -10,8 +10,12 @@
     "identity",
     "alarms",
     "storage",
-    "notifications"
+    "notifications",
+    "sidePanel"
   ],
+  "side_panel": {
+    "default_path": "sidepanel/sidepanel.html"
+  },
   "host_permissions": [
     "https://gmail.googleapis.com/*",
     "https://generativelanguage.googleapis.com/*",

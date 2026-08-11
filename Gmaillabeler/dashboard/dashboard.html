@@ -4,8 +4,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title data-i18n="dashPageTitle">Gmail AI Labeler - Dashboard</title>
+  <link rel="stylesheet" href="../ui/tokens/colors.css">
+  <link rel="stylesheet" href="../ui/tokens/typography.css">
+  <link rel="stylesheet" href="../ui/tokens/components.css">
   <link rel="stylesheet" href="dashboard.css">
-</head>
 <body>
 
   <!-- Top Header Navigation Bar -->
@@ -43,8 +45,8 @@
         <button class="dash-nav-btn" data-dash-tab="relabel">
           <span class="nav-icon">🔄</span> <span data-i18n="dashNavRelabel">Relabel &amp; dedupe</span>
         </button>
-        <button class="dash-nav-btn" data-dash-tab="settings">
-          <span class="nav-icon">⚙️</span> <span data-i18n="dashNavSettings">Settings &amp; Discord</span>
+        <button class="dash-nav-btn" data-dash-tab="calendar">
+          <span class="nav-icon">📅</span> <span data-i18n="dashNavCalendar">Calendar AI</span>
         </button>
         <button class="dash-nav-btn" data-dash-tab="logs">
           <span class="nav-icon">📜</span> <span data-i18n="dashNavLogs">System log</span>
@@ -215,149 +217,53 @@
         </div>
       </section>
 
-      <!-- Tab Panel 5: Settings -->
-      <section class="dash-panel" id="dashPanelSettings">
+      <!-- Tab Panel: Calendar -->
+      <section class="dash-panel" id="dashPanelCalendar">
         <div class="panel-header">
-          <h2 data-i18n="dashPanelSettingsTitle">⚙️ Personalization and Discord</h2>
+          <h2 data-i18n="dashPanelCalendarTitle">📅 Calendar AI Auto-Labeling</h2>
         </div>
-        
-        <div class="dash-card" style="margin-bottom: 20px;">
-          <h3 data-i18n="dashApiKeyHeading">🔑 Gemini API keys</h3>
-          <div id="dashApiKeyInputsWrap">
-            <!-- Dynamically generated API key fields -->
-          </div>
-          <div class="dash-btn-row" style="margin-top: 12px;">
-            <button class="dash-btn dash-btn-secondary" id="dashAddApiKeyBtn" data-i18n="dashBtnAddApiKey">➕ Add key</button>
-            <button class="dash-btn dash-btn-primary" id="dashSaveKeyBtn" data-i18n="dashBtnSaveApiKey">💾 Save keys</button>
-          </div>
-        </div>
-
-        <div class="dash-card" style="margin-bottom: 20px;">
-          <h3 data-i18n="dashDiscordHeading">💬 Discord webhooks by importance</h3>
-          <p class="dash-desc" data-i18n="dashDiscordDesc"></p>
+        <div class="dash-card">
+          <h3 data-i18n="dashCalendarHeading">Select Range to Classify</h3>
+          <p class="dash-desc" data-i18n="dashCalendarDesc">Select a calendar and date range to automatically classify and colorize events using Gemini AI.</p>
           
           <div class="dash-form-group">
-            <label data-i18n="dashLabelWebhookDefault">Default webhook URL (all mail)</label>
-            <input type="text" id="dashDiscordWebhookUrl" class="dash-input-text" placeholder="https://discord.com/api/webhooks/...">
+            <label data-i18n="dashLabelCalendarSelect">Select Calendar</label>
+            <div style="display:flex; align-items:center;">
+              <select id="dashCalendarSelect" class="dash-select">
+                <option value="primary" data-i18n="dashOptionPrimaryCalendar">Primary Calendar (Default)</option>
+              </select>
+              <button class="dash-btn dash-btn-icon" id="dashCalendarRefreshBtn" style="margin-left: 8px; font-size: 16px;" title="Refresh Calendars">🔄</button>
+            </div>
           </div>
 
-          <div class="dash-form-group">
-            <label data-i18n="dashLabelWebhookHigh">🔴 Webhook for high importance</label>
-            <input type="text" id="dashDiscordWebhookHigh" class="dash-input-text" data-i18n-placeholder="dashPlaceholderWebhookHigh" placeholder="🔴 Urgent channel webhook URL">
+          <div class="dash-form-row" style="margin-top: 14px;">
+            <label class="dash-form-inline">
+              <span data-i18n="dashLabelCalendarStart">Start Date</span>
+              <input type="date" id="dashCalendarStartInput" class="dash-input-text">
+            </label>
+            <label class="dash-form-inline">
+              <span data-i18n="dashLabelCalendarEnd">End Date</span>
+              <input type="date" id="dashCalendarEndInput" class="dash-input-text">
+            </label>
           </div>
 
-          <div class="dash-form-group">
-            <label data-i18n="dashLabelWebhookMedium">🟡 Webhook for medium importance</label>
-            <input type="text" id="dashDiscordWebhookMedium" class="dash-input-text" data-i18n-placeholder="dashPlaceholderWebhookMedium" placeholder="🟡 General notices channel webhook URL">
+          <div class="dash-btn-row" style="margin-top: 16px;">
+            <button class="dash-btn dash-btn-primary" id="dashStartCalendarBtn" data-i18n="dashBtnStartCalendar">🚀 Start Calendar Classification</button>
+            <button class="dash-btn dash-btn-danger" id="dashStopCalendarBtn" style="display:none;" data-i18n="dashBtnStopCalendar">🛑 Stop</button>
           </div>
-
-          <div class="dash-form-group">
-            <label data-i18n="dashLabelWebhookLow">🟢 Webhook for low importance</label>
-            <input type="text" id="dashDiscordWebhookLow" class="dash-input-text" data-i18n-placeholder="dashPlaceholderWebhookLow" placeholder="🟢 Newsletter channel webhook URL">
+          
+          <div class="dash-progress-wrap" id="dashCalendarProgressWrap" style="display: none; margin-top: 16px;">
+            <div class="dash-progress-bar-bg">
+              <div class="dash-progress-bar-fill" id="dashCalendarProgressBar" style="width: 0%;"></div>
+            </div>
+            <div class="dash-progress-text" id="dashCalendarProgressText" data-i18n="dashProgressCalendar">Classifying events...</div>
           </div>
-
-          <label class="dash-inline-check" style="margin-top:12px;">
-            <input type="checkbox" id="dashDiscordSendPerEmail" checked>
-            <span data-i18n="checkboxDiscordPerEmail">Send one Discord message per email</span>
-          </label>
-          <p class="dash-desc" data-i18n="hintDiscordPerEmail"></p>
-
-          <hr class="dash-divider">
-
-          <h3 data-i18n="dashAutoSummaryHeading">🤖 Auto-summarize and auto-send</h3>
-          <p class="dash-desc" data-i18n="hintAutoSummary"></p>
-
-          <label class="dash-inline-check" style="margin-bottom:10px;">
-            <input type="checkbox" id="dashAutoSummaryEnabled">
-            <span data-i18n="checkboxAutoSummary">Summarize automatically when new mail lands on the label</span>
-          </label>
-
-          <div class="dash-form-group">
-            <label data-i18n="labelAutoSummaryLabel">Label to watch</label>
-            <select id="dashAutoSummaryLabelSelect" class="dash-select"></select>
-          </div>
-
-          <div class="dash-form-group">
-            <label data-i18n="labelAutoSummaryMaxCount">Max emails per run</label>
-            <input type="number" id="dashAutoSummaryMaxCount" class="dash-input-num" value="20" min="1" max="100">
-          </div>
-
-          <div class="dash-form-group">
-            <label data-i18n="labelAutoSummaryCriteria">Filter criteria used by auto-summary</label>
-            <input type="text" id="dashAutoSummaryCriteria" class="dash-input-text" data-i18n-placeholder="dashPlaceholderCriteria" placeholder="e.g. only key schedules and expenses">
-          </div>
-
-          <label class="dash-inline-check">
-            <input type="checkbox" id="dashAutoSummarySendDiscord" checked>
-            <span data-i18n="checkboxAutoSummarySendDiscord">Send the result to Discord automatically</span>
-          </label>
-          <p class="dash-desc" data-i18n="hintAutoSummaryDiscord"></p>
-
-          <hr class="dash-divider">
-
-          <h3 data-i18n="dashPersonalWebhookHeading">🙋 Deciding what counts as "related to me"</h3>
-          <p class="dash-desc" data-i18n="dashPersonalWebhookDesc"></p>
-
-          <div class="dash-form-group">
-            <label data-i18n="dashLabelIdentityHints">Names / aliases that mean me</label>
-            <input type="text" id="dashPersonalIdentityHints" class="dash-input-text" data-i18n-placeholder="dashPlaceholderIdentityHints" placeholder="e.g. 김태형, TH Kim, 개발팀장">
-          </div>
-
-          <div class="dash-form-group">
-            <label data-i18n="dashLabelExclusionRules">Learned "not mine" rules</label>
-            <textarea id="dashPersonalExclusionRules" class="dash-input-text" rows="4" data-i18n-placeholder="dashPlaceholderExclusionRules" placeholder="One rule per line"></textarea>
-          </div>
-
-          <hr class="dash-divider">
-
-          <h3 data-i18n="dashFeedbackHeading">🧠 Learning from your feedback</h3>
-          <p class="dash-desc" data-i18n="dashFeedbackDesc"></p>
-          <div id="dashFeedbackList"></div>
-          <div class="dash-btn-row" style="margin-top:10px;">
-            <button class="dash-btn dash-btn-primary" id="dashLearnFeedbackBtn" data-i18n="dashBtnLearnFeedback">🧠 Update criteria from feedback</button>
-            <button class="dash-btn dash-btn-secondary" id="dashClearFeedbackBtn" data-i18n="dashBtnClearFeedback">Clear feedback</button>
-          </div>
-
-          <hr class="dash-divider">
-
-          <h3 data-i18n="dashCustomWebhookHeading">📨 Custom webhooks</h3>
-          <p class="dash-desc" data-i18n="dashCustomWebhookDesc"></p>
-          <div id="dashCustomWebhookList"></div>
-          <button class="dash-btn dash-btn-secondary" id="dashAddCustomWebhookBtn" data-i18n="dashBtnAddCustomWebhook">+ Add webhook</button>
-
-          <hr class="dash-divider">
-
-          <h3 data-i18n="dashCriteriaHeading">🎯 Importance criteria</h3>
-          <div class="dash-form-group">
-            <label data-i18n="dashLabelCriteriaHigh">High importance criteria</label>
-            <input type="text" id="dashCriteriaHigh" class="dash-input-text" data-i18n-placeholder="dashPlaceholderCriteriaHigh" placeholder="e.g. needs a reply now, payment, contract, outage">
-          </div>
-          <div class="dash-form-group">
-            <label data-i18n="dashLabelCriteriaMedium">Medium importance criteria</label>
-            <input type="text" id="dashCriteriaMedium" class="dash-input-text" data-i18n-placeholder="dashPlaceholderCriteriaMedium" placeholder="e.g. routine work, schedule changes, notices">
-          </div>
-          <div class="dash-form-group">
-            <label data-i18n="dashLabelCriteriaLow">Low importance criteria</label>
-            <input type="text" id="dashCriteriaLow" class="dash-input-text" data-i18n-placeholder="dashPlaceholderCriteriaLow" placeholder="e.g. marketing, newsletters, ads, events">
-          </div>
-
-          <div style="display:flex; align-items:center; gap:10px; margin-top:14px;">
-            <button class="dash-btn dash-btn-primary" id="dashSaveDiscordSettingsBtn" data-i18n="dashBtnSaveDiscordSettings">💾 Save Discord and importance settings</button>
-            <span id="dashSettingsSavedMark" class="dash-desc" style="opacity:0; transition:opacity .2s ease; margin:0;"></span>
-          </div>
-          <p class="dash-desc" data-i18n="hintSettingsAutoSave"></p>
-        </div>
-
-        <div class="dash-card">
-          <h3 data-i18n="dashDriveHeading">☁️ Google Drive backup and restore</h3>
-          <p class="dash-desc" data-i18n="dashDriveDesc"></p>
-          <div class="dash-btn-row">
-            <button class="dash-btn dash-btn-secondary" id="dashBackupDriveBtn" data-i18n="dashBtnBackupDrive">☁️ Back up to Drive</button>
-            <button class="dash-btn dash-btn-secondary" id="dashRestoreDriveBtn" data-i18n="dashBtnRestoreDrive">📥 Restore from Drive</button>
-          </div>
+          <div class="dash-result-card" id="dashCalendarResultBox" style="margin-top: 16px;"></div>
         </div>
       </section>
 
+      <!-- Removed Settings Panel (Moved to Options page) -->
+      
       <!-- Tab Panel 6: Logs -->
       <section class="dash-panel" id="dashPanelLogs">
         <div class="panel-header">

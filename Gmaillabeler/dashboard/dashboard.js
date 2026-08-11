@@ -560,7 +560,7 @@ const TAB_PANEL_MAP = {
   classify: "dashPanelClassify",
   labels: "dashPanelLabels",
   relabel: "dashPanelRelabel",
-  settings: "dashPanelSettings",
+  calendar: "dashPanelCalendar",
   logs: "dashPanelLogs",
 };
 
@@ -1606,8 +1606,53 @@ function initEvents() {
   const restoreDriveBtn = $("dashRestoreDriveBtn");
   if (restoreDriveBtn) {
     restoreDriveBtn.addEventListener("click", () => {
-      if (!confirm(t("dashConfirmRestoreDrive"))) return;
+              if (!confirm(t("dashConfirmRestoreDrive"))) return;
       startJob({ action: "startRestoreFromDrive", passphrase: "" }, t("dashMsgRestoreStarted"));
+    });
+  }
+
+  // --- Calendar AI ---
+  const startCalendarBtn = $("dashStartCalendarBtn");
+  if (startCalendarBtn) {
+    startCalendarBtn.addEventListener("click", () => {
+      const calId = $("dashCalendarSelect")?.value || "primary";
+      const startDate = $("dashCalendarStartInput")?.value;
+      const endDate = $("dashCalendarEndInput")?.value;
+      if (!startDate || !endDate) {
+        alert("Please select start and end dates."); // can be localized later
+        return;
+      }
+      startJob({ 
+        action: "startCalendarClassification", 
+        calendarId: calId, 
+        startDate: startDate, 
+        endDate: endDate 
+      }, "Calendar classification started");
+    });
+  }
+
+  const stopCalendarBtn = $("dashStopCalendarBtn");
+  if (stopCalendarBtn) {
+    stopCalendarBtn.addEventListener("click", () => {
+      chrome.runtime.sendMessage({ action: "cancelJob" }, () => pollStatus());
+    });
+  }
+
+  const refreshCalendarBtn = $("dashCalendarRefreshBtn");
+  if (refreshCalendarBtn) {
+    refreshCalendarBtn.addEventListener("click", () => {
+      chrome.runtime.sendMessage({ action: "listCalendars" }, (response) => {
+        if (response && response.calendars) {
+          const select = $("dashCalendarSelect");
+          select.innerHTML = "";
+          response.calendars.forEach(cal => {
+            const opt = document.createElement("option");
+            opt.value = cal.id;
+            opt.textContent = cal.summary + (cal.primary ? " (Primary)" : "");
+            select.appendChild(opt);
+          });
+        }
+      });
     });
   }
 

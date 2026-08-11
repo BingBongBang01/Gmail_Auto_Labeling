@@ -1977,10 +1977,10 @@
     "message": "<li><a class=\"btn\" href=\"https://console.cloud.google.com/projectcreate\" target=\"_blank\">在 Google Cloud Console 中创建新项目</a></li><li class=\"note\"><span class=\"warn\">如果这是该账号首次访问 Cloud Console</span>，可能会先出现“选择国家+同意服务条款”的欢迎页面，而不是项目创建页面。勾选条款并点击“同意并继续”后会自动跳转到项目创建页面。</li><li>项目名称随意即可(例如“gmail-labeler-personal”)。点击“创建”后等待几秒(右上角铃铛图标会显示进度)。</li><li>创建完成后，请确认页面顶部的项目选择下拉菜单中已选中刚创建的项目(若未自动选中，请手动点击选择)。</li>"
   },
   "guideStep2Title": {
-    "message": "第 2 步：启用 Gmail API + Google Drive API"
+    "message": "第 2 步：启用 Gmail, Google Drive, Google Calendar API"
   },
   "guideStep2List": {
-    "message": "<li><a class=\"btn\" href=\"https://console.cloud.google.com/apis/library/gmail.googleapis.com\" target=\"_blank\">打开 Gmail API 库页面</a></li><li>(在选中刚创建的项目的状态下)点击蓝色的<strong>“启用(ENABLE)”</strong>按钮，需要几秒钟。</li><li><a class=\"btn\" href=\"https://console.cloud.google.com/apis/library/drive.googleapis.com\" target=\"_blank\">打开 Google Drive API 库页面</a></li><li>同样点击<strong>“启用”</strong>(用于设置备份功能 - 不使用可跳过)</li>"
+    "message": "<li><a class=\"btn\" href=\"https://console.cloud.google.com/apis/library/gmail.googleapis.com\" target=\"_blank\">打开 Gmail API 库页面</a></li><li>(在选中刚创建的项目的状态下)点击蓝色的<strong>“启用(ENABLE)”</strong>按钮，需要几秒钟。</li><li><a class=\"btn\" href=\"https://console.cloud.google.com/apis/library/drive.googleapis.com\" target=\"_blank\">打开 Google Drive API 库页面</a></li><li>同样点击<strong>“启用”</strong>(用于设置备份功能 - 不使用可跳过)</li><li><a class=\"btn\" href=\"https://console.cloud.google.com/apis/library/calendar-json.googleapis.com\" target=\"_blank\">打开 Google Calendar API 库页面</a></li><li>同样点击<strong>“启用”</strong>(用于日历的日程分类功能)</li>"
   },
   "guideStep2Box": {
     "message": "本扩展仅使用 Drive 的 <span class=\"mono\">drive.file</span> 权限范围 - 只能访问它自己创建的那一个备份文件，无法看到 Drive 中的其他任何文件。根据 Google 政策，这属于“非敏感”范围，无需额外的安全审核即可直接使用。"
@@ -2909,5 +2909,41 @@
   },
   "dashPlaceholderExclusionRules": {
     "message": "每行一条规则，例如：新加坡分公司的路由器／网络设备通知不归我负责"
+  },
+  "dashNavCalendar": {
+    "message": "日历 AI"
+  },
+  "dashPanelCalendarTitle": {
+    "message": "📅 日历 AI 自动分类"
+  },
+  "dashCalendarHeading": {
+    "message": "选择分类范围"
+  },
+  "dashCalendarDesc": {
+    "message": "选择日历和日期范围，使用 Gemini AI 自动分类日程并应用颜色。"
+  },
+  "dashLabelCalendarSelect": {
+    "message": "选择日历"
+  },
+  "dashOptionPrimaryCalendar": {
+    "message": "主日历 (默认)"
+  },
+  "dashLabelCalendarStart": {
+    "message": "开始日期"
+  },
+  "dashLabelCalendarEnd": {
+    "message": "结束日期"
+  },
+  "dashBtnStartCalendar": {
+    "message": "🚀 开始日历自动分类"
+  },
+  "dashBtnStopCalendar": {
+    "message": "🛑 停止"
+  },
+  "dashProgressCalendar": {
+    "message": "正在分类日程..."
+  },
+  "checkboxAutoCalendar": {
+    "message": "自动分类新日程"
   }
 }

@@ -1977,10 +1977,10 @@
     "message": "<li><a class=\"btn\" href=\"https://console.cloud.google.com/projectcreate\" target=\"_blank\">Google Cloud Consoleで新しいプロジェクトを作成</a></li><li class=\"note\"><span class=\"warn\">このアカウントでCloud Consoleを初めて訪れる場合</span>、プロジェクト作成画面の代わりに「国選択+利用規約への同意」のウェルカム画面が先に表示されることがあります。規約にチェックして「同意して続行」を押すと、本来のプロジェクト作成画面に自動で移動します。</li><li>プロジェクト名は何でも構いません(例: \"gmail-labeler-personal\")。「作成」を押して数秒待ちます(右上のベルアイコンに進行状況が表示されます)。</li><li>作成が終わったら、画面上部のプロジェクト選択ドロップダウンで今作ったプロジェクトが選択されているか確認します(自動で選択されていなければクリックして選択)。</li>"
   },
   "guideStep2Title": {
-    "message": "ステップ2. Gmail API + Google Drive APIを有効化"
+    "message": "ステップ2. Gmail, Google Drive, Google Calendar APIを有効化"
   },
   "guideStep2List": {
-    "message": "<li><a class=\"btn\" href=\"https://console.cloud.google.com/apis/library/gmail.googleapis.com\" target=\"_blank\">Gmail APIライブラリページを開く</a></li><li>(作成したプロジェクトが選択された状態で)青い<strong>「有効にする(ENABLE)」</strong>ボタンをクリック。数秒かかります。</li><li><a class=\"btn\" href=\"https://console.cloud.google.com/apis/library/drive.googleapis.com\" target=\"_blank\">Google Drive APIライブラリページを開く</a></li><li>同様に<strong>「有効にする」</strong>をクリック(設定バックアップ機能を使うため - 使わない場合はスキップ可)</li>"
+    "message": "<li><a class=\"btn\" href=\"https://console.cloud.google.com/apis/library/gmail.googleapis.com\" target=\"_blank\">Gmail APIライブラリページを開く</a></li><li>(作成したプロジェクトが選択された状態で)青い<strong>「有効にする(ENABLE)」</strong>ボタンをクリック。数秒かかります。</li><li><a class=\"btn\" href=\"https://console.cloud.google.com/apis/library/drive.googleapis.com\" target=\"_blank\">Google Drive APIライブラリページを開く</a></li><li>同様に<strong>「有効にする」</strong>をクリック(設定バックアップ機能を使うため - 使わない場合はスキップ可)</li><li><a class=\"btn\" href=\"https://console.cloud.google.com/apis/library/calendar-json.googleapis.com\" target=\"_blank\">Google Calendar APIライブラリページを開く</a></li><li>同様に<strong>「有効にする」</strong>をクリック(カレンダーの予定分類を使うため)</li>"
   },
   "guideStep2Box": {
     "message": "この拡張機能はDriveの<span class=\"mono\">drive.file</span>範囲のみを使用します - この拡張機能が直接作成したバックアップファイル1つだけにアクセスでき、Drive内の他のファイルは一切見えません。Googleのポリシー上「機密性の低い」範囲のため、別途セキュリティ審査なしでそのまま使用できます。"
@@ -2909,5 +2909,41 @@
   },
   "dashPlaceholderExclusionRules": {
     "message": "1行に1ルール。例：シンガポール支社のルーター／ネットワーク機器の通知は自分の担当ではない"
+  },
+  "dashNavCalendar": {
+    "message": "カレンダー AI"
+  },
+  "dashPanelCalendarTitle": {
+    "message": "📅 カレンダー AI 自動分類"
+  },
+  "dashCalendarHeading": {
+    "message": "分類する期間を選択"
+  },
+  "dashCalendarDesc": {
+    "message": "カレンダーと期間を選択して、Gemini AIで予定を自動分類し色を適用します。"
+  },
+  "dashLabelCalendarSelect": {
+    "message": "カレンダー選択"
+  },
+  "dashOptionPrimaryCalendar": {
+    "message": "メイン カレンダー (デフォルト)"
+  },
+  "dashLabelCalendarStart": {
+    "message": "開始日"
+  },
+  "dashLabelCalendarEnd": {
+    "message": "終了日"
+  },
+  "dashBtnStartCalendar": {
+    "message": "🚀 カレンダー自動分類を開始"
+  },
+  "dashBtnStopCalendar": {
+    "message": "🛑 停止"
+  },
+  "dashProgressCalendar": {
+    "message": "予定を分類中..."
+  },
+  "checkboxAutoCalendar": {
+    "message": "新しいカレンダー予定を自動分類"
   }
 }

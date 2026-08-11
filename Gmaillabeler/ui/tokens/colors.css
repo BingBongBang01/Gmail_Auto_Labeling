@@ -1,0 +1,90 @@
+/* ui/tokens/colors.css */
+/* Material 3 inspired Design Tokens for Gmail AI Labeler */
+
+:root {
+  /* Core brand colors */
+  --md-sys-color-primary: #1a73e8;       /* Primary Blue */
+  --md-sys-color-on-primary: #ffffff;
+  --md-sys-color-primary-container: #d3e3fd;
+  --md-sys-color-on-primary-container: #041e49;
+
+  /* Secondary */
+  --md-sys-color-secondary: #5f6368;
+  --md-sys-color-on-secondary: #ffffff;
+  --md-sys-color-secondary-container: #e8eaed;
+  --md-sys-color-on-secondary-container: #202124;
+
+  /* Status Colors */
+  --md-sys-color-error: #d93025;         /* Red */
+  --md-sys-color-error-container: #fce8e6;
+  --md-sys-color-on-error: #ffffff;
+  --md-sys-color-on-error-container: #c5221f;
+
+  --md-sys-color-success: #188038;       /* Green */
+  --md-sys-color-success-container: #e6f4ea;
+  --md-sys-color-on-success: #ffffff;
+  --md-sys-color-on-success-container: #137333;
+  
+  --md-sys-color-warning: #f9a825;       /* Amber */
+  --md-sys-color-warning-container: #fef7e0;
+  --md-sys-color-on-warning: #ffffff;
+  --md-sys-color-on-warning-container: #e27200;
+
+  /* Background and Surface */
+  --md-sys-color-background: #ffffff;
+  --md-sys-color-on-background: #202124;
+  
+  --md-sys-color-surface: #ffffff;
+  --md-sys-color-surface-dim: #f8f9fa;   /* Surface 2 */
+  --md-sys-color-surface-container: #f1f3f4;
+  --md-sys-color-surface-container-high: #e8eaed;
+  
+  --md-sys-color-on-surface: #202124;
+  --md-sys-color-on-surface-variant: #5f6368;
+
+  /* Outlines */
+  --md-sys-color-outline: #dadce0;
+  --md-sys-color-outline-variant: #e0e0e0;
+}
+
+html[data-theme="dark"] {
+  /* Dark mode overrides */
+  --md-sys-color-primary: #8ab4f8;
+  --md-sys-color-on-primary: #202124;
+  --md-sys-color-primary-container: #174ea6;
+  --md-sys-color-on-primary-container: #d3e3fd;
+
+  --md-sys-color-secondary: #9aa0a6;
+  --md-sys-color-on-secondary: #202124;
+  --md-sys-color-secondary-container: #3c4043;
+  --md-sys-color-on-secondary-container: #e8eaed;
+
+  --md-sys-color-error: #f28b82;
+  --md-sys-color-error-container: #8c1d18;
+  --md-sys-color-on-error: #202124;
+  --md-sys-color-on-error-container: #fce8e6;
+
+  --md-sys-color-success: #81c995;
+  --md-sys-color-success-container: #0f5223;
+  --md-sys-color-on-success: #202124;
+  --md-sys-color-on-success-container: #e6f4ea;
+
+  --md-sys-color-warning: #fdd663;
+  --md-sys-color-warning-container: #b06000;
+  --md-sys-color-on-warning: #202124;
+  --md-sys-color-on-warning-container: #fef7e0;
+
+  --md-sys-color-background: #202124;
+  --md-sys-color-on-background: #e8eaed;
+  
+  --md-sys-color-surface: #202124;
+  --md-sys-color-surface-dim: #2a2b2e;
+  --md-sys-color-surface-container: #28292c;
+  --md-sys-color-surface-container-high: #3c4043;
+  
+  --md-sys-color-on-surface: #e8eaed;
+  --md-sys-color-on-surface-variant: #9aa0a6;
+
+  --md-sys-color-outline: #5f6368;
+  --md-sys-color-outline-variant: #3c4043;
+}

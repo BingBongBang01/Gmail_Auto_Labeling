@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Workspace Companion</title>
+  
+  <link rel="stylesheet" href="../ui/tokens/colors.css">
+  <link rel="stylesheet" href="../ui/tokens/typography.css">
+  <link rel="stylesheet" href="../ui/tokens/components.css">
+  <link rel="stylesheet" href="sidepanel.css">
+</head>
+<body>
+  
+  <header class="sidepanel-header">
+    <div class="header-main">
+      <img src="../icon32.png" alt="Logo" class="header-logo">
+      <div class="header-text">
+        <div class="title-small">AI Workspace</div>
+      </div>
+    </div>
+  </header>
+
+  <main class="sidepanel-content">
+    
+    <!-- Context Card (Changes based on what the user is viewing) -->
+    <div class="context-card card card-elevated">
+      <div class="context-header">
+        <span class="label-small" id="contextService">Gmail</span>
+      </div>
+      <div class="title-medium" id="contextTitle">Inbox</div>
+      <div class="body-small" id="contextDesc" style="color:var(--md-sys-color-on-surface-variant); margin-top:4px;">
+        12 unread emails
+      </div>
+    </div>
+
+    <!-- Dynamic Actions -->
+    <div class="dynamic-actions" id="dynamicActions">
+      <!-- Injected by sidepanel.js based on context -->
+      <button class="btn btn-primary action-btn">Classify This Mail</button>
+      <button class="btn btn-secondary action-btn">Summarize Sender</button>
+    </div>
+
+    <!-- Quick Tools (Always available) -->
+    <div class="section-title label-small" style="margin-top:24px; margin-bottom:8px;">AI Tools</div>
+    <div class="tool-list">
+      <button class="btn btn-outlined tool-btn">Write Email</button>
+      <button class="btn btn-outlined tool-btn">Ask Gemini</button>
+    </div>
+
+  </main>
+
+  <footer class="sidepanel-footer">
+    <button class="btn btn-text footer-btn" id="btnSettings">⚙️ Settings</button>
+    <button class="btn btn-text footer-btn" id="btnDashboard">▣ Dashboard</button>
+  </footer>
+
+  <script src="../i18n.js"></script>
+  <script src="sidepanel.js"></script>
+</body>
+</html>

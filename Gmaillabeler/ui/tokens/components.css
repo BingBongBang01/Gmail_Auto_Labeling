@@ -1,0 +1,154 @@
+/* ui/tokens/components.css */
+
+/* Button System */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-family: inherit;
+  font-size: var(--md-sys-typescale-label-large-size);
+  font-weight: var(--md-sys-typescale-label-large-weight);
+  border-radius: 20px; /* Fully rounded for primary/secondary M3 style */
+  padding: 10px 24px;
+  cursor: pointer;
+  border: none;
+  transition: background-color 0.2s, box-shadow 0.2s, color 0.2s;
+  text-decoration: none;
+}
+
+.btn:disabled {
+  opacity: 0.38;
+  pointer-events: none;
+}
+
+/* Primary Button (Filled) */
+.btn-primary {
+  background-color: var(--md-sys-color-primary);
+  color: var(--md-sys-color-on-primary);
+}
+.btn-primary:hover {
+  background-color: var(--md-sys-color-primary-container);
+  color: var(--md-sys-color-on-primary-container);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
+}
+
+/* Secondary Button (Tonal/Filled) */
+.btn-secondary {
+  background-color: var(--md-sys-color-secondary-container);
+  color: var(--md-sys-color-on-secondary-container);
+}
+.btn-secondary:hover {
+  filter: brightness(0.95);
+}
+
+/* Outlined Button */
+.btn-outlined {
+  background-color: transparent;
+  color: var(--md-sys-color-primary);
+  border: 1px solid var(--md-sys-color-outline);
+}
+.btn-outlined:hover {
+  background-color: rgba(26, 115, 232, 0.04);
+}
+
+/* Danger Button */
+.btn-danger {
+  background-color: var(--md-sys-color-error);
+  color: var(--md-sys-color-on-error);
+}
+.btn-danger:hover {
+  background-color: var(--md-sys-color-error-container);
+  color: var(--md-sys-color-on-error-container);
+}
+
+/* Icon Button */
+.btn-icon {
+  padding: 8px;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--md-sys-color-on-surface-variant);
+  line-height: 1;
+}
+.btn-icon:hover {
+  background-color: var(--md-sys-color-surface-container-high);
+}
+
+/* Text Button */
+.btn-text {
+  background-color: transparent;
+  color: var(--md-sys-color-primary);
+  padding: 10px 12px;
+}
+.btn-text:hover {
+  background-color: rgba(26, 115, 232, 0.04);
+}
+
+/* Cards */
+.card {
+  background-color: var(--md-sys-color-surface);
+  border-radius: 12px;
+  padding: 16px;
+  border: 1px solid var(--md-sys-color-outline-variant);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+
+.card-elevated {
+  border: none;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
+}
+
+/* Forms */
+.form-group {
+  margin-bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.form-label {
+  font-size: var(--md-sys-typescale-label-medium-size);
+  color: var(--md-sys-color-on-surface-variant);
+  font-weight: var(--md-sys-typescale-label-medium-weight);
+}
+
+.form-input {
+  font-family: inherit;
+  font-size: var(--md-sys-typescale-body-medium-size);
+  color: var(--md-sys-color-on-surface);
+  background-color: var(--md-sys-color-surface);
+  border: 1px solid var(--md-sys-color-outline);
+  border-radius: 4px;
+  padding: 8px 12px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: var(--md-sys-color-primary);
+  box-shadow: 0 0 0 1px var(--md-sys-color-primary);
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-size: var(--md-sys-typescale-body-medium-size);
+  color: var(--md-sys-color-on-surface);
+}
+
+/* Progress Bar */
+.progress-container {
+  width: 100%;
+  height: 4px;
+  background-color: var(--md-sys-color-surface-container-high);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.progress-bar {
+  height: 100%;
+  background-color: var(--md-sys-color-primary);
+  transition: width 0.3s ease;
+}

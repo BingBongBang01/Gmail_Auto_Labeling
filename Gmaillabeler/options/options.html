@@ -1,36 +1,179 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Gmail AI Labeler 설정</title>
-  <style>
-    body { margin: 0; padding: 24px; background: #f1f3f4; display: flex; justify-content: center; font-family: 'Segoe UI', sans-serif; }
-    @media (prefers-color-scheme: dark) {
-      body { background: #131314; }
-      .note { color: #9aa0a6; }
-      .frame-wrap { background: #1f1f20; }
-      .links a { color: #8ab4f8; }
-    }
-    .wrap { width: 100%; max-width: 420px; }
-    .frame-wrap { background: #fff; border-radius: 10px; box-shadow: 0 1px 4px rgba(0,0,0,.15); overflow: hidden; }
-    /* 팝업 화면은 380px 폭 기준으로 만들어져 있어 그대로 두고, 높이만 창 크기에 맞춘다.
-       (예전에는 높이가 620px로 고정돼 있어 옵션 페이지에서 아래쪽이 잘렸다) */
-    iframe { width: 100%; height: min(620px, calc(100vh - 140px)); min-height: 420px; border: none; display: block; }
-    .note { text-align: center; color: #5f6368; font-size: 12px; margin-bottom: 12px; }
-    .links { text-align: center; margin-bottom: 12px; font-size: 13px; }
-    .links a { color: #1a73e8; text-decoration: none; }
-  </style>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gmail AI Labeler - Settings</title>
+  
+  <!-- Design Tokens -->
+  <link rel="stylesheet" href="../ui/tokens/colors.css">
+  <link rel="stylesheet" href="../ui/tokens/typography.css">
+  <link rel="stylesheet" href="../ui/tokens/components.css">
+  <link rel="stylesheet" href="options.css">
 </head>
 <body>
-  <div class="wrap">
-    <div class="links">
-      <!-- 넓은 화면에서 쓰기 좋은 전체 화면 UI는 대시보드다. 옵션 페이지에서는 그쪽을 먼저 안내한다. -->
-      <a href="../dashboard/dashboard.html" target="_blank" rel="noopener">대시보드(전체 화면)에서 열기</a>
-    </div>
-    <div class="note">아래는 툴바 아이콘 클릭 시 뜨는 팝업과 동일한 화면입니다.</div>
-    <div class="frame-wrap">
-      <iframe src="../popup/popup.html"></iframe>
-    </div>
+  <div class="options-layout">
+    <!-- Sidebar Navigation -->
+    <nav class="options-sidebar">
+      <div class="sidebar-header">
+        <img src="../icon48.png" alt="Logo" class="sidebar-logo">
+        <div class="sidebar-title">
+          <div class="title-large" style="font-size:16px; font-weight:600;">Settings</div>
+          <div class="label-small">Gmail AI Labeler</div>
+        </div>
+      </div>
+      
+      <div class="search-box">
+        <input type="text" id="settingsSearch" class="form-input" placeholder="🔍 Search settings...">
+      </div>
+
+      <div class="nav-section">
+        <button class="nav-btn active" data-target="panel-general">General</button>
+        <button class="nav-btn" data-target="panel-connections">Connections</button>
+        <button class="nav-btn" data-target="panel-gmail">Gmail</button>
+        <button class="nav-btn" data-target="panel-calendar">Calendar</button>
+        <button class="nav-btn" data-target="panel-ai">AI Settings</button>
+        <button class="nav-btn" data-target="panel-automation">Automation</button>
+        <button class="nav-btn" data-target="panel-notifications">Notifications</button>
+        <button class="nav-btn" data-target="panel-data">Data & Backup</button>
+        <button class="nav-btn" data-target="panel-advanced">Advanced</button>
+      </div>
+    </nav>
+
+    <!-- Main Content Area -->
+    <main class="options-content">
+      <div class="content-header">
+        <h2 id="currentSectionTitle" class="headline-medium">General</h2>
+      </div>
+
+      <div class="panels-container">
+        <!-- General Panel -->
+        <section id="panel-general" class="settings-panel active">
+          <div class="card card-elevated" style="margin-bottom:16px;">
+            <h3 class="title-medium">Appearance</h3>
+            <div class="form-group" style="margin-top:12px;">
+              <label class="form-label">Theme</label>
+              <div style="display:flex; gap:8px; margin-top:8px;">
+                <button class="btn btn-outlined active" id="themeSystemBtn">System</button>
+                <button class="btn btn-outlined" id="themeLightBtn">Light</button>
+                <button class="btn btn-outlined" id="themeDarkBtn">Dark</button>
+              </div>
+            </div>
+          </div>
+          
+          <div class="card card-elevated">
+            <h3 class="title-medium">Language</h3>
+            <div class="form-group" style="margin-top:12px;">
+              <label class="form-label">Display Language</label>
+              <select id="languageSelect" class="form-input" style="width:200px;">
+                <option value="system">Match Browser</option>
+                <option value="en">English</option>
+                <option value="ko">한국어</option>
+                <option value="ja">日本語</option>
+                <option value="zh_CN">简体中文</option>
+              </select>
+            </div>
+          </div>
+        </section>
+
+        <!-- Connections Panel -->
+        <section id="panel-connections" class="settings-panel">
+          <div class="card card-elevated" style="margin-bottom:16px;">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <div>
+                <h3 class="title-medium">Google Account</h3>
+                <p class="body-small" style="color:var(--md-sys-color-on-surface-variant)">Connect your Google account to manage Gmail and Calendar.</p>
+              </div>
+              <span class="badge" id="oauthStatusBadge">Not Connected</span>
+            </div>
+            
+            <div class="form-group" style="margin-top:16px;">
+              <label class="form-label">OAuth Client ID</label>
+              <input type="text" id="oauthClientIdInput" class="form-input" placeholder="xxxxxxxx.apps.googleusercontent.com">
+            </div>
+            <div class="form-group">
+              <label class="form-label">OAuth Client Secret (Optional)</label>
+              <input type="password" id="oauthClientSecretInput" class="form-input" placeholder="GOCSPX-...">
+            </div>
+            <div style="display:flex; gap:8px; margin-top:16px;">
+              <button class="btn btn-primary" id="connectOAuthBtn">Connect</button>
+              <button class="btn btn-danger" id="disconnectOAuthBtn" style="display:none;">Disconnect</button>
+              <button class="btn btn-secondary" id="saveOAuthBtn">Save Credentials</button>
+            </div>
+          </div>
+
+          <div class="card card-elevated">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <div>
+                <h3 class="title-medium">Gemini API Keys</h3>
+                <p class="body-small" style="color:var(--md-sys-color-on-surface-variant)">API keys used for AI classification and summaries.</p>
+              </div>
+              <button class="btn btn-text" id="openAiStudioBtn">Get a key</button>
+            </div>
+            <div id="apiKeysList" style="margin-top:16px;"></div>
+            <div style="display:flex; gap:8px; margin-top:12px;">
+              <button class="btn btn-outlined" id="addApiKeyBtn">+ Add Key</button>
+              <button class="btn btn-primary" id="saveKeyBtn">Save Keys</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- Gmail Panel -->
+        <section id="panel-gmail" class="settings-panel">
+          <div class="card card-elevated" style="margin-bottom:16px;">
+            <h3 class="title-medium">Label Categories</h3>
+            <p class="body-small" style="color:var(--md-sys-color-on-surface-variant)">Define the categories for AI classification.</p>
+            <div id="categoriesList" style="margin-top:16px;"></div>
+            <div style="display:flex; gap:8px; margin-top:12px;">
+              <button class="btn btn-outlined" id="addCategoryBtn">+ Add Category</button>
+              <button class="btn btn-primary" id="saveCategoriesBtn">Save</button>
+            </div>
+          </div>
+          
+          <div class="card card-elevated">
+            <h3 class="title-medium">Importance Criteria</h3>
+            <div class="form-group" style="margin-top:12px;">
+              <label class="form-label" style="color:var(--md-sys-color-error)">High Importance</label>
+              <textarea id="criteriaHighInput" class="form-input" rows="2"></textarea>
+            </div>
+            <div class="form-group">
+              <label class="form-label" style="color:var(--md-sys-color-warning)">Medium Importance</label>
+              <textarea id="criteriaMediumInput" class="form-input" rows="2"></textarea>
+            </div>
+            <div class="form-group">
+              <label class="form-label" style="color:var(--md-sys-color-success)">Low Importance</label>
+              <textarea id="criteriaLowInput" class="form-input" rows="2"></textarea>
+            </div>
+            <div style="display:flex; gap:8px; margin-top:12px;">
+              <button class="btn btn-primary" id="saveCriteriaBtn">Save Criteria</button>
+            </div>
+          </div>
+        </section>
+        
+        <!-- Calendar Panel -->
+        <section id="panel-calendar" class="settings-panel">
+          <div class="card card-elevated">
+            <h3 class="title-medium">Calendar Color Mapping</h3>
+            <p class="body-small" style="color:var(--md-sys-color-on-surface-variant)">Map AI categories to Google Calendar colors.</p>
+            <div style="margin-top:16px;">
+               <!-- Colors will be managed via script or hardcoded in calendar_colors.js for now -->
+               <p class="body-small">Colors are currently managed by the built-in Semantic Palette.</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- Other panels (AI, Automation, Notifications, Data, Advanced) are placeholders for now to fit the architecture -->
+        <section id="panel-ai" class="settings-panel"><div class="card card-elevated"><h3>AI Settings</h3><p>Model selection, token limits, and privacy.</p></div></section>
+        <section id="panel-automation" class="settings-panel"><div class="card card-elevated"><h3>Automation</h3><p>Manage auto-classification triggers.</p></div></section>
+        <section id="panel-notifications" class="settings-panel"><div class="card card-elevated"><h3>Notifications</h3><p>Discord webhooks and browser alerts.</p></div></section>
+        <section id="panel-data" class="settings-panel"><div class="card card-elevated"><h3>Data & Backup</h3><p>Export and import settings.</p></div></section>
+        <section id="panel-advanced" class="settings-panel"><div class="card card-elevated"><h3>Advanced</h3><p>Developer options and logs.</p></div></section>
+      </div>
+    </main>
   </div>
+
+  <script src="../i18n.js"></script>
+  <script src="../crypto-helper.js"></script>
+  <script src="options.js"></script>
 </body>
 </html>
