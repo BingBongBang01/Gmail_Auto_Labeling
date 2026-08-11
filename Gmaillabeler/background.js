@@ -1,6 +1,8 @@
 // background.js
 // Gmail AI Labeler - Copyright (c) 2026 김태형 (thk7410@gmail.com). All rights reserved.
 // See LICENSE file at the extension root for terms. Unauthorized redistribution or resale is prohibited.
+// 로드 순서 주의: 공급자 어댑터는 AIProviderBase를 상속하고 로드 시점에
+// AIProviderRegistry.register()를 부르므로, 그 둘이 먼저 올라와 있어야 한다.
 importScripts(
   "settings/settings_schema.js",
   "settings/settings_defaults.js",
@@ -8,6 +10,8 @@ importScripts(
   "i18n.js",
   "crypto-helper.js",
   "ai/ai_provider_registry.js",
+  "ai/ai_schema.js",
+  "ai/ai_provider_base.js",
   "ai/ai_key_manager.js",
   "ai/ai_quota_manager.js",
   "ai/ai_failover_manager.js",
@@ -15,6 +19,7 @@ importScripts(
   "ai/providers/google_provider.js",
   "ai/providers/openai_provider.js",
   "ai/providers/anthropic_provider.js",
+  "settings/settings_migration.js",
   "calendar/calendar_api.js",
   "calendar/calendar_colors.js",
   "calendar/calendar_categories.js",
@@ -107,8 +112,8 @@ try {
 
 // 파이프라인: 인증 -> 메일 수집 -> (배치 단위) AI 분석(필요시 신규 카테고리 생성) -> 라벨 확인/생성 -> 라벨 즉시 적용(배타적) -> 진행도/로그 기록
 
-const GEMINI_MODEL = "gemini-3.1-flash-lite";
-
+// 실제로 쓰는 모델은 ai.credentials의 각 항목이 들고 있다(공급자별로 다르다).
+// 아래 한도 값들은 배치 크기를 계산하기 위한 Gemini 무료 티어 기준 추정치다.
 const GEMINI_RPM_LIMIT = 15;
 const GEMINI_TPM_LIMIT = 250000;
 const GEMINI_RPD_LIMIT = 500;
@@ -121,10 +126,6 @@ const BATCH_SIZE = Math.max(
   Math.min(MAX_BATCH_SIZE_FOR_ACCURACY, Math.floor(TOKEN_BUDGET_PER_REQUEST / AVG_TOKENS_PER_EMAIL_ESTIMATE))
 );
 
-const MIN_CALL_INTERVAL_MS = Math.ceil(60000 / GEMINI_RPM_LIMIT) + 200;
-// 네트워크가 연결된 채 응답을 돌려주지 않는 경우가 있어, 작업이 영구히 running
-// 상태로 남지 않도록 Gemini 요청의 상한을 둔다.
-const GEMINI_REQUEST_TIMEOUT_MS = 60000;
 const MAX_BATCH_COUNT_PER_RUN = 50; // UI 상 설정 가능한 상한. 실제 안전 제한은 computeSafeEmailCount()가 그날 남은 RPD 추정치로 별도 수행
 const MAX_EMAIL_COUNT_PER_RUN = BATCH_SIZE * MAX_BATCH_COUNT_PER_RUN;
 const MAX_MESSAGES_PER_LABEL_FETCH = 1000; // 라벨 하나에서 메일을 조회할 때 한 번에 가져올 상한 (전체 재작업/라벨 정리용)
@@ -173,9 +174,9 @@ function sleep(ms) {
 // 사용자당 초당 할당량(250 quota units/s, messages.get = 5 units) 안에서 안전한 수준으로만 동시에 보낸다.
 const GMAIL_FETCH_CONCURRENCY = 8;
 
-// Gemini 분류 배치를 몇 개까지 겹쳐서 진행할지.
-// 분당 요청 수 상한은 throttleGeminiCall()이 따로 지키므로, 이 값은 "응답 대기 시간을 얼마나
-// 겹쳐서 감출지"만 결정한다(값을 올려도 RPM을 더 쓰지는 않는다).
+// AI 분류 배치를 몇 개까지 겹쳐서 진행할지.
+// 분당 요청 수 상한은 AIPacer(ai/ai_request_router.js)가 따로 지키므로, 이 값은
+// "응답 대기 시간을 얼마나 겹쳐서 감출지"만 결정한다(값을 올려도 RPM을 더 쓰지는 않는다).
 const GEMINI_BATCH_CONCURRENCY = 3;
 
 // items를 최대 concurrency개씩 동시에 worker에 넘긴다. 결과는 입력 순서를 그대로 유지한다.
@@ -287,13 +288,24 @@ chrome.runtime.onInstalled.addListener(async (details) => {
   // 전용 '나와 관련된 메일 웹훅'은 없어졌다(커스텀 웹훅의 onlyPersonal 조건으로 대체).
   // 쓰이지 않는 웹훅 URL이 저장소에 남아 있지 않게 지운다.
   await chrome.storage.local.remove(["discordWebhookUrlPersonal"]);
+
+  // 업데이트 시점에도 마이그레이션을 돌린다. 예전에는 옵션 페이지를 열 때만 실행돼서,
+  // 옵션 화면에 한 번도 들어가지 않은 사용자는 v2 데이터가 영구히 옮겨지지 않았다.
+  try {
+    await migrateToLatestSettings();
+  } catch (e) {
+    console.warn("[GmailLabeler] 설정 마이그레이션 실패:", e);
+  }
+
   if (details.reason !== "install") return;
   await i18nInit(true);
-  await chrome.storage.local.set({
-    categoryDefinitions: getLocalizedDefaultCategoryDefs(),
-    autoClassifyEnabled: true,
-    autoClassifyThreshold: 1,
-    autoBackupOnChange: true,
+  // 설치 직후 기본 카테고리는 새 설정 구조에 넣는다.
+  // 예전에는 평면 키 categoryDefinitions에 썼는데, 정작 읽는 쪽은 settings.gmail.categories라서
+  // 기본 카테고리가 전달되지 않았다.
+  await SettingsStore.setSettings({
+    gmail: { categories: getLocalizedDefaultCategoryDefs() },
+    automation: { autoClassify: { enabled: true, threshold: 1 } },
+    data: { backup: { autoBackupToDrive: true } },
   });
 });
 
@@ -301,18 +313,18 @@ function normalizeLabelName(name) {
   return String(name).trim().replace(/\s+/g, "").toLowerCase();
 }
 
-// 예전 버전은 API 키를 하나만 저장했는데, 이제는 여러 개를 등록해서 한 키의 일일 할당량이 다 차면
-// 자동으로 다음 키로 넘어가도록 한다(무료 티어 키 여러 개를 돌려쓰면 사실상 처리량이 늘어남).
-async function getGeminiApiKeys() {
-  const settings = await SettingsStore.getSettings();
-  if (settings.ai.geminiApiKeys && settings.ai.geminiApiKeys.length > 0) {
-    return settings.ai.geminiApiKeys.filter((k) => k && k.key);
-  }
-  return [];
+// API 키는 ai.credentials 한 곳에만 저장한다(공급자/모델/우선순위를 함께 들고 있는 형태).
+// 예전 이 함수는 settings.ai.geminiApiKeys를 읽었는데, 그 경로는 v3 스키마에도 기본값에도 없고
+// 어디서도 쓰지 않았다. 그래서 항상 빈 배열을 돌려줬고, 이 값을 "키가 있는지" 판단에 쓰던
+// initGeminiAndGmailContext()가 사용자가 키를 몇 개 등록했든 무조건 errNoApiKey로 실패했다.
+async function getActiveAiCredentials() {
+  return await AIKeyManager.getActiveCredentials();
 }
 
-async function saveGeminiApiKeys(keys) {
-  await SettingsStore.setSetting("ai.geminiApiKeys", keys);
+// 사용 가능한 AI 키가 하나라도 있는지. 작업 시작 전 사전 점검용.
+async function hasUsableAiCredential() {
+  const creds = await getActiveAiCredentials();
+  return creds.length > 0;
 }
 
 // ---------------- OAuth (사용자 개인 클라이언트 방식) ----------------
@@ -1027,8 +1039,7 @@ async function initGmailOnlyContext() {
 }
 
 async function initGeminiAndGmailContext() {
-  const apiKeys = await getGeminiApiKeys();
-  if (!apiKeys.length) {
+  if (!(await hasUsableAiCredential())) {
     throw new Error(t("errNoApiKey"));
   }
   let categoryDefs = await getCategoryDefinitions();
@@ -1170,35 +1181,58 @@ async function applyLabelExclusive(token, detail, newLabel, allCategories, label
   return removeLabelIds.length > 0;
 }
 
-let lastGeminiCallAt = 0;
-let currentCallIntervalMs = MIN_CALL_INTERVAL_MS; // 429를 맞으면 늘어나고, 성공이 이어지면 서서히 기본값으로 회복됨
-const MAX_CALL_INTERVAL_MS = MIN_CALL_INTERVAL_MS * 6; // 무한정 늘어나지 않도록 상한
-const INTERVAL_BACKOFF_MULTIPLIER = 1.6;
-const INTERVAL_RECOVERY_MULTIPLIER = 0.92;
-const DAILY_QUOTA_TEXT_PATTERN = /(per\s*day|daily|quota[^"]*day)/i;
+// ---------------- AI 호출 어댑터 ----------------
+// 요청 간격 조절(분당 상한)과 할당량 추적은 ai/ai_request_router.js의 AIPacer와
+// ai/ai_quota_manager.js가 담당한다. 예전에 이 자리에 있던 lastGeminiCallAt /
+// currentCallIntervalMs / MAX_CALL_INTERVAL_MS / INTERVAL_*_MULTIPLIER /
+// DAILY_QUOTA_TEXT_PATTERN은 라우터 도입 때 소비하는 함수가 삭제되면서
+// 선언만 남은 채 아무도 읽지 않는 상태였다.
 
-// RPM 슬롯 확보는 반드시 한 번에 하나씩 순서대로 이뤄져야 한다.
-// ---------------- AI Provider Migration Adapter ----------------
-// Legacy functions have been removed or adapted to route through the universal AIRequestRouter.
-function getTodayString() {
-  try {
-    return new Intl.DateTimeFormat("en-CA", { timeZone: "America/Los_Angeles" }).format(new Date());
-  } catch (e) {
-    const d = new Date();
-    return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
-  }
-}
+// Gemini 무료 티어의 키당 하루 요청 상한(추정치). 유료 티어는 훨씬 크지만,
+// 확장 프로그램이 사용자의 결제 등급을 알 방법이 없어서 보수적인 무료 티어 값을 쓴다.
+const GEMINI_FREE_RPD_PER_KEY = 1500;
 
+// 실제 사용량을 보고한다. 예전에는 requestsToday를 0으로, exhausted를 false로 하드코딩해서
+// 화면의 할당량 표시가 장식에 불과했고(요청 수를 세는 코드가 아예 없었다),
+// 게다가 존재하지 않는 AIKeyManager.getKeysForProvider를 불러서 매번 TypeError로 죽었다.
 async function getQuotaUsage() {
-  const keys = await AIKeyManager.getKeysForProvider("google");
+  await AIQuotaManager.load();
+  const allCredentials = await AIKeyManager.getAllCredentials();
+  const enabled = allCredentials.filter((c) => c && c.enabled && c.apiKey);
+
+  const perKey = enabled.map((cred) => {
+    const state = AIQuotaManager.getState(cred.id);
+    return {
+      id: cred.id,
+      label: cred.name || cred.provider,
+      provider: cred.provider,
+      model: cred.model || "",
+      requestsToday: AIQuotaManager.getRequestCount(cred.id),
+      rpd: cred.provider === "google" ? GEMINI_FREE_RPD_PER_KEY : null,
+      exhausted: !!state && state.status === "quota_exhausted",
+      cooldownUntil: state ? state.until : null,
+      cooldownReason: state ? state.status : null,
+    };
+  });
+
+  // 일일 한도 개념이 뚜렷한 건 Gemini 무료 티어뿐이다.
+  // Google 키가 없으면(OpenAI/Anthropic만 등록) 하루 상한을 추정하지 않는다(null).
+  const googleKeyCount = perKey.filter((k) => k.provider === "google" && !k.exhausted).length;
+  const rpd = googleKeyCount > 0 ? GEMINI_FREE_RPD_PER_KEY * googleKeyCount : null;
+
+  const settings = await SettingsStore.getSettings();
+  const rpmLimit = Number(settings.ai?.requestPolicy?.rpmLimit) > 0
+    ? Number(settings.ai.requestPolicy.rpmLimit)
+    : GEMINI_RPM_LIMIT;
+
   return {
-    date: getTodayString(),
-    requestsToday: 0,
-    rpd: 1500 * Math.max(1, keys.length),
-    rpm: 15,
-    tpm: 1000000,
-    keyCount: keys.length,
-    perKey: keys.map(k => ({ label: k.label, requestsToday: 0, rpd: 1500, exhausted: false }))
+    date: AIQuotaManager.pacificDateString(),
+    requestsToday: AIQuotaManager.getTotalRequestCount(),
+    rpd,
+    rpm: rpmLimit,
+    keyCount: enabled.length,
+    usableKeyCount: perKey.filter((k) => !k.exhausted).length,
+    perKey,
   };
 }
 
@@ -1851,8 +1885,7 @@ async function flushDeferredCategoryLearning() {
 async function applyLearnedCategoryDescription(pattern) {
   let requestConsumed = false;
   try {
-    const apiKeys = await getGeminiApiKeys();
-    if (!apiKeys.length) return false;
+    if (!(await hasUsableAiCredential())) return false;
 
     const exampleText = pattern.examples
       .slice(-CORRECTION_PATTERN_THRESHOLD)
@@ -2357,12 +2390,20 @@ async function learnFromSummaryFeedback() {
   return { ...updated, feedbackCount: feedback.length, changeSummary: parsed.changeSummary || "" };
 }
 
-async function processSummarizeLabelEmails(labelName, maxEmails, filterCriteria) {
+// options.messageIds가 주어지면 라벨 조회를 건너뛰고 그 메일들만 요약한다
+// (사이드패널의 "지금 보고 있는 메일 요약").
+async function processSummarizeLabelEmails(labelName, maxEmails, filterCriteria, options = {}) {
   const { categoryDefs, categories, token } = await initGeminiAndGmailContext();
   const emailLimit = Math.max(1, Math.min(100, parseInt(maxEmails, 10) || 20));
 
-  await addLog(`[요약] '${labelName}' 라벨 메일 수집 중 (최대 ${emailLimit}개)...`);
-  const messages = await getMessagesByLabelName(token, labelName, emailLimit);
+  let messages;
+  if (Array.isArray(options.messageIds) && options.messageIds.length) {
+    messages = options.messageIds.slice(0, emailLimit).map((id) => ({ id }));
+    await addLog(`[요약] 지정된 메일 ${messages.length}건 요약 중...`);
+  } else {
+    await addLog(`[요약] '${labelName}' 라벨 메일 수집 중 (최대 ${emailLimit}개)...`);
+    messages = await getMessagesByLabelName(token, labelName, emailLimit);
+  }
 
   if (!messages || messages.length === 0) {
     const emptyReport = {
@@ -3156,7 +3197,7 @@ async function classifyAndLabelMessages(token, categoryDefs, labelCache, message
   await reportProgress(1, 3);
 
   // 배치끼리는 서로 의존하지 않으므로 겹쳐서 보낸다.
-  // RPM 상한은 throttleGeminiCall()이 지키고, 이렇게 하면 앞 요청의 응답 대기 시간 동안
+  // RPM 상한은 AIPacer가 지키고, 이렇게 하면 앞 요청의 응답 대기 시간 동안
   // 다음 요청이 출발해서 "간격 + 응답지연"이 배치마다 누적되던 것을 없앨 수 있다.
   let stopClassifying = false;
   let fatalClassifyError = null;
@@ -3397,14 +3438,30 @@ async function classifyAndLabelMessages(token, categoryDefs, labelCache, message
 // 오늘 남은 추정 RPD에 맞춰 요청 개수를 미리 안전하게 축소한다 (배치 1개 = 요청 1회 기준)
 async function computeSafeEmailCount(requestedCount) {
   const usage = await getQuotaUsage();
-  // 분류 배치 외에도 자동 학습/요약 등 부수적인 Gemini 호출이 몇 건 생길 수 있으므로 여유분을 남겨둔다.
+
+  if (usage.keyCount === 0) {
+    throw new Error(t("errNoApiKey"));
+  }
+  if (usage.usableKeyCount === 0) {
+    throw new Error(
+      "등록된 모든 AI 키가 할당량 소진 상태입니다. 잠시 후 다시 시도하거나 다른 공급자의 키를 추가하세요."
+    );
+  }
+
+  // 하루 상한을 추정할 수 있는 건 Gemini 무료 티어 키가 있을 때뿐이다.
+  // OpenAI/Anthropic만 쓰는 구성에서는 상한을 모르므로 요청 수를 줄이지 않는다.
+  if (usage.rpd === null) {
+    return { count: requestedCount, reduced: false, usage, remainingRequests: null };
+  }
+
+  // 분류 배치 외에도 자동 학습/요약 등 부수적인 AI 호출이 몇 건 생길 수 있으므로 여유분을 남겨둔다.
   const QUOTA_RESERVE_REQUESTS = 5;
   const remainingRequests = Math.max(0, usage.rpd - usage.requestsToday - QUOTA_RESERVE_REQUESTS);
   const maxEmailsFromQuota = remainingRequests * BATCH_SIZE;
 
   if (maxEmailsFromQuota <= 0) {
     throw new Error(
-      `오늘 Gemini 요청 추정치(${usage.requestsToday}/${usage.rpd})가 이미 한도에 도달한 것으로 보입니다. 자정 이후 다시 시도하세요.`
+      `오늘 AI 요청 추정치(${usage.requestsToday}/${usage.rpd})가 이미 한도에 도달했습니다. 태평양 시간 자정 이후 다시 시도하세요.`
     );
   }
 
@@ -3428,6 +3485,21 @@ async function processRecentEmails(count) {
     await addLog(t("logFewerThanRequested", [messages.length]));
   }
 
+  const summary = await classifyAndLabelMessages(token, categoryDefs, labelCache, messages, null);
+  await chrome.storage.local.set({
+    latestAiData: trimAiDataForContentScript(summary.results),
+    latestAiDataUpdatedAt: Date.now(),
+  });
+  return { ...summary, batchSize: BATCH_SIZE };
+}
+
+// 대상 메일이 이미 정해진 경우(사이드패널의 "지금 보고 있는 메일 분류")에 쓴다.
+// 라벨/최근 목록 조회를 건너뛰고 주어진 ID만 분류한다.
+async function processSpecificMessages(messageIds) {
+  const { categoryDefs, token, labelCache } = await initGeminiAndGmailContext();
+  const messages = messageIds.map((id) => ({ id }));
+
+  await addLog(`[분류] 지정된 메일 ${messages.length}건 분류 중...`);
   const summary = await classifyAndLabelMessages(token, categoryDefs, labelCache, messages, null);
   await chrome.storage.local.set({
     latestAiData: trimAiDataForContentScript(summary.results),
@@ -3767,8 +3839,7 @@ async function checkAutoClassifyTrigger() {
   const threshold = Math.max(1, Math.min(BATCH_SIZE, parseInt(settings.automation.autoClassify.threshold, 10) || 1));
 
   try {
-    const apiKeys = await getGeminiApiKeys();
-    if (!apiKeys.length) return; // API 키 없으면 자동 실행 안 함
+    if (!(await hasUsableAiCredential())) return; // API 키 없으면 자동 실행 안 함
 
     const categories = getCategoryNames(await getCategoryDefinitions());
     const { token } = await initGmailOnlyContext();
@@ -3821,8 +3892,7 @@ async function checkAutoSummaryTrigger() {
   if (running) return;
 
   try {
-    const apiKeys = await getGeminiApiKeys();
-    if (!apiKeys.length) return;
+    if (!(await hasUsableAiCredential())) return;
 
     const { token } = await initGmailOnlyContext();
     const maxCount = Math.max(1, Math.min(100, parseInt(settings.automation.autoSummary.maxCount, 10) || 20));
