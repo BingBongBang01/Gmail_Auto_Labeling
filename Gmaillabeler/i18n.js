@@ -18,8 +18,8 @@ function i18nMapBrowserLangToSupported(lang) {
 
 function i18nResolveLocale() {
   return new Promise((resolve) => {
-    chrome.storage.local.get(["uiLanguage"], (result) => {
-      const pref = result.uiLanguage;
+    chrome.storage.local.get(["appSettings", "uiLanguage"], (result) => {
+      const pref = result.appSettings?.general?.language || result.uiLanguage;
       if (pref && pref !== "system" && I18N_SUPPORTED_LOCALES.includes(pref)) {
         resolve(pref);
         return;

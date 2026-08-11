@@ -1,8 +1,6 @@
 // options/options.js
 const $ = (id) => document.getElementById(id);
 
-let saveTimeout = null;
-
 async function initOptions() {
   if (typeof i18nInit === 'function') {
     await i18nInit();
@@ -77,15 +75,19 @@ function initSearch() {
   });
 }
 
+const saveTimers = new Map();
+
 // Global debounced save helper
 function scheduleSave(path, value) {
-  clearTimeout(saveTimeout);
-  saveTimeout = setTimeout(() => {
+  if (saveTimers.has(path)) clearTimeout(saveTimers.get(path));
+  const timerId = setTimeout(() => {
     SettingsStore.setSetting(path, value).then(() => {
       showSnackbar("Changes saved successfully.");
       applyTheme(SettingsStore._cache.general.themeMode);
     });
+    saveTimers.delete(path);
   }, 500); // 500ms debounce
+  saveTimers.set(path, timerId);
 }
 
 function showSnackbar(message) {
@@ -120,10 +122,15 @@ function initGeneralSettings(settings) {
 
   if (selectUiLanguage) {
     selectUiLanguage.value = settings.general.language;
-    selectUiLanguage.addEventListener('change', (e) => {
-      scheduleSave('general.language', e.target.value);
-      // Changing language might require a reload to apply i18n everywhere cleanly
-      setTimeout(() => window.location.reload(), 600);
+    selectUiLanguage.addEventListener('change', async (e) => {
+      await SettingsStore.setSetting('general.language', e.target.value);
+      if (typeof i18nInit === 'function') {
+        await i18nInit(true);
+        if (typeof i18nApplyToDom === 'function') {
+          i18nApplyToDom(document);
+        }
+      }
+      showSnackbar("Language updated.");
     });
   }
 
@@ -145,22 +152,85 @@ function initGeneralSettings(settings) {
 function initConnectionsSettings(settings) {
   // Google Account Status
   const statusBox = $('googleAccountStatus');
-  if (statusBox) {
+  const btnConnect = $('btnConnectGoogle');
+  const btnDisconnect = $('btnDisconnectGoogle');
+
+  function updateOAuthStatusUI() {
+    if (!statusBox) return;
     chrome.runtime.sendMessage({ action: "getOAuthStatus" }, (oauth) => {
       if (chrome.runtime.lastError || !oauth || !oauth.connected) {
-        statusBox.innerHTML = `<span style="color:var(--md-sys-color-error)">Not Connected</span>`;
+        statusBox.innerHTML = `<span style="color:var(--md-sys-color-error)" data-i18n="settingsOAuthNotConnected">Not Connected</span>`;
+        if (btnConnect) {
+          btnConnect.disabled = false;
+          btnConnect.textContent = "Connect Google Account";
+        }
+        if (btnDisconnect) btnDisconnect.disabled = true;
       } else {
-        statusBox.innerHTML = `<span style="color:var(--md-sys-color-success)">Connected to Google Services</span>`;
+        const emailStr = oauth.email ? `<br><span style="color:var(--md-sys-color-on-surface-variant)">${oauth.email}</span>` : '';
+        statusBox.innerHTML = `<span style="color:var(--md-sys-color-success)" data-i18n="settingsOAuthConnected">Connected to Google Services</span>${emailStr}`;
+        if (btnConnect) {
+          btnConnect.disabled = false;
+          btnConnect.textContent = "Reconnect";
+        }
+        if (btnDisconnect) btnDisconnect.disabled = false;
       }
     });
   }
 
-  $('btnConnectGoogle')?.addEventListener('click', () => {
-    chrome.runtime.sendMessage({ action: "connectOAuth" }, () => window.location.reload());
+  updateOAuthStatusUI();
+
+  // Listen for OAuth completion from background
+  chrome.runtime.onMessage.addListener((msg) => {
+    if (msg.action === "oauthStatusUpdated" || msg.type === "oauthStatusUpdated") {
+      updateOAuthStatusUI();
+    }
+  });
+
+  btnConnect?.addEventListener('click', () => {
+    btnConnect.disabled = true;
+    if (statusBox) statusBox.innerHTML = `<span style="color:var(--md-sys-color-primary)" data-i18n="settingsOAuthConnecting">Opening Google login...</span>`;
+    
+    chrome.runtime.sendMessage({ action: "authorizeOAuth" }, (response) => {
+      if (chrome.runtime.lastError) {
+        showSnackbar(chrome.runtime.lastError.message || "Failed to start OAuth");
+        updateOAuthStatusUI();
+      } else if (response && response.error) {
+        showSnackbar(response.error);
+        updateOAuthStatusUI();
+      } else {
+        // We wait for the background to complete and send 'oauthStatusUpdated', or we poll as fallback
+        setTimeout(updateOAuthStatusUI, 5000); // fallback polling
+      }
+    });
   });
   
-  $('btnDisconnectGoogle')?.addEventListener('click', () => {
-    chrome.runtime.sendMessage({ action: "disconnectOAuth" }, () => window.location.reload());
+  btnDisconnect?.addEventListener('click', () => {
+    btnDisconnect.disabled = true;
+    chrome.runtime.sendMessage({ action: "disconnectOAuth" }, (response) => {
+      if (chrome.runtime.lastError) {
+        showSnackbar(chrome.runtime.lastError.message);
+      } else if (response && response.error) {
+        showSnackbar(response.error);
+      }
+      updateOAuthStatusUI();
+    });
+  });
+
+  // OAuth Settings
+  const inputClientId = $('inputOAuthClientId');
+  if (inputClientId) {
+    inputClientId.value = settings.google?.oauth?.clientId || '';
+    inputClientId.addEventListener('input', (e) => scheduleSave('google.oauth.clientId', e.target.value));
+  }
+  
+  const inputClientSecret = $('inputOAuthClientSecret');
+  if (inputClientSecret) {
+    inputClientSecret.value = settings.google?.oauth?.clientSecret || '';
+    inputClientSecret.addEventListener('input', (e) => scheduleSave('google.oauth.clientSecret', e.target.value));
+  }
+
+  $('btnOAuthGuide')?.addEventListener('click', () => {
+    chrome.tabs.create({ url: chrome.runtime.getURL("guide/oauth-guide.html") });
   });
 
   // Gemini API Keys
@@ -234,10 +304,6 @@ function initConnectionsSettings(settings) {
     currentKeys.push({ label: "", key: "", active: currentKeys.length === 0 });
     renderKeys();
   });
-
-function initConnectionsSettings(settings) {
-  // ... (Existing connections code is kept intact by placing this before the end of initOptions or in its own function)
-  // Actually, I need to append to the end of the file, or insert after initConnectionsSettings
 }
 
 function initGmailSettings(settings) {
@@ -416,6 +482,7 @@ function initCalendarSettings(settings) {
       });
     });
   }
+}
 function initAiSettings(settings) {
   const selModel = $('selectAiModel');
   if (selModel) {

@@ -48,16 +48,16 @@ function initTheme(settings) {
 // Action Registry
 const ACTION_REGISTRY = {
   "gmail.inbox": [
-    { id: "action_classify_visible", label: "Classify Visible Mail", cls: "btn-primary", handler: () => chrome.runtime.sendMessage({ action: "job.start", jobType: "gmail_classify" }) },
-    { id: "action_summarize_all", label: "Summarize", cls: "btn-secondary", handler: () => chrome.runtime.sendMessage({ action: "job.start", jobType: "gmail_summarize" }) }
+    { id: "action_classify_visible", label: "sidepanelClassifyVisible", cls: "btn-primary", handler: () => chrome.runtime.sendMessage({ action: "job.start", jobType: "gmail_classify" }) },
+    { id: "action_summarize_all", label: "sidepanelSummarizeAll", cls: "btn-secondary", handler: () => chrome.runtime.sendMessage({ action: "job.start", jobType: "gmail_summarize" }) }
   ],
   "gmail.thread": [
-    { id: "action_classify_thread", label: "Classify Thread", cls: "btn-primary", handler: () => chrome.runtime.sendMessage({ action: "job.start", jobType: "gmail_classify_thread" }) },
-    { id: "action_summarize_thread", label: "Summarize Thread", cls: "btn-secondary", handler: () => chrome.runtime.sendMessage({ action: "job.start", jobType: "gmail_summarize_thread" }) }
+    { id: "action_classify_thread", label: "sidepanelClassifyThread", cls: "btn-primary", handler: () => chrome.runtime.sendMessage({ action: "job.start", jobType: "gmail_classify_thread" }) },
+    { id: "action_summarize_thread", label: "sidepanelSummarizeThread", cls: "btn-secondary", handler: () => chrome.runtime.sendMessage({ action: "job.start", jobType: "gmail_summarize_thread" }) }
   ],
   "calendar.schedule": [
-    { id: "action_classify_schedule", label: "Classify Schedule", cls: "btn-primary", handler: () => chrome.runtime.sendMessage({ action: "job.start", jobType: "calendar_classify" }) },
-    { id: "action_apply_colors", label: "Apply Colors", cls: "btn-secondary", handler: () => chrome.runtime.sendMessage({ action: "job.start", jobType: "calendar_apply_colors" }) }
+    { id: "action_classify_schedule", label: "sidepanelClassifySchedule", cls: "btn-primary", handler: () => chrome.runtime.sendMessage({ action: "job.start", jobType: "calendar_classify" }) },
+    { id: "action_apply_colors", label: "sidepanelApplyColors", cls: "btn-secondary", handler: () => chrome.runtime.sendMessage({ action: "job.start", jobType: "calendar_apply_colors" }) }
   ]
 };
 
@@ -73,13 +73,13 @@ function updateContextUI(context) {
   const actions = ACTION_REGISTRY[registryKey] || [];
 
   if (actions.length === 0) {
-    actionsContainer.innerHTML = `<button class="btn btn-outlined action-btn">Analyze Page</button>`;
+    actionsContainer.innerHTML = `<button class="btn btn-outlined action-btn" data-i18n="sidepanelAnalyzePage">${t("sidepanelAnalyzePage")}</button>`;
   } else {
     actions.forEach(act => {
       const btn = document.createElement("button");
       btn.className = `btn action-btn ${act.cls}`;
       btn.id = act.id;
-      btn.textContent = act.label;
+      btn.textContent = typeof t === "function" ? t(act.label) : act.label;
       btn.addEventListener("click", act.handler);
       actionsContainer.appendChild(btn);
     });

@@ -20,7 +20,7 @@
     <div class="header-main">
       <img src="../icon32.png" alt="Logo" class="header-logo">
       <div class="header-text">
-        <div class="title-small">AI Workspace</div>
+        <div class="title-small" data-i18n="sidepanelWorkspace">AI Workspace</div>
       </div>
     </div>
   </header>
@@ -32,31 +32,31 @@
       <div class="context-header">
         <span class="label-small" id="contextService">Gmail</span>
       </div>
-      <div class="title-medium" id="contextTitle">Inbox</div>
-      <div class="body-small" id="contextDesc" style="color:var(--md-sys-color-on-surface-variant); margin-top:4px;">
-        12 unread emails
+      <div class="title-medium" id="contextTitle" data-i18n="sidepanelInbox">Inbox</div>
+      <div class="body-small" id="contextDesc" style="color:var(--md-sys-color-on-surface-variant); margin-top:4px;" data-i18n="sidepanelReady">
+        Ready to assist
       </div>
     </div>
 
     <!-- Dynamic Actions -->
     <div class="dynamic-actions" id="dynamicActions">
       <!-- Injected by sidepanel.js based on context -->
-      <button class="btn btn-primary action-btn">Classify This Mail</button>
-      <button class="btn btn-secondary action-btn">Summarize Sender</button>
+      <button class="btn btn-primary action-btn" data-i18n="sidepanelClassifyVisible">Classify This Mail</button>
+      <button class="btn btn-secondary action-btn" data-i18n="sidepanelSummarizeSender">Summarize Sender</button>
     </div>
 
     <!-- Quick Tools (Always available) -->
-    <div class="section-title label-small" style="margin-top:24px; margin-bottom:8px;">AI Tools</div>
+    <div class="section-title label-small" style="margin-top:24px; margin-bottom:8px;" data-i18n="sidepanelAITools">AI Tools</div>
     <div class="tool-list">
-      <button class="btn btn-outlined tool-btn">Write Email</button>
-      <button class="btn btn-outlined tool-btn">Ask Gemini</button>
+      <button class="btn btn-outlined tool-btn" data-i18n="sidepanelWriteEmail">Write Email</button>
+      <button class="btn btn-outlined tool-btn" data-i18n="sidepanelAskGemini">Ask Gemini</button>
     </div>
 
   </main>
 
   <footer class="sidepanel-footer">
-    <button class="btn btn-text footer-btn" id="btnSettings">⚙️ Settings</button>
-    <button class="btn btn-text footer-btn" id="btnDashboard">▣ Dashboard</button>
+    <button class="btn btn-text footer-btn" id="btnSettings" data-i18n="sidepanelSettingsBtn">⚙️ Settings</button>
+    <button class="btn btn-text footer-btn" id="btnDashboard" data-i18n="sidepanelDashboardBtn">▣ Dashboard</button>
   </footer>
 
   <script src="../i18n.js"></script>

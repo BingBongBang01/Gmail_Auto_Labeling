@@ -5,6 +5,7 @@
  * This defines the nested object structure that will be saved to chrome.storage.
  */
 const SETTINGS_SCHEMA = {
+  schemaVersion: "number",
   general: {
     language: "string", // "system", "ko", "en", etc.
     themeMode: "string", // "system", "light", "dark"

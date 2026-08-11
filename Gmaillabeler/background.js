@@ -1,7 +1,14 @@
 // background.js
 // Gmail AI Labeler - Copyright (c) 2026 김태형 (thk7410@gmail.com). All rights reserved.
 // See LICENSE file at the extension root for terms. Unauthorized redistribution or resale is prohibited.
-importScripts("i18n.js", "crypto-helper.js", "calendar/calendar_api.js");
+importScripts(
+  "settings/settings_schema.js",
+  "settings/settings_defaults.js",
+  "settings/settings_store.js",
+  "i18n.js",
+  "crypto-helper.js",
+  "calendar/calendar_api.js"
+);
 
 // ---------------- 투명 배경 고시인성 왕 편지봉투 + AI Sparkle 아이콘 드로잉 ----------------
 function drawIconCodeData(size) {
@@ -185,6 +192,8 @@ async function mapWithConcurrency(items, concurrency, worker) {
   return results;
 }
 
+
+
 class JobCancelledError extends Error {
   constructor() {
     super("Job cancelled by user");
@@ -227,21 +236,15 @@ function getLocalizedDefaultCategoryDefs() {
 // 예전 버전(문자열 배열)으로 저장된 데이터가 있으면 자동으로 {name, description:""} 형태로 변환해서 반환한다.
 async function getCategoryDefinitions() {
   await i18nInit();
-  const result = await new Promise((resolve) =>
-    chrome.storage.local.get(["categoryDefinitions", "labelCategories"], resolve)
-  );
-  if (Array.isArray(result.categoryDefinitions) && result.categoryDefinitions.length) {
-    return result.categoryDefinitions.map((c) => ({ name: c.name, description: c.description || "", autoLearned: !!c.autoLearned }));
-  }
-  if (Array.isArray(result.labelCategories) && result.labelCategories.length) {
-    // 예전 버전 데이터(이름만 있는 문자열 배열) 마이그레이션
-    return result.labelCategories.map((name) => ({ name, description: "" }));
+  const settings = await SettingsStore.getSettings();
+  if (settings.gmail.categories && settings.gmail.categories.length) {
+    return settings.gmail.categories.map((c) => ({ name: c.name, description: c.description || "", autoLearned: !!c.autoLearned }));
   }
   return getLocalizedDefaultCategoryDefs();
 }
 
 async function saveCategoryDefinitions(categoryDefs) {
-  await chrome.storage.local.set({ categoryDefinitions: categoryDefs });
+  await SettingsStore.setSetting("gmail.categories", categoryDefs);
 }
 
 // 이름만 필요한 곳(라벨 배타 처리, 색상 계산, enum 등)에서 쓰는 헬퍼
@@ -253,8 +256,8 @@ function getCategoryNames(categoryDefs) {
 // rule: { id, matchType: "from" | "subject", matchValue, targetLabel }
 // AI 분류보다 먼저 확인해서, 매칭되면 AI 호출 없이 바로 그 라벨을 붙인다.
 async function getFilterRules() {
-  const result = await new Promise((resolve) => chrome.storage.local.get(["filterRules"], resolve));
-  return result.filterRules || [];
+  const settings = await SettingsStore.getSettings();
+  return settings.gmail.filters || [];
 }
 
 function matchesFilterRule(detail, rule) {
@@ -289,21 +292,15 @@ function normalizeLabelName(name) {
 // 예전 버전은 API 키를 하나만 저장했는데, 이제는 여러 개를 등록해서 한 키의 일일 할당량이 다 차면
 // 자동으로 다음 키로 넘어가도록 한다(무료 티어 키 여러 개를 돌려쓰면 사실상 처리량이 늘어남).
 async function getGeminiApiKeys() {
-  const result = await new Promise((resolve) =>
-    chrome.storage.local.get(["geminiApiKeys", "geminiApiKey"], resolve)
-  );
-  if (Array.isArray(result.geminiApiKeys) && result.geminiApiKeys.length) {
-    return result.geminiApiKeys.filter((k) => k && k.key);
-  }
-  if (result.geminiApiKey) {
-    // 예전 단일 키 데이터 마이그레이션
-    return [{ key: result.geminiApiKey, label: "" }];
+  const settings = await SettingsStore.getSettings();
+  if (settings.ai.geminiApiKeys && settings.ai.geminiApiKeys.length > 0) {
+    return settings.ai.geminiApiKeys.filter((k) => k && k.key);
   }
   return [];
 }
 
 async function saveGeminiApiKeys(keys) {
-  await chrome.storage.local.set({ geminiApiKeys: keys });
+  await SettingsStore.setSetting("ai.geminiApiKeys", keys);
 }
 
 // ---------------- OAuth (사용자 개인 클라이언트 방식) ----------------
@@ -313,10 +310,11 @@ async function saveGeminiApiKeys(keys) {
 const GOOGLE_OAUTH_SCOPE = "https://www.googleapis.com/auth/gmail.modify https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/calendar.events";
 
 async function getOAuthCredentials() {
-  const result = await new Promise((resolve) =>
-    chrome.storage.local.get(["oauthClientId", "oauthClientSecret"], resolve)
-  );
-  return { clientId: (result.oauthClientId || "").trim(), clientSecret: (result.oauthClientSecret || "").trim() };
+  const settings = await SettingsStore.getSettings();
+  return { 
+    clientId: (settings.google.oauth.clientId || "").trim(), 
+    clientSecret: (settings.google.oauth.clientSecret || "").trim() 
+  };
 }
 
 async function getStoredOAuthTokens() {
@@ -860,8 +858,8 @@ let lightMailFetchCache = null;
 
 async function isLightMailFetchEnabled() {
   if (lightMailFetchCache !== null) return lightMailFetchCache;
-  const stored = await chrome.storage.local.get(["lightMailFetchEnabled"]);
-  lightMailFetchCache = stored.lightMailFetchEnabled === true;
+  const settings = await SettingsStore.getSettings();
+  lightMailFetchCache = settings.gmail.fetching.lightweight === true;
   return lightMailFetchCache;
 }
 
@@ -1729,13 +1727,73 @@ async function writeProgress(progress) {
 
 function clearProgressBadge() {
   try {
-    chrome.action.setBadgeText({ text: "" });
+    SettingsStore.getSettings().then(settings => {
+      if (settings && settings.general && settings.general.startupBehavior.showStatusOnGmail) {
+        chrome.action.setBadgeText({ text: "●" });
+        chrome.action.setBadgeBackgroundColor({ color: "#10b981" }); // green
+      } else {
+        chrome.action.setBadgeText({ text: "" });
+      }
+    }).catch(() => {
+      chrome.action.setBadgeText({ text: "" });
+    });
   } catch (e) {}
 }
 
 function isCancelled() {
   return cancelRequested;
 }
+
+// ---------------- Startup Behavior (Side Panel & Badge) ----------------
+
+// Allow opening the side panel on action click globally
+if (chrome.sidePanel && chrome.sidePanel.setPanelBehavior) {
+  chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true }).catch(console.error);
+}
+
+async function updateSidePanelForTab(tabId, url) {
+  if (!url) return;
+  const isGmail = url.startsWith('https://mail.google.com/');
+  const settings = await SettingsStore.getSettings();
+  
+  if (isGmail && settings.general.startupBehavior.openSidePanelOnGmail) {
+    chrome.sidePanel.setOptions({ tabId, path: 'sidepanel/sidepanel.html', enabled: true });
+    
+    if (settings.general.startupBehavior.showStatusOnGmail) {
+      chrome.storage.local.get(["jobStatus"], (res) => {
+        if (res.jobStatus !== "running") {
+          chrome.action.setBadgeText({ text: "●" });
+          chrome.action.setBadgeBackgroundColor({ color: "#10b981" });
+        }
+      });
+    }
+  } else {
+    chrome.sidePanel.setOptions({ tabId, enabled: false }).catch(() => {});
+    chrome.action.setBadgeText({ text: "" });
+  }
+}
+
+chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
+  if (changeInfo.status === 'complete' && tab.url) {
+    try {
+      await updateSidePanelForTab(tabId, tab.url);
+    } catch (e) {
+      console.error("SidePanel update failed", e);
+    }
+  }
+});
+
+chrome.tabs.onActivated.addListener(async (activeInfo) => {
+  try {
+    const tab = await chrome.tabs.get(activeInfo.tabId);
+    if (tab && tab.url) {
+      await updateSidePanelForTab(activeInfo.tabId, tab.url);
+    }
+  } catch (e) {
+    console.error("SidePanel active tab check failed", e);
+  }
+});
+
 
 // ---------------- 수동 정정 학습 ----------------
 // 우리가 라벨을 붙일 때마다 "이 메일엔 이 라벨을 붙였다"를 기록해두고, 다음 실행 때 그중 일부를 다시 확인해서
@@ -2410,6 +2468,10 @@ async function learnFromSummaryFeedback() {
     )
     .join("\n");
 
+  const settings = await SettingsStore.getSettings();
+  const identityHints = (settings.gmail.personalization.identityHints || "").trim();
+  const exclusionRulesText = (settings.gmail.personalization.exclusionRules || "").trim();
+
   const prompt =
     `사용자가 메일 요약 결과를 보고 직접 남긴 판정 기록이다. 이 기록을 반영해서 판단 기준 문장을 다시 써라. 출력 언어는 ${langName}.\n\n` +
     `[현재 기준]\n` +
@@ -2417,8 +2479,8 @@ async function learnFromSummaryFeedback() {
     `- 중요도 상: ${criteria.high || "(없음)"}\n` +
     `- 중요도 중: ${criteria.medium || "(없음)"}\n` +
     `- 중요도 하: ${criteria.low || "(없음)"}\n` +
-    `- 개인 관련 제외 규칙: ${stored.personalExclusionRules || "(없음)"}\n` +
-    (stored.personalIdentityHints ? `- 사용자를 가리키는 이름/별칭: ${stored.personalIdentityHints}\n` : "") +
+    `- 개인 관련 제외 규칙: ${exclusionRulesText || "(없음)"}\n` +
+    (identityHints ? `- 사용자를 가리키는 이름/별칭: ${identityHints}\n` : "") +
     `\n[사용자 판정 기록]\n${feedbackText}\n\n` +
     `[작성 규칙]\n` +
     `1. 기존 기준을 통째로 갈아엎지 말고, 판정 기록과 어긋나는 부분만 고치거나 규칙을 덧붙여라.\n` +
@@ -2552,8 +2614,8 @@ async function processSummarizeLabelEmails(labelName, maxEmails, filterCriteria)
     ? `사용자 특별 필터링 조건: "${filterCriteria.trim()}" (이 조건에 맞는 메일을 최우선으로 선별해라.)\n`
     : "";
 
-  const storedCriteria = await new Promise((resolve) => chrome.storage.local.get(["importanceCriteria"], resolve));
-  const criteria = storedCriteria.importanceCriteria || {
+  const settings = await SettingsStore.getSettings();
+  const criteria = settings.gmail.importance || {
     high: "24시간 이내 마감/회신 요구, 결제 실패/서버 오류/계정 보안 경고, 상사의 직접 승인 요청, 법적/비용적 이슈 메일",
     medium: "일주일 이내 미팅/회의 일정, 프로젝트 진행상황 공유, 일반 업무 요청, 주요 회사/서비스 공지사항",
     low: "뉴스레터, 정기 보고서, 마케팅/프로모션 참고용, 회신이나 조치가 필요 없는 순수 정보성 알림"
@@ -3867,18 +3929,19 @@ chrome.runtime.onStartup.addListener(() => {
 
 // 새 메일 자동 분류: 라벨 없는 메일이 설정한 임계값(1~배치크기) 이상 쌓이면 자동으로 1배치 분류를 시작한다.
 async function checkAutoClassifyTrigger() {
-  const settings = await new Promise((resolve) =>
-    chrome.storage.local.get(["autoClassifyEnabled", "autoClassifyThreshold", AUTO_CLASSIFY_BLOCKED_UNTIL_KEY], resolve)
+  const settings = await SettingsStore.getSettings();
+  const stored = await new Promise((resolve) =>
+    chrome.storage.local.get([AUTO_CLASSIFY_BLOCKED_UNTIL_KEY], resolve)
   );
-  if ((settings[AUTO_CLASSIFY_BLOCKED_UNTIL_KEY] || 0) > Date.now()) return;
+  if ((stored[AUTO_CLASSIFY_BLOCKED_UNTIL_KEY] || 0) > Date.now()) return;
   // 기본값: 켜짐 / 1개 (사용자가 명시적으로 끈 적이 없다면 새 기본값을 적용)
-  const autoClassifyEnabled = settings.autoClassifyEnabled === undefined ? true : settings.autoClassifyEnabled;
+  const autoClassifyEnabled = settings.automation.autoClassify.enabled !== false;
   if (!autoClassifyEnabled) return;
 
   const running = await isJobRunning();
   if (running) return; // 다른 작업이 이미 진행 중이면 이번 주기는 건너뜀
 
-  const threshold = Math.max(1, Math.min(BATCH_SIZE, parseInt(settings.autoClassifyThreshold, 10) || 1));
+  const threshold = Math.max(1, Math.min(BATCH_SIZE, parseInt(settings.automation.autoClassify.threshold, 10) || 1));
 
   try {
     const apiKeys = await getGeminiApiKeys();
@@ -3899,24 +3962,15 @@ async function checkAutoClassifyTrigger() {
 
 // 저장된 Discord 웹훅 설정을 sendSummaryToDiscord()가 받는 형태로 모아준다.
 async function loadDiscordWebhookConfig() {
-  const stored = await new Promise((resolve) =>
-    chrome.storage.local.get(
-      [
-        "discordWebhookUrl",
-        "discordWebhookUrlHigh",
-        "discordWebhookUrlMedium",
-        "discordWebhookUrlLow",
-        "customDiscordWebhooks",
-      ],
-      resolve
-    )
-  );
+  const settings = await SettingsStore.getSettings();
+  const notifSettings = settings.notifications.discord || {};
+  const custom = settings.notifications.customWebhooks || [];
   return {
-    defaultUrl: stored.discordWebhookUrl || "",
-    highUrl: stored.discordWebhookUrlHigh || "",
-    mediumUrl: stored.discordWebhookUrlMedium || "",
-    lowUrl: stored.discordWebhookUrlLow || "",
-    custom: Array.isArray(stored.customDiscordWebhooks) ? stored.customDiscordWebhooks : [],
+    defaultUrl: notifSettings.defaultWebhook || "",
+    highUrl: notifSettings.highWebhook || "",
+    mediumUrl: notifSettings.mediumWebhook || "",
+    lowUrl: notifSettings.lowWebhook || "",
+    custom: Array.isArray(custom) ? custom : [],
   };
 }
 
@@ -3925,14 +3979,10 @@ async function loadDiscordWebhookConfig() {
 // "새 메일"은 라벨 메일 목록(최신순)의 맨 위 ID를 기억해두고 비교하는 방식으로 찾는다.
 // 목록 조회 1회면 되므로 주기적으로 돌려도 API 부담이 거의 없다.
 async function checkAutoSummaryTrigger() {
-  const settings = await new Promise((resolve) =>
+  const settings = await SettingsStore.getSettings();
+  const storedRuntime = await new Promise((resolve) =>
     chrome.storage.local.get(
       [
-        "autoSummaryEnabled",
-        "autoSummaryLabel",
-        "autoSummaryMaxCount",
-        "autoSummaryCriteria",
-        "autoSummarySendDiscord",
         "autoSummaryLastTopId",
         "autoSummaryLastLabel",
       ],
@@ -3940,8 +3990,8 @@ async function checkAutoSummaryTrigger() {
     )
   );
 
-  if (settings.autoSummaryEnabled !== true) return;
-  const labelName = (settings.autoSummaryLabel || "").trim();
+  if (settings.automation.autoSummary.enabled !== true) return;
+  const labelName = (settings.automation.autoSummary.label || "").trim();
   if (!labelName) return;
 
   const running = await isJobRunning();
@@ -3952,28 +4002,28 @@ async function checkAutoSummaryTrigger() {
     if (!apiKeys.length) return;
 
     const { token } = await initGmailOnlyContext();
-    const maxCount = Math.max(1, Math.min(100, parseInt(settings.autoSummaryMaxCount, 10) || 20));
+    const maxCount = Math.max(1, Math.min(100, parseInt(settings.automation.autoSummary.maxCount, 10) || 20));
     const messages = await getMessagesByLabelName(token, labelName, maxCount);
     if (!messages || !messages.length) return;
 
     const topId = messages[0].id;
     // 대상 라벨이 바뀌었거나 처음 켠 직후에는, 이미 쌓여 있던 메일을 통째로 요약하지 않고 기준점만 잡는다.
-    if (settings.autoSummaryLastLabel !== labelName || !settings.autoSummaryLastTopId) {
+    if (storedRuntime.autoSummaryLastLabel !== labelName || !storedRuntime.autoSummaryLastTopId) {
       await chrome.storage.local.set({ autoSummaryLastTopId: topId, autoSummaryLastLabel: labelName });
       return;
     }
-    if (topId === settings.autoSummaryLastTopId) return;
+    if (topId === storedRuntime.autoSummaryLastTopId) return;
 
     // 기억해둔 ID가 목록에서 사라졌다면(그 사이에 maxCount보다 많이 들어옴) 목록 전체를 새 메일로 본다.
-    const seenIdx = messages.findIndex((m) => m.id === settings.autoSummaryLastTopId);
+    const seenIdx = messages.findIndex((m) => m.id === storedRuntime.autoSummaryLastTopId);
     const newCount = seenIdx === -1 ? messages.length : seenIdx;
     if (newCount <= 0) return;
 
     // 같은 메일로 반복 실행되지 않도록 기준점을 먼저 갱신한다.
     await chrome.storage.local.set({ autoSummaryLastTopId: topId, autoSummaryLastLabel: labelName });
 
-    const sendDiscord = settings.autoSummarySendDiscord !== false;
-    const filterCriteria = settings.autoSummaryCriteria || "";
+    const sendDiscord = settings.automation.autoSummary.sendToDiscord !== false;
+    const filterCriteria = settings.automation.autoSummary.criteria || "";
 
     await markJobRunning("labelSummary");
     runJob(async () => {

@@ -12,13 +12,17 @@ const SettingsStore = {
   _cache: null,
   
   _deepMerge: function(target, source) {
-    for (const key of Object.keys(source)) {
-      if (source[key] instanceof Object && key in target) {
-        Object.assign(source[key], this._deepMerge(target[key], source[key]));
-      }
+    if (Array.isArray(source)) {
+      return structuredClone(source);
     }
-    Object.assign(target || {}, source);
-    return target;
+    if (source && typeof source === "object" && !Array.isArray(source)) {
+      const result = { ...(target && typeof target === "object" ? target : {}) };
+      for (const [key, value] of Object.entries(source)) {
+        result[key] = this._deepMerge(result[key], value);
+      }
+      return result;
+    }
+    return source;
   },
 
   /**

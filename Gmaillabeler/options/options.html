@@ -11,9 +11,6 @@
   <link rel="stylesheet" href="options.css">
   
   <!-- Settings Architecture -->
-  <script src="../settings/settings_schema.js"></script>
-  <script src="../settings/settings_defaults.js"></script>
-  <script src="../settings/settings_store.js"></script>
 </head>
 <body>
 
@@ -49,26 +46,26 @@
       <!-- General Panel -->
       <section id="panel-general" class="tab-panel active">
         <div class="panel-header">
-          <h1 class="headline-small">General</h1>
-          <p class="body-medium" style="color:var(--md-sys-color-on-surface-variant);">Appearance and basic preferences.</p>
+          <h1 class="headline-small" data-i18n="settingsGeneralTitle">General</h1>
+          <p class="body-medium" style="color:var(--md-sys-color-on-surface-variant);" data-i18n="settingsGeneralDesc">Appearance and basic preferences.</p>
         </div>
         
         <div class="card">
-          <h3 class="title-medium" style="margin-bottom:12px;">Theme</h3>
+          <h3 class="title-medium" style="margin-bottom:12px;" data-i18n="settingsThemeTitle">Theme</h3>
           <div class="form-row">
             <select id="selectThemeMode" class="form-select">
-              <option value="system">System Default</option>
-              <option value="light">Light</option>
-              <option value="dark">Dark</option>
+              <option value="system" data-i18n="settingsThemeSystem">System Default</option>
+              <option value="light" data-i18n="settingsThemeLight">Light</option>
+              <option value="dark" data-i18n="settingsThemeDark">Dark</option>
             </select>
           </div>
         </div>
         
         <div class="card">
-          <h3 class="title-medium" style="margin-bottom:12px;">Language</h3>
+          <h3 class="title-medium" style="margin-bottom:12px;" data-i18n="settingsLangTitle">Language</h3>
           <div class="form-row">
             <select id="selectUiLanguage" class="form-select">
-              <option value="system">System Default</option>
+              <option value="system" data-i18n="settingsThemeSystem">System Default</option>
               <option value="en">English</option>
               <option value="ko">한국어</option>
               <option value="ja">日本語</option>
@@ -78,14 +75,14 @@
         </div>
 
         <div class="card">
-          <h3 class="title-medium" style="margin-bottom:12px;">Startup Behavior</h3>
+          <h3 class="title-medium" style="margin-bottom:12px;" data-i18n="settingsStartupTitle">Startup Behavior</h3>
           <label class="checkbox-container">
             <input type="checkbox" id="checkOpenSidePanelOnGmail">
-            <span class="body-medium">Open Side Panel automatically when Gmail is opened</span>
+            <span class="body-medium" data-i18n="settingsStartupSidePanel">Open Side Panel automatically when Gmail is opened</span>
           </label>
           <label class="checkbox-container">
             <input type="checkbox" id="checkShowStatusOnGmail">
-            <span class="body-medium">Show extension status badge when Gmail is opened</span>
+            <span class="body-medium" data-i18n="settingsStartupBadge">Show extension status badge when Gmail is opened</span>
           </label>
         </div>
       </section>
@@ -107,6 +104,19 @@
             <button class="btn btn-primary" id="btnConnectGoogle">Connect Google Account</button>
             <button class="btn btn-outlined danger" id="btnDisconnectGoogle">Disconnect</button>
           </div>
+        </div>
+
+        <div class="card">
+          <h3 class="title-medium" style="margin-bottom:8px;">Google OAuth Configuration</h3>
+          <div class="form-row">
+            <label class="body-medium" style="flex:1;">Client ID</label>
+            <input type="text" id="inputOAuthClientId" class="form-input" style="flex:2;" placeholder="Enter Client ID">
+          </div>
+          <div class="form-row">
+            <label class="body-medium" style="flex:1;">Client Secret (Optional)</label>
+            <input type="password" id="inputOAuthClientSecret" class="form-input" style="flex:2;" placeholder="Enter Client Secret">
+          </div>
+          <button class="btn btn-text" id="btnOAuthGuide" style="margin-top:8px;">OAuth Setup Guide</button>
         </div>
 
         <div class="card">
@@ -439,6 +449,10 @@
     Changes saved successfully.
   </div>
 
+  <script src="../settings/settings_schema.js"></script>
+  <script src="../settings/settings_defaults.js"></script>
+  <script src="../settings/settings_store.js"></script>
+  <script src="../settings/settings_migration.js"></script>
   <script src="../i18n.js"></script>
   <script src="options.js"></script>
 </body>

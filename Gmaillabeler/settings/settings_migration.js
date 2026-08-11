@@ -9,10 +9,8 @@
 async function migrateToV2Settings() {
   return new Promise((resolve) => {
     chrome.storage.local.get(null, async (allData) => {
-      // If appSettings already exists, migration has likely run. 
-      // We could add a v2_migration_done flag, but checking appSettings is a good proxy.
-      // Actually, to be safe and idempotent, we check if 'appSettings' has 'general'
-      if (allData.appSettings && allData.appSettings.general) {
+      const currentVersion = allData.appSettings?.schemaVersion || 1;
+      if (currentVersion >= 2) {
         console.log("Settings already migrated to v2 schema.");
         return resolve(false);
       }
@@ -20,6 +18,7 @@ async function migrateToV2Settings() {
       console.log("Starting v1 to v2 settings migration...");
       
       const migratedSettings = JSON.parse(JSON.stringify(SETTINGS_DEFAULTS)); // Deep copy defaults
+      migratedSettings.schemaVersion = 2;
 
       // 1. General & Theme
       if (allData.themeMode) migratedSettings.general.themeMode = allData.themeMode;

@@ -4,6 +4,7 @@
  * Default values for all settings based on SETTINGS_SCHEMA.
  */
 const SETTINGS_DEFAULTS = {
+  schemaVersion: 2,
   general: {
     language: "system",
     themeMode: "system",
