@@ -1,6 +1,17 @@
 // popup/popup.js
 const $ = (id) => document.getElementById(id);
 
+// 저장된 작업 기록을 innerHTML로 그리므로 이스케이프가 필요하다.
+// 작업 결과 문자열에는 AI 출력과 메일에서 온 오류 메시지가 섞여 들어온다.
+function escapeHtml(text) {
+  return String(text == null ? "" : text)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 async function initPopup() {
   if (typeof i18nInit === 'function') {
     await i18nInit();
@@ -37,6 +48,12 @@ function initStatus(settings) {
     const readyCredentials = activeCredentials.filter((c) => c.status !== "invalid" && c.status !== "rate_limited" && c.status !== "quota_exhausted" && c.status !== "unavailable");
     const hasApiKey = activeCredentials.length > 0;
 
+    // API 키는 ai.credentials에 저장된다.
+    // 예전에는 settings.ai.geminiApiKeys를 봤는데 그 경로는 스키마에 없어서
+    // 키를 몇 개 등록해도 항상 "Missing Key / Setup Required"로 표시됐다.
+    const credentials = Array.isArray(settings?.ai?.credentials) ? settings.ai.credentials : [];
+    const hasApiKey = credentials.some((c) => c && c.enabled && c.apiKey);
+    
     const googleStatus = $("googleStatusText");
     if (googleStatus) {
       if (connected) {
@@ -107,8 +124,8 @@ function initRecentJobs() {
       
       return `
         <div class="job-item">
-          <div class="job-name">${job.name || 'Unknown Job'}</div>
-          <div class="job-status ${statusClass}">${job.result || job.status || ''}</div>
+          <div class="job-name">${escapeHtml(job.name || 'Unknown Job')}</div>
+          <div class="job-status ${statusClass}">${escapeHtml(job.result || job.status || '')}</div>
         </div>
       `;
     }).join("");
@@ -126,10 +143,14 @@ function initActionButtons() {
   });
   
   $("btnOpenSidePanel")?.addEventListener("click", () => {
-    chrome.windows.getCurrent((window) => {
-      chrome.sidePanel.open({ windowId: window.id }).then(() => {
-        window.close(); 
-      }).catch(err => console.error("Failed to open side panel:", err));
+    // 콜백 인자를 window로 받으면 전역 window가 가려져서, 팝업을 닫으려던
+    // window.close()가 chrome.windows.Window 객체의 없는 메서드를 부르며 TypeError를 냈다.
+    // (사이드패널은 열리는데 콘솔에는 "실패"로 찍히고 팝업은 닫히지 않았다)
+    chrome.windows.getCurrent((currentWindow) => {
+      chrome.sidePanel
+        .open({ windowId: currentWindow.id })
+        .then(() => window.close())
+        .catch((err) => console.error("Failed to open side panel:", err));
     });
   });
 

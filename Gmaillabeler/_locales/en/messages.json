@@ -418,6 +418,12 @@
       }
     }
   },
+  "notifyTitleCalendarClassify": {
+    "message": "Calendar Classification"
+  },
+  "notifyTitleCalendarCategories": {
+    "message": "Generate Calendar Categories"
+  },
   "notifyTitleClassify": {
     "message": "Gmail AI Labeler"
   },
@@ -3242,5 +3248,22 @@
   },
   "advDangerZoneTitle": {
     "message": "Danger Zone"
+  "dashFilterRulesEmpty": {
+    "message": "No filter rules yet. Add one to label matching mail without calling the AI."
+  },
+  "dashFilterMatchFrom": {
+    "message": "Sender"
+  },
+  "dashFilterMatchSubject": {
+    "message": "Subject"
+  },
+  "dashFilterValuePlaceholder": {
+    "message": "Text to match (partial, case-insensitive)"
+  },
+  "dashFilterLabelPlaceholder": {
+    "message": "Label to apply"
+  },
+  "settingsBackupIncludeCredentials": {
+    "message": "Include API keys and OAuth details (a passphrase is required; they are encrypted)"
   }
 }

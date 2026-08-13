@@ -418,6 +418,12 @@
       }
     }
   },
+  "notifyTitleCalendarClassify": {
+    "message": "カレンダー分類"
+  },
+  "notifyTitleCalendarCategories": {
+    "message": "カレンダーカテゴリ生成"
+  },
   "notifyTitleClassify": {
     "message": "Gmail AI Labeler"
   },
@@ -3242,5 +3248,22 @@
   },
   "advDangerZoneTitle": {
     "message": "危険な操作"
+  "dashFilterRulesEmpty": {
+    "message": "フィルタルールがまだありません。追加すると AI を呼ばずにラベルを付けます。"
+  },
+  "dashFilterMatchFrom": {
+    "message": "送信者"
+  },
+  "dashFilterMatchSubject": {
+    "message": "件名"
+  },
+  "dashFilterValuePlaceholder": {
+    "message": "含まれる文字列（大文字小文字を区別しない）"
+  },
+  "dashFilterLabelPlaceholder": {
+    "message": "適用するラベル"
+  },
+  "settingsBackupIncludeCredentials": {
+    "message": "API キーと OAuth 情報を含める（パスフレーズが必要・暗号化されます）"
   }
 }

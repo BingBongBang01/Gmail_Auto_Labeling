@@ -1,6 +1,18 @@
 // options/options.js
 const $ = (id) => document.getElementById(id);
 
+// 이 페이지는 사용자 입력, AI 생성 텍스트, 그리고 가져온 설정 파일의 내용을
+// innerHTML 템플릿으로 그린다. 이스케이프 없이 속성에 꽂으면 따옴표를 닫고
+// 이벤트 핸들러를 심을 수 있고, 옵션 페이지는 확장 오리진 권한을 그대로 갖는다.
+function escapeHtml(text) {
+  return String(text == null ? "" : text)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 async function initOptions() {
   if (typeof i18nInit === 'function') {
     await i18nInit();
@@ -166,7 +178,7 @@ function initConnectionsSettings(settings) {
         }
         if (btnDisconnect) btnDisconnect.disabled = true;
       } else {
-        const emailStr = oauth.email ? `<br><span style="color:var(--md-sys-color-on-surface-variant)">${oauth.email}</span>` : '';
+        const emailStr = oauth.email ? `<br><span style="color:var(--md-sys-color-on-surface-variant)">${escapeHtml(oauth.email)}</span>` : '';
         statusBox.innerHTML = `<span style="color:var(--md-sys-color-success)" data-i18n="settingsOAuthConnected">Connected to Google Services</span>${emailStr}`;
         if (btnConnect) {
           btnConnect.disabled = false;
@@ -174,6 +186,9 @@ function initConnectionsSettings(settings) {
         }
         if (btnDisconnect) btnDisconnect.disabled = false;
       }
+      // 방금 넣은 HTML에도 data-i18n이 붙어 있다. 초기 i18nApplyToDom은 이미 지나갔으므로
+      // 여기서 다시 적용하지 않으면 OAuth 상태 문구만 영어로 남는다.
+      if (typeof i18nApplyToDom === "function") i18nApplyToDom(statusBox);
     });
   }
 
@@ -307,10 +322,10 @@ function initGmailSettings(settings) {
     catList.innerHTML = currentCategories.map((c, idx) => `
       <div class="category-row" style="border:1px solid var(--md-sys-color-outline-variant); border-radius:8px; padding:12px; margin-bottom:8px;">
         <div style="display:flex; gap:8px; align-items:center; margin-bottom:8px;">
-          <input type="text" class="form-input cat-name" placeholder="Category Name" value="${c.name || ''}" style="flex:1; font-weight:600;">
+          <input type="text" class="form-input cat-name" placeholder="Category Name" value="${escapeHtml(c.name)}" style="flex:1; font-weight:600;">
           <button class="btn btn-icon danger delete-cat-btn" data-idx="${idx}" style="color:var(--md-sys-color-error)">✕</button>
         </div>
-        <textarea class="form-input cat-desc" placeholder="Description of when this category should apply" style="resize:vertical; min-height:40px;">${c.description || ''}</textarea>
+        <textarea class="form-input cat-desc" placeholder="Description of when this category should apply" style="resize:vertical; min-height:40px;">${escapeHtml(c.description)}</textarea>
       </div>
     `).join("");
 
@@ -385,7 +400,7 @@ function initCalendarSettings(settings) {
     } else {
       colorsList.innerHTML = settings.calendar.categories.map((c, idx) => `
         <div class="form-row" style="margin-bottom:8px;">
-          <label class="body-medium" style="flex:1;" title="${c.criteria}">${c.name}</label>
+          <label class="body-medium" style="flex:1;" title="${escapeHtml(c.criteria)}">${escapeHtml(c.name)}</label>
           <select class="form-select calendar-color-select" data-idx="${idx}" style="flex:1;">
             <option value="">Default</option>
             <option value="1" ${c.colorId === "1" ? "selected" : ""}>Lavender (1)</option>
@@ -505,29 +520,29 @@ function initAiSettings(settings) {
       return `
       <div class="cred-card" style="border:1px solid var(--md-sys-color-outline-variant); border-radius:8px; padding:12px; margin-bottom:8px; display:flex; align-items:center; gap:12px;">
         <div style="display:flex; flex-direction:column; align-items:center; gap:4px;">
-          <button class="btn btn-icon btn-cred-up" data-id="${cred.id}" ${idx === 0 ? 'disabled' : ''} title="Move Up">▲</button>
-          <button class="btn btn-icon btn-cred-down" data-id="${cred.id}" ${idx === currentCreds.length - 1 ? 'disabled' : ''} title="Move Down">▼</button>
+          <button class="btn btn-icon btn-cred-up" data-id="${escapeHtml(cred.id)}" ${idx === 0 ? 'disabled' : ''} title="Move Up">▲</button>
+          <button class="btn btn-icon btn-cred-down" data-id="${escapeHtml(cred.id)}" ${idx === currentCreds.length - 1 ? 'disabled' : ''} title="Move Down">▼</button>
         </div>
         <div style="flex:1;">
           <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
-            <span style="font-weight:600; font-size:16px;">${cred.name}</span>
-            <span style="font-size:12px; background:var(--md-sys-color-surface-variant); padding:2px 6px; border-radius:4px;">${providerName}</span>
+            <span style="font-weight:600; font-size:16px;">${escapeHtml(cred.name)}</span>
+            <span style="font-size:12px; background:var(--md-sys-color-surface-variant); padding:2px 6px; border-radius:4px;">${escapeHtml(providerName)}</span>
           </div>
-          <div style="font-size:13px; color:var(--md-sys-color-on-surface-variant); margin-bottom:4px;">Model: ${modelName}</div>
+          <div style="font-size:13px; color:var(--md-sys-color-on-surface-variant); margin-bottom:4px;">Model: ${escapeHtml(modelName)}</div>
           <div style="font-size:13px; display:flex; align-items:center; gap:4px;">
             <span>Status:</span>
-            <span style="color:${statusColor}; font-weight:500;">${cred.status || "Unknown"}</span>
+            <span style="color:${statusColor}; font-weight:500;">${escapeHtml(cred.status || "Unknown")}</span>
           </div>
         </div>
         <div style="display:flex; flex-direction:column; gap:8px;">
           <label class="switch" style="display:flex; align-items:center; gap:8px;">
             <span style="font-size:13px;">${cred.enabled ? 'Enabled' : 'Disabled'}</span>
-            <input type="checkbox" class="cred-toggle" data-id="${cred.id}" ${cred.enabled ? 'checked' : ''}>
+            <input type="checkbox" class="cred-toggle" data-id="${escapeHtml(cred.id)}" ${cred.enabled ? 'checked' : ''}>
           </label>
         </div>
         <div style="display:flex; flex-direction:column; gap:4px;">
-          <button class="btn btn-secondary btn-cred-edit" data-id="${cred.id}" style="padding:4px 8px; font-size:13px;">Edit</button>
-          <button class="btn btn-outlined danger btn-cred-delete" data-id="${cred.id}" style="padding:4px 8px; font-size:13px;">Delete</button>
+          <button class="btn btn-secondary btn-cred-edit" data-id="${escapeHtml(cred.id)}" style="padding:4px 8px; font-size:13px;">Edit</button>
+          <button class="btn btn-outlined danger btn-cred-delete" data-id="${escapeHtml(cred.id)}" style="padding:4px 8px; font-size:13px;">Delete</button>
         </div>
       </div>
       `;
@@ -604,13 +619,22 @@ function initAiSettings(settings) {
   // --- Dialog Management ---
   function populateProviders() {
     if (!AIProviderRegistry) return;
-    dProvider.innerHTML = AIProviderRegistry.SUPPORTED_PROVIDERS.map(p => `<option value="${p.id}">${p.name}</option>`).join("");
+    dProvider.innerHTML = AIProviderRegistry.SUPPORTED_PROVIDERS.map(p => `<option value="${escapeHtml(p.id)}">${escapeHtml(p.name)}</option>`).join("");
   }
   
-  function populateModels(providerId) {
+  // selectedModel이 목록에 없으면 항목을 추가해준다.
+  // 그러지 않으면 select에 없는 값을 대입하는 셈이라 조용히 빈 값이 되고,
+  // 편집 후 저장하면 사용자가 쓰던 모델이 다른 것으로 바뀐다.
+  function populateModels(providerId, selectedModel) {
     if (!AIProviderRegistry) return;
-    const models = AIProviderRegistry.SUPPORTED_MODELS[providerId] || [];
-    dModel.innerHTML = models.map(m => `<option value="${m.id}">${m.name}</option>`).join("");
+    const models = [...(AIProviderRegistry.SUPPORTED_MODELS[providerId] || [])];
+    if (selectedModel && !models.some((m) => m.id === selectedModel)) {
+      models.push({ id: selectedModel, name: `${selectedModel} (직접 입력)` });
+    }
+    dModel.innerHTML = models
+      .map((m) => `<option value="${escapeHtml(m.id)}">${escapeHtml(m.name)}</option>`)
+      .join("");
+    if (selectedModel) dModel.value = selectedModel;
   }
   
   if (dProvider) {
@@ -632,15 +656,14 @@ function initAiSettings(settings) {
       dTitle.textContent = t("aiCredentialsEdit") || "Edit AI API";
       dId.value = cred.id;
       dProvider.value = cred.provider;
-      populateModels(cred.provider);
+      populateModels(cred.provider, cred.model);
       dName.value = cred.name;
       dApiKey.value = cred.apiKey;
-      dModel.value = cred.model;
     } else {
       dTitle.textContent = t("aiCredentialsAdd") || "Add AI API";
       dId.value = "";
       dProvider.value = AIProviderRegistry.SUPPORTED_PROVIDERS[0].id;
-      populateModels(dProvider.value);
+      populateModels(dProvider.value, AIProviderRegistry.getDefaultModel(dProvider.value));
       dName.value = "";
       dApiKey.value = "";
     }
@@ -665,22 +688,27 @@ function initAiSettings(settings) {
     }
     
     const isNew = !dId.value;
+    const existingIdx = isNew ? -1 : currentCreds.findIndex(c => c.id === dId.value);
+    // 다른 탭에서 이 항목을 삭제했다면 findIndex가 -1이 된다.
+    // 예전에는 .find(...).priority를 바로 읽어서 그 상황에 TypeError가 났다.
+    const existing = existingIdx >= 0 ? currentCreds[existingIdx] : null;
+
     const credData = {
-      id: isNew ? (crypto.randomUUID ? crypto.randomUUID() : Math.random().toString()) : dId.value,
+      id: isNew || !existing ? (crypto.randomUUID ? crypto.randomUUID() : `cred-${Date.now()}`) : dId.value,
       provider: dProvider.value,
       name: dName.value.trim(),
       apiKey: dApiKey.value.trim(),
       model: dModel.value,
-      enabled: true,
-      priority: isNew ? currentCreds.length + 1 : currentCreds.find(c => c.id === dId.value).priority,
-      status: "Ready"
+      enabled: existing ? existing.enabled !== false : true,
+      priority: existing ? existing.priority : currentCreds.length + 1,
+      // 실제로 호출해보기 전에는 정상인지 알 수 없다. 첫 요청이 성공하면 라우터가 Ready로 바꾼다.
+      status: "Unknown"
     };
-    
-    if (isNew) {
-      currentCreds.push(credData);
+
+    if (existing) {
+      currentCreds[existingIdx] = credData;
     } else {
-      const idx = currentCreds.findIndex(c => c.id === dId.value);
-      currentCreds[idx] = credData;
+      currentCreds.push(credData);
     }
     
     saveCredentials();
@@ -698,19 +726,36 @@ function initAiSettings(settings) {
       const model = dModel.value;
       
       const provider = AIProviderRegistry.getProvider(providerId);
-      if (!provider) throw new Error("Provider not found");
-      
+      if (!provider) {
+        throw new Error(
+          `공급자 어댑터를 찾을 수 없습니다: ${providerId}. 확장 프로그램을 새로 고친 뒤 다시 시도하세요.`
+        );
+      }
+      if (!apiKey) throw new Error("API 키를 입력하세요.");
+      if (!model) throw new Error("모델을 선택하세요.");
+
       // Simple prompt to test
-      const res = await provider.generateStructured(apiKey, model, "Say 'OK'", {
-        type: "object",
-        properties: { status: { type: "string" } }
+      await provider.generateStructured(apiKey, model, "Reply with status OK.", {
+        type: "OBJECT",
+        properties: { status: { type: "STRING" } },
+        required: ["status"]
       });
-      
+
       alert(t("aiTestSuccess") || "Connection successful!");
     } catch (err) {
-      let msg = err.message || "Unknown error";
-      if (err.status) msg = `HTTP ${err.status}: ${JSON.stringify(err.raw)}`;
-      alert(`Connection failed: ${msg}`);
+      // 어댑터가 던지는 것은 Error가 아니라 { status, raw }일 수도 있다.
+      // normalizeError로 사람이 읽을 수 있는 원인으로 바꿔서 보여준다.
+      let msg = err && err.message ? err.message : "";
+      try {
+        const provider = AIProviderRegistry.getProvider(dProvider.value);
+        if (provider && (err?.status || err?.isBadResponse)) {
+          const meta = provider.normalizeError(err);
+          msg = `${meta.type}${meta.message ? `: ${meta.message}` : ""}`;
+        }
+      } catch (e) {
+        /* 분류 실패 시엔 원래 메시지를 쓴다 */
+      }
+      alert(`Connection failed: ${msg || "Unknown error"}`);
     } finally {
       btnTest.textContent = originalText;
       btnTest.disabled = false;
@@ -819,21 +864,50 @@ function initDataSettings(settings) {
       const input = document.createElement('input');
       input.type = 'file';
       input.accept = '.json';
-      input.onchange = e => { 
-         const file = e.target.files[0]; 
+      input.onchange = e => {
+         const file = e.target.files[0];
+         if (!file) return;
          const reader = new FileReader();
          reader.readAsText(file,'UTF-8');
          reader.onload = readerEvent => {
             const content = readerEvent.target.result;
+            let parsed;
             try {
-              const parsed = JSON.parse(content);
-              SettingsStore.setSettings(parsed).then(() => {
-                showSnackbar("Settings imported successfully!");
-                setTimeout(() => window.location.reload(), 1000);
-              });
-            } catch(err) {
-              alert("Invalid settings file.");
+              parsed = JSON.parse(content);
+            } catch (err) {
+              alert("설정 파일을 읽을 수 없습니다(JSON 형식 오류).");
+              return;
             }
+
+            // 임의의 JSON을 그대로 setSettings에 넘기면 안 된다.
+            // 스키마에 없는 키, 잘못된 타입, 그리고 카테고리 이름 같은 문자열에 심어둔
+            // HTML이 그대로 저장돼 옵션 화면을 렌더할 때 실행될 수 있다.
+            // 예전 구현에는 검증이 전혀 없었다.
+            const { value, errors } = validateSettingsAgainstSchema(parsed);
+
+            if (!Object.keys(value).length) {
+              alert("가져올 수 있는 설정이 없습니다. 이 확장 프로그램이 내보낸 파일인지 확인하세요.");
+              return;
+            }
+            if (errors.length) {
+              const preview = errors.slice(0, 8).join("\n");
+              const more = errors.length > 8 ? `\n... 그리고 ${errors.length - 8}건 더` : "";
+              const proceed = confirm(
+                `설정 파일에서 ${errors.length}건의 항목을 건너뜁니다:\n\n${preview}${more}\n\n나머지만 가져올까요?`
+              );
+              if (!proceed) return;
+            }
+
+            // 가져온 파일에 schemaVersion이 없거나 낮으면 마이그레이션이 다시 돌아
+            // 자격 증명이 지워질 수 있다. 현재 버전으로 고정한다.
+            value.schemaVersion = SETTINGS_DEFAULTS.schemaVersion;
+
+            SettingsStore.setSettings(value).then(() => {
+              showSnackbar("Settings imported successfully!");
+              setTimeout(() => window.location.reload(), 1000);
+            }).catch((err) => {
+              alert("설정을 저장하지 못했습니다: " + (err.message || err));
+            });
          }
       }
       input.click();
@@ -845,6 +919,12 @@ function initDataSettings(settings) {
     driveBackup.checked = settings.data.backup.autoBackupToDrive;
     driveBackup.addEventListener('change', e => scheduleSave('data.backup.autoBackupToDrive', e.target.checked));
   }
+
+  const includeCreds = $('checkBackupIncludeCredentials');
+  if (includeCreds) {
+    includeCreds.checked = settings.data.backup.includeCredentials === true;
+    includeCreds.addEventListener('change', e => scheduleSave('data.backup.includeCredentials', e.target.checked));
+  }
   
   const lastBackup = $('labelLastBackup');
   if (lastBackup) {
@@ -854,9 +934,20 @@ function initDataSettings(settings) {
   const btnBackupNow = $('btnDriveBackupNow');
   if (btnBackupNow) {
     btnBackupNow.addEventListener('click', () => {
+      // 자격 증명을 포함하려면 암호가 필요하다. 암호 없이는 키를 백업하지 않는다
+      // (평문으로 드라이브에 올리지 않기 위해서다).
+      let passphrase = "";
+      const includeCredentials = !!$('checkBackupIncludeCredentials')?.checked
+        || SettingsStore._cache?.data?.backup?.includeCredentials === true;
+      if (includeCredentials) {
+        passphrase = prompt(
+          "API 키와 OAuth 정보를 암호화해서 함께 백업합니다.\n복원할 때 필요한 암호를 입력하세요.\n(비워두면 키는 백업에서 제외됩니다)"
+        ) || "";
+      }
+
       btnBackupNow.disabled = true;
       btnBackupNow.textContent = "Backing up...";
-      chrome.runtime.sendMessage({ action: "backupToDrive" }, (response) => {
+      chrome.runtime.sendMessage({ action: "backupToDrive", includeCredentials, passphrase }, (response) => {
         btnBackupNow.disabled = false;
         btnBackupNow.textContent = "Backup Now";
         if (response && response.ok) {
@@ -875,7 +966,13 @@ function initDataSettings(settings) {
       if (confirm("Restore settings from Google Drive? This will overwrite your current settings.")) {
         btnRestore.disabled = true;
         btnRestore.textContent = "Restoring...";
-        chrome.runtime.sendMessage({ action: "restoreFromDrive" }, (response) => {
+        // 암호화된 백업이면 복호화 암호가 필요하다.
+        const passphrase = prompt(
+          "백업에 암호가 걸려 있으면 그 암호를 입력하세요.\n(암호 없이 만든 백업이면 그냥 확인을 누르세요)"
+        ) || "";
+        // background.js가 처리하는 액션 이름은 startRestoreFromDrive다.
+        // "restoreFromDrive"에는 핸들러가 없어서 항상 "Restore failed: Unknown Error"였다.
+        chrome.runtime.sendMessage({ action: "startRestoreFromDrive", passphrase }, (response) => {
           btnRestore.disabled = false;
           btnRestore.textContent = "Restore from Drive";
           if (response && response.ok) {

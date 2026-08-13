@@ -418,6 +418,12 @@
       }
     }
   },
+  "notifyTitleCalendarClassify": {
+    "message": "캘린더 분류"
+  },
+  "notifyTitleCalendarCategories": {
+    "message": "캘린더 카테고리 생성"
+  },
   "notifyTitleClassify": {
     "message": "Gmail AI Labeler"
   },
@@ -3242,5 +3248,22 @@
   },
   "advDangerZoneTitle": {
     "message": "위험 구역"
+  "dashFilterRulesEmpty": {
+    "message": "아직 필터 규칙이 없습니다. 규칙을 추가하면 AI를 부르지 않고 바로 라벨을 붙입니다."
+  },
+  "dashFilterMatchFrom": {
+    "message": "보낸사람"
+  },
+  "dashFilterMatchSubject": {
+    "message": "제목"
+  },
+  "dashFilterValuePlaceholder": {
+    "message": "포함될 문자열 (대소문자 무시)"
+  },
+  "dashFilterLabelPlaceholder": {
+    "message": "적용할 라벨"
+  },
+  "settingsBackupIncludeCredentials": {
+    "message": "API 키와 OAuth 정보 포함 (암호 입력 필요, 암호화되어 저장됩니다)"
   }
 }

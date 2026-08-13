@@ -4,6 +4,9 @@
  * Default values for all settings based on SETTINGS_SCHEMA.
  */
 const SETTINGS_DEFAULTS = {
+  // 마이그레이션이 기록하는 버전과 같아야 한다. 예전에는 여기가 2였는데 마이그레이션은 3을 써서,
+  // 설정 초기화나 백업 가져오기로 이 기본값이 적용되면 버전이 2로 되돌아가 마이그레이션이
+  // 다시 실행됐고, 그때 ai.credentials가 비워지면서 API 키가 사라졌다.
   schemaVersion: 3,
   general: {
     language: "en",
@@ -28,7 +31,10 @@ const SETTINGS_DEFAULTS = {
       failoverEnabled: true,
       retryEnabled: true,
       maxRetries: 3,
-      quotaAware: true
+      quotaAware: true,
+      // 분당 요청 수 상한. AIPacer가 이 값으로 공급자별 요청 간격을 계산한다.
+      // Gemini 무료 티어가 15 RPM이라 그 값을 기본으로 둔다.
+      rpmLimit: 15
     },
     processing: {
       batchSize: 50,
@@ -102,7 +108,9 @@ const SETTINGS_DEFAULTS = {
   
   notifications: {
     browser: {
-      enabled: false,
+      // 지금까지 이 설정을 아무도 읽지 않아서 알림은 항상 떴다.
+      // 이제 실제로 반영되므로, 기본값을 true로 둬서 기존 동작을 유지한다.
+      enabled: true,
       onClassifyComplete: true,
       onClassifyError: true,
       onSummaryComplete: true
@@ -138,6 +146,8 @@ const SETTINGS_DEFAULTS = {
 if (typeof self !== "undefined") {
   self.SETTINGS_DEFAULTS = SETTINGS_DEFAULTS;
 }
+// 서비스워커에는 window가 없다. window로만 내보내면 background.js에서 이 값이 사라진다.
+globalThis.SETTINGS_DEFAULTS = SETTINGS_DEFAULTS;
 if (typeof module !== "undefined" && module.exports) {
   module.exports = SETTINGS_DEFAULTS;
 }

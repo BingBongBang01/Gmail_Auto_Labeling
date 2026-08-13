@@ -1,6 +1,8 @@
 // background.js
 // Gmail AI Labeler - Copyright (c) 2026 김태형 (thk7410@gmail.com). All rights reserved.
 // See LICENSE file at the extension root for terms. Unauthorized redistribution or resale is prohibited.
+// 로드 순서 주의: 공급자 어댑터는 AIProviderBase를 상속하고 로드 시점에
+// AIProviderRegistry.register()를 부르므로, 그 둘이 먼저 올라와 있어야 한다.
 importScripts(
   "settings/settings_schema.js",
   "settings/settings_defaults.js",
@@ -9,6 +11,8 @@ importScripts(
   "i18n.js",
   "crypto-helper.js",
   "ai/ai_provider_registry.js",
+  "ai/ai_schema.js",
+  "ai/ai_provider_base.js",
   "ai/ai_key_manager.js",
   "ai/ai_quota_manager.js",
   "ai/ai_failover_manager.js",
@@ -16,6 +20,7 @@ importScripts(
   "ai/providers/google_provider.js",
   "ai/providers/openai_provider.js",
   "ai/providers/anthropic_provider.js",
+  "settings/settings_migration.js",
   "calendar/calendar_api.js",
   "calendar/calendar_colors.js",
   "calendar/calendar_categories.js",
@@ -113,6 +118,8 @@ try {
 // 이 계산을 Provider capability 기반으로 재설계해야 하지만, 기존 Gmail 자동 분류 동작을 깨뜨릴
 // 위험이 있어 이번 단계에서는 유지한다(README "알려진 제한 사항" 참고). 실제로 쓰이지 않던
 // GEMINI_MODEL 상수만 제거했다.
+// 실제로 쓰는 모델은 ai.credentials의 각 항목이 들고 있다(공급자별로 다르다).
+// 아래 한도 값들은 배치 크기를 계산하기 위한 Gemini 무료 티어 기준 추정치다.
 const GEMINI_RPM_LIMIT = 15;
 const GEMINI_TPM_LIMIT = 250000;
 const GEMINI_RPD_LIMIT = 500;
@@ -180,6 +187,8 @@ const GMAIL_FETCH_CONCURRENCY = 8;
 // AI 분류 배치를 몇 개까지 겹쳐서 진행할지.
 // RPM 상한은 AIRequestRouter/AIQuotaManager가 오류 발생 시 반응적으로 관리하므로, 이 값은
 // "응답 대기 시간을 얼마나 겹쳐서 감출지"만 결정한다.
+// 분당 요청 수 상한은 AIPacer(ai/ai_request_router.js)가 따로 지키므로, 이 값은
+// "응답 대기 시간을 얼마나 겹쳐서 감출지"만 결정한다(값을 올려도 RPM을 더 쓰지는 않는다).
 const GEMINI_BATCH_CONCURRENCY = 3;
 
 // items를 최대 concurrency개씩 동시에 worker에 넘긴다. 결과는 입력 순서를 그대로 유지한다.
@@ -294,13 +303,24 @@ chrome.runtime.onInstalled.addListener(async (details) => {
   // 전용 '나와 관련된 메일 웹훅'은 없어졌다(커스텀 웹훅의 onlyPersonal 조건으로 대체).
   // 쓰이지 않는 웹훅 URL이 저장소에 남아 있지 않게 지운다.
   await chrome.storage.local.remove(["discordWebhookUrlPersonal"]);
+
+  // 업데이트 시점에도 마이그레이션을 돌린다. 예전에는 옵션 페이지를 열 때만 실행돼서,
+  // 옵션 화면에 한 번도 들어가지 않은 사용자는 v2 데이터가 영구히 옮겨지지 않았다.
+  try {
+    await migrateToLatestSettings();
+  } catch (e) {
+    console.warn("[GmailLabeler] 설정 마이그레이션 실패:", e);
+  }
+
   if (details.reason !== "install") return;
   await i18nInit(true);
-  await chrome.storage.local.set({
-    categoryDefinitions: getLocalizedDefaultCategoryDefs(),
-    autoClassifyEnabled: true,
-    autoClassifyThreshold: 1,
-    autoBackupOnChange: true,
+  // 설치 직후 기본 카테고리는 새 설정 구조에 넣는다.
+  // 예전에는 평면 키 categoryDefinitions에 썼는데, 정작 읽는 쪽은 settings.gmail.categories라서
+  // 기본 카테고리가 전달되지 않았다.
+  await SettingsStore.setSettings({
+    gmail: { categories: getLocalizedDefaultCategoryDefs() },
+    automation: { autoClassify: { enabled: true, threshold: 1 } },
+    data: { backup: { autoBackupToDrive: true } },
   });
 });
 
@@ -317,13 +337,34 @@ async function getActiveAiCredentials() {
 
 async function saveAiCredentials(keys) {
   await SettingsStore.setSetting("ai.credentials", keys);
+// API 키는 ai.credentials 한 곳에만 저장한다(공급자/모델/우선순위를 함께 들고 있는 형태).
+// 예전 이 함수는 settings.ai.geminiApiKeys를 읽었는데, 그 경로는 v3 스키마에도 기본값에도 없고
+// 어디서도 쓰지 않았다. 그래서 항상 빈 배열을 돌려줬고, 이 값을 "키가 있는지" 판단에 쓰던
+// initGeminiAndGmailContext()가 사용자가 키를 몇 개 등록했든 무조건 errNoApiKey로 실패했다.
+async function getActiveAiCredentials() {
+  return await AIKeyManager.getActiveCredentials();
+}
+
+// 사용 가능한 AI 키가 하나라도 있는지. 작업 시작 전 사전 점검용.
+async function hasUsableAiCredential() {
+  const creds = await getActiveAiCredentials();
+  return creds.length > 0;
 }
 
 // ---------------- OAuth (사용자 개인 클라이언트 방식) ----------------
 // chrome.identity.getAuthToken()은 manifest에 박혀있는 client_id로만 동작해서, 사용자마다 각자의 GCP
 // OAuth 클라이언트를 쓰게 할 수가 없다. 그래서 launchWebAuthFlow + authorization code 교환 + refresh_token
 // 방식을 직접 구현해서, 설정 탭에서 입력한 사용자 개인 client_id/secret으로 인증하도록 한다.
-const GOOGLE_OAUTH_SCOPE = "https://www.googleapis.com/auth/gmail.modify https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/calendar.events";
+// calendar.events는 일정 조회/수정만 허용한다. 캘린더 "목록"(calendarList.list)은
+// 포함되지 않아서 대시보드의 캘린더 선택 새로고침이 403을 받는다. 그래서 읽기 전용 스코프를 함께 요청한다.
+// 주의: 이 목록이 바뀌면 기존 사용자의 refresh token으로는 새 권한이 없으므로 재연결이 필요하다.
+// (calendar_api.js가 403을 감지해 재연결 안내 메시지를 띄운다)
+const GOOGLE_OAUTH_SCOPE = [
+  "https://www.googleapis.com/auth/gmail.modify",
+  "https://www.googleapis.com/auth/drive.file",
+  "https://www.googleapis.com/auth/calendar.events",
+  "https://www.googleapis.com/auth/calendar.readonly",
+].join(" ");
 
 async function getOAuthCredentials() {
   const settings = await SettingsStore.getSettings();
@@ -573,41 +614,39 @@ async function gmailFetch(url, options) {
 // 백업 파일은 사용자 드라이브 최상위에 평범한 보이는 파일로 저장돼서, 사용자가 직접 열어보거나 지울 수도 있다.
 const DRIVE_BACKUP_FILENAME = "gmail-ai-labeler-backup.json";
 
-// 백업에 포함할 전체 사용자 설정 및 데이터 키 목록
-const BACKUP_SETTING_KEYS = [
-  "categoryDefinitions",
-  "filterRules",
-  "autoClassifyEnabled",
-  "autoClassifyThreshold",
-  "themeMode",
-  "uiLanguage",
-  "showQuotaOnMain",
-  "correctionLearningEnabled",
-  "importanceCriteria",
-  "discordWebhookUrl",
-  "discordWebhookUrlHigh",
-  "discordWebhookUrlMedium",
-  "discordWebhookUrlLow",
-  "customDiscordWebhooks",
-  "discordSendPerEmail",
-  "personalIdentityHints",
-  "personalExclusionRules",
+// 설정 본체는 appSettings 하나로 백업한다. 예전에 여기 있던 평면 키 목록
+// (categoryDefinitions, filterRules, discordWebhookUrl* 등)은 v3에서 더 이상
+// 쓰이지 않는 저장 위치라서, 그것만 백업하면 실제 설정이 하나도 담기지 않았다.
+
+// v2 백업 파일을 복원할 때만 쓰는 옛 평면 키 목록(하위 호환).
+const BACKUP_LEGACY_CREDENTIAL_KEYS = ["geminiApiKeys", "oauthClientId", "oauthClientSecret"];
+
+// appSettings에 들어가지 않는, 순수 런타임/작업 데이터. 이건 평면 키 그대로 백업한다.
+const BACKUP_RUNTIME_KEYS = [
   "summaryFeedback",
   "lastSummaryLabel",
   "lastSummaryCriteria",
-  "autoSummaryEnabled",
-  "autoSummaryLabel",
-  "autoSummaryMaxCount",
-  "autoSummaryCriteria",
-  "autoSummarySendDiscord",
   "lastLabelSummary",
-  "criteriaScratchpad"
+  "criteriaScratchpad",
 ];
 // v1/v2 시절의 평면 storage key. v3 마이그레이션 이후에는 실제로 존재하지 않지만, 마이그레이션을
 // 아직 거치지 않은 아주 오래된 설치본을 위해 하위호환으로만 남겨둔다. 새 credential은
 // appSettings.ai.credentials / appSettings.google.oauth에 저장되며, 아래 processBackupToDrive에서
 // 이 값들을 직접 백업/복원한다.
 const BACKUP_CREDENTIAL_KEYS = ["geminiApiKeys", "oauthClientId", "oauthClientSecret"];
+
+// 설정 blob에서 자격 증명을 떼어낸다.
+// API 키와 OAuth 시크릿이 평문으로 드라이브에 올라가지 않게 하기 위한 분리다.
+function splitSettingsAndCredentials(settings) {
+  const clone = JSON.parse(JSON.stringify(settings || {}));
+  const credentials = {
+    aiCredentials: clone.ai?.credentials || [],
+    oauth: clone.google?.oauth || {},
+  };
+  if (clone.ai) clone.ai.credentials = [];
+  if (clone.google) clone.google.oauth = { clientId: "", clientSecret: "" };
+  return { safeSettings: clone, credentials };
+}
 
 async function findOrCreateDriveBackupFileId() {
   const cached = await new Promise((resolve) => chrome.storage.local.get(["driveBackupFileId"], resolve));
@@ -660,6 +699,23 @@ async function processBackupToDrive(includeCredentials, passphrase) {
   // 구버전(v1/v2) 하위호환용 평면 credential key. v3 마이그레이션이 끝난 설치본에는 존재하지 않는다.
   for (const key of BACKUP_CREDENTIAL_KEYS) if (key in stored) credentials[key] = stored[key];
 
+  // 설정 본체는 appSettings 하나다. 예전에는 이 키가 백업 목록에 아예 없어서
+  // v3 설정(카테고리, 필터, 웹훅, ai.credentials 전체)이 백업되지 않았고,
+  // 대신 이미 쓰이지 않는 옛 평면 키만 올라가고 있었다.
+  const allSettings = await SettingsStore.getSettings();
+  const { safeSettings, credentials } = splitSettingsAndCredentials(allSettings);
+
+  const storedRuntime = await new Promise((resolve) =>
+    chrome.storage.local.get(BACKUP_RUNTIME_KEYS, resolve)
+  );
+  const runtime = {};
+  for (const key of BACKUP_RUNTIME_KEYS) if (key in storedRuntime) runtime[key] = storedRuntime[key];
+
+  const hasCredentials =
+    (credentials.aiCredentials && credentials.aiCredentials.length) ||
+    credentials.oauth?.clientId ||
+    credentials.oauth?.clientSecret;
+
   // v3 중앙 설정(appSettings)에는 ai.credentials(API Key 포함)와 google.oauth(clientSecret 포함)처럼
   // 민감한 정보가 함께 들어있다. 항상 백업되는 settings에는 민감 정보를 제거한 사본을 넣고,
   // 실제 값은 includeCredentials가 켜졌을 때만 credentials 쪽(암호화 대상)에 담는다.
@@ -681,17 +737,25 @@ async function processBackupToDrive(includeCredentials, passphrase) {
   }
 
   const payload = {
-    backupVersion: 2,
+    backupVersion: 3,
     createdAt: new Date().toISOString(),
-    includesCredentials: !!includeCredentials,
-    settings,
+    includesCredentials: false,
+    appSettings: safeSettings,
+    runtime,
   };
 
-  if (includeCredentials && Object.keys(credentials).length) {
+  if (includeCredentials && hasCredentials) {
     if (passphrase) {
       payload.encryptedCredentials = await encryptWithPassphrase(passphrase, credentials);
+      payload.includesCredentials = true;
     } else {
-      payload.settings = { ...payload.settings, ...credentials }; // 암호 없으면 예전처럼 평문 저장
+      // 예전에는 암호가 없으면 자격 증명을 평문으로 그대로 넣었다(그리고 UI에는 암호를
+      // 입력할 경로가 없어서 사실상 항상 평문이었다). API 키와 OAuth 시크릿을
+      // 드라이브에 평문으로 올리는 건 위험하므로, 암호가 없으면 아예 제외한다.
+      await addLog(
+        "[백업] 암호를 입력하지 않아 API 키와 OAuth 정보는 백업에서 제외했습니다(평문 저장 방지).",
+        "warn"
+      );
     }
   }
 
@@ -710,9 +774,10 @@ async function processBackupToDrive(includeCredentials, passphrase) {
   }
 
   await chrome.storage.local.set({ lastDriveBackupAt: Date.now() });
+  await SettingsStore.setSetting("data.backup.lastBackupAt", new Date().toISOString());
   await addLog(
     t(payload.encryptedCredentials ? "logDriveBackupDoneEncrypted" : "logDriveBackupDone", [
-      Object.keys(payload.settings).length,
+      Object.keys(payload.appSettings || {}).length,
     ])
   );
   return { total: 1, success: 1, failMessages: [], requestsUsed: 0, batchSize: 1, cancelled: false, quotaExhausted: false };
@@ -737,14 +802,12 @@ async function processRestoreFromDrive(passphrase) {
     throw new Error(t("errDriveBackupInvalid"));
   }
 
-  const settings = { ...(payload.settings || {}) };
-  let restoredCount = Object.keys(settings).length;
-
+  // 자격 증명을 먼저 복호화한다(암호가 틀리면 아무것도 덮어쓰지 않고 중단해야 한다).
+  let credentials = null;
   if (payload.encryptedCredentials) {
     if (!passphrase) {
       throw new Error(t("errBackupPassphraseNeeded"));
     }
-    let credentials;
     try {
       credentials = await decryptWithPassphrase(passphrase, payload.encryptedCredentials);
     } catch (e) {
@@ -771,7 +834,47 @@ async function processRestoreFromDrive(passphrase) {
     }
   }
 
-  await chrome.storage.local.set(settings);
+  let restoredCount = 0;
+
+  if (payload.appSettings) {
+    // v3 백업. 스키마로 걸러서 병합한다.
+    const { value } = validateSettingsAgainstSchema(payload.appSettings);
+    if (credentials) {
+      if (Array.isArray(credentials.aiCredentials) && credentials.aiCredentials.length) {
+        value.ai = { ...(value.ai || {}), credentials: sanitizeCredentialList(credentials.aiCredentials) };
+      }
+      if (credentials.oauth && (credentials.oauth.clientId || credentials.oauth.clientSecret)) {
+        value.google = { oauth: { ...credentials.oauth } };
+      }
+    }
+    value.schemaVersion = SETTINGS_DEFAULTS.schemaVersion;
+    await SettingsStore.setSettings(value);
+    restoredCount += Object.keys(value).length;
+
+    if (payload.runtime && typeof payload.runtime === "object") {
+      const runtime = {};
+      for (const key of BACKUP_RUNTIME_KEYS) {
+        if (key in payload.runtime) runtime[key] = payload.runtime[key];
+      }
+      if (Object.keys(runtime).length) {
+        await chrome.storage.local.set(runtime);
+        restoredCount += Object.keys(runtime).length;
+      }
+    }
+  } else {
+    // v2 이하 백업(평면 키). 그대로 되돌려놓고 마이그레이션이 새 구조로 옮기게 한다.
+    const flat = { ...(payload.settings || {}) };
+    if (credentials) {
+      for (const key of BACKUP_LEGACY_CREDENTIAL_KEYS) {
+        if (key in credentials) flat[key] = credentials[key];
+      }
+    }
+    restoredCount = Object.keys(flat).length;
+    if (restoredCount) await chrome.storage.local.set(flat);
+    // schemaVersion을 내려서 마이그레이션이 다시 돌도록 한 뒤 즉시 실행한다.
+    await SettingsStore.setSetting("schemaVersion", 1);
+    await migrateToLatestSettings();
+  }
   await addLog(t("logDriveRestoreDone", [payload.createdAt || t("logUnknownTime"), restoredCount]));
   return {
     total: 1,
@@ -1013,6 +1116,22 @@ async function fetchLabelCache(token) {
   return { exact, normalized, systemNames };
 }
 
+// "부모/자식" 형태로 존재하는 Gmail 라벨에서 자식 부분의 이름만 모아준다.
+// 부모 라벨을 이름 변경/삭제할 때 그 아래 하위 라벨까지 함께 처리하기 위해 쓴다.
+// 호출부는 반환된 각 값을 `${parent}/${child}`로 다시 조립해 라벨 ID를 찾으므로,
+// 2단 이상 깊은 라벨(parent/a/b)도 "a/b" 형태로 그대로 돌려주면 된다.
+function getSubLabelCandidates(parentName, labelCache) {
+  if (!labelCache || !labelCache.exact) return [];
+  const prefix = `${parentName}/`;
+  const children = new Set();
+  for (const name of labelCache.exact.keys()) {
+    if (typeof name !== "string" || !name.startsWith(prefix)) continue;
+    const child = name.slice(prefix.length);
+    if (child) children.add(child);
+  }
+  return Array.from(children);
+}
+
 // 사용자가 Gmail에서 직접 만든(이 확장이 모르는) 최상위 라벨을 찾아서 카테고리 목록에 자동으로 편입한다.
 async function syncNewTopLevelLabels(categoryDefs, labelCache) {
   const known = new Set(categoryDefs.map((c) => c.name.split("/")[0]));
@@ -1077,6 +1196,7 @@ async function initGmailOnlyContext() {
 async function initGeminiAndGmailContext() {
   const apiKeys = await getActiveAiCredentials();
   if (!apiKeys.length) {
+  if (!(await hasUsableAiCredential())) {
     throw new Error(t("errNoApiKey"));
   }
   let categoryDefs = await getCategoryDefinitions();
@@ -1221,29 +1341,58 @@ async function applyLabelExclusive(token, detail, newLabel, allCategories, label
 // (예전에는 여기서 lastGeminiCallAt/currentCallIntervalMs로 호출 간 간격을 직접 조절하는
 // 선제적 스로틀을 구현했으나, 실제로는 어디서도 참조되지 않는 죽은 코드였다. Rate limit 대응은
 // 이제 AIRequestRouter -> AIFailoverManager -> AIQuotaManager가 오류 발생 시 반응적으로 처리한다.)
+// ---------------- AI 호출 어댑터 ----------------
+// 요청 간격 조절(분당 상한)과 할당량 추적은 ai/ai_request_router.js의 AIPacer와
+// ai/ai_quota_manager.js가 담당한다. 예전에 이 자리에 있던 lastGeminiCallAt /
+// currentCallIntervalMs / MAX_CALL_INTERVAL_MS / INTERVAL_*_MULTIPLIER /
+// DAILY_QUOTA_TEXT_PATTERN은 라우터 도입 때 소비하는 함수가 삭제되면서
+// 선언만 남은 채 아무도 읽지 않는 상태였다.
 
-// RPM 슬롯 확보는 반드시 한 번에 하나씩 순서대로 이뤄져야 한다.
-// ---------------- AI Provider Migration Adapter ----------------
-// Legacy functions have been removed or adapted to route through the universal AIRequestRouter.
-function getTodayString() {
-  try {
-    return new Intl.DateTimeFormat("en-CA", { timeZone: "America/Los_Angeles" }).format(new Date());
-  } catch (e) {
-    const d = new Date();
-    return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
-  }
-}
+// Gemini 무료 티어의 키당 하루 요청 상한(추정치). 유료 티어는 훨씬 크지만,
+// 확장 프로그램이 사용자의 결제 등급을 알 방법이 없어서 보수적인 무료 티어 값을 쓴다.
+const GEMINI_FREE_RPD_PER_KEY = 1500;
 
+// 실제 사용량을 보고한다. 예전에는 requestsToday를 0으로, exhausted를 false로 하드코딩해서
+// 화면의 할당량 표시가 장식에 불과했고(요청 수를 세는 코드가 아예 없었다),
+// 게다가 존재하지 않는 AIKeyManager.getKeysForProvider를 불러서 매번 TypeError로 죽었다.
 async function getQuotaUsage() {
-  const keys = await AIKeyManager.getKeysForProvider("google");
+  await AIQuotaManager.load();
+  const allCredentials = await AIKeyManager.getAllCredentials();
+  const enabled = allCredentials.filter((c) => c && c.enabled && c.apiKey);
+
+  const perKey = enabled.map((cred) => {
+    const state = AIQuotaManager.getState(cred.id);
+    return {
+      id: cred.id,
+      label: cred.name || cred.provider,
+      provider: cred.provider,
+      model: cred.model || "",
+      requestsToday: AIQuotaManager.getRequestCount(cred.id),
+      rpd: cred.provider === "google" ? GEMINI_FREE_RPD_PER_KEY : null,
+      exhausted: !!state && state.status === "quota_exhausted",
+      cooldownUntil: state ? state.until : null,
+      cooldownReason: state ? state.status : null,
+    };
+  });
+
+  // 일일 한도 개념이 뚜렷한 건 Gemini 무료 티어뿐이다.
+  // Google 키가 없으면(OpenAI/Anthropic만 등록) 하루 상한을 추정하지 않는다(null).
+  const googleKeyCount = perKey.filter((k) => k.provider === "google" && !k.exhausted).length;
+  const rpd = googleKeyCount > 0 ? GEMINI_FREE_RPD_PER_KEY * googleKeyCount : null;
+
+  const settings = await SettingsStore.getSettings();
+  const rpmLimit = Number(settings.ai?.requestPolicy?.rpmLimit) > 0
+    ? Number(settings.ai.requestPolicy.rpmLimit)
+    : GEMINI_RPM_LIMIT;
+
   return {
-    date: getTodayString(),
-    requestsToday: 0,
-    rpd: 1500 * Math.max(1, keys.length),
-    rpm: 15,
-    tpm: 1000000,
-    keyCount: keys.length,
-    perKey: keys.map(k => ({ label: k.label, requestsToday: 0, rpd: 1500, exhausted: false }))
+    date: AIQuotaManager.pacificDateString(),
+    requestsToday: AIQuotaManager.getTotalRequestCount(),
+    rpd,
+    rpm: rpmLimit,
+    keyCount: enabled.length,
+    usableKeyCount: perKey.filter((k) => !k.exhausted).length,
+    perKey,
   };
 }
 
@@ -1898,6 +2047,7 @@ async function applyLearnedCategoryDescription(pattern) {
   try {
     const apiKeys = await getActiveAiCredentials();
     if (!apiKeys.length) return false;
+    if (!(await hasUsableAiCredential())) return false;
 
     const exampleText = pattern.examples
       .slice(-CORRECTION_PATTERN_THRESHOLD)
@@ -2402,12 +2552,20 @@ async function learnFromSummaryFeedback() {
   return { ...updated, feedbackCount: feedback.length, changeSummary: parsed.changeSummary || "" };
 }
 
-async function processSummarizeLabelEmails(labelName, maxEmails, filterCriteria) {
+// options.messageIds가 주어지면 라벨 조회를 건너뛰고 그 메일들만 요약한다
+// (사이드패널의 "지금 보고 있는 메일 요약").
+async function processSummarizeLabelEmails(labelName, maxEmails, filterCriteria, options = {}) {
   const { categoryDefs, categories, token } = await initGeminiAndGmailContext();
   const emailLimit = Math.max(1, Math.min(100, parseInt(maxEmails, 10) || 20));
 
-  await addLog(`[요약] '${labelName}' 라벨 메일 수집 중 (최대 ${emailLimit}개)...`);
-  const messages = await getMessagesByLabelName(token, labelName, emailLimit);
+  let messages;
+  if (Array.isArray(options.messageIds) && options.messageIds.length) {
+    messages = options.messageIds.slice(0, emailLimit).map((id) => ({ id }));
+    await addLog(`[요약] 지정된 메일 ${messages.length}건 요약 중...`);
+  } else {
+    await addLog(`[요약] '${labelName}' 라벨 메일 수집 중 (최대 ${emailLimit}개)...`);
+    messages = await getMessagesByLabelName(token, labelName, emailLimit);
+  }
 
   if (!messages || messages.length === 0) {
     const emptyReport = {
@@ -3201,6 +3359,8 @@ async function classifyAndLabelMessages(token, categoryDefs, labelCache, message
   await reportProgress(1, 3);
 
   // 배치끼리는 서로 의존하지 않으므로 겹쳐서 보낸다. 이렇게 하면 앞 요청의 응답 대기 시간 동안
+  // 배치끼리는 서로 의존하지 않으므로 겹쳐서 보낸다.
+  // RPM 상한은 AIPacer가 지키고, 이렇게 하면 앞 요청의 응답 대기 시간 동안
   // 다음 요청이 출발해서 "간격 + 응답지연"이 배치마다 누적되던 것을 없앨 수 있다.
   let stopClassifying = false;
   let fatalClassifyError = null;
@@ -3441,14 +3601,30 @@ async function classifyAndLabelMessages(token, categoryDefs, labelCache, message
 // 오늘 남은 추정 RPD에 맞춰 요청 개수를 미리 안전하게 축소한다 (배치 1개 = 요청 1회 기준)
 async function computeSafeEmailCount(requestedCount) {
   const usage = await getQuotaUsage();
-  // 분류 배치 외에도 자동 학습/요약 등 부수적인 Gemini 호출이 몇 건 생길 수 있으므로 여유분을 남겨둔다.
+
+  if (usage.keyCount === 0) {
+    throw new Error(t("errNoApiKey"));
+  }
+  if (usage.usableKeyCount === 0) {
+    throw new Error(
+      "등록된 모든 AI 키가 할당량 소진 상태입니다. 잠시 후 다시 시도하거나 다른 공급자의 키를 추가하세요."
+    );
+  }
+
+  // 하루 상한을 추정할 수 있는 건 Gemini 무료 티어 키가 있을 때뿐이다.
+  // OpenAI/Anthropic만 쓰는 구성에서는 상한을 모르므로 요청 수를 줄이지 않는다.
+  if (usage.rpd === null) {
+    return { count: requestedCount, reduced: false, usage, remainingRequests: null };
+  }
+
+  // 분류 배치 외에도 자동 학습/요약 등 부수적인 AI 호출이 몇 건 생길 수 있으므로 여유분을 남겨둔다.
   const QUOTA_RESERVE_REQUESTS = 5;
   const remainingRequests = Math.max(0, usage.rpd - usage.requestsToday - QUOTA_RESERVE_REQUESTS);
   const maxEmailsFromQuota = remainingRequests * BATCH_SIZE;
 
   if (maxEmailsFromQuota <= 0) {
     throw new Error(
-      `오늘 Gemini 요청 추정치(${usage.requestsToday}/${usage.rpd})가 이미 한도에 도달한 것으로 보입니다. 자정 이후 다시 시도하세요.`
+      `오늘 AI 요청 추정치(${usage.requestsToday}/${usage.rpd})가 이미 한도에 도달했습니다. 태평양 시간 자정 이후 다시 시도하세요.`
     );
   }
 
@@ -3472,6 +3648,21 @@ async function processRecentEmails(count) {
     await addLog(t("logFewerThanRequested", [messages.length]));
   }
 
+  const summary = await classifyAndLabelMessages(token, categoryDefs, labelCache, messages, null);
+  await chrome.storage.local.set({
+    latestAiData: trimAiDataForContentScript(summary.results),
+    latestAiDataUpdatedAt: Date.now(),
+  });
+  return { ...summary, batchSize: BATCH_SIZE };
+}
+
+// 대상 메일이 이미 정해진 경우(사이드패널의 "지금 보고 있는 메일 분류")에 쓴다.
+// 라벨/최근 목록 조회를 건너뛰고 주어진 ID만 분류한다.
+async function processSpecificMessages(messageIds) {
+  const { categoryDefs, token, labelCache } = await initGeminiAndGmailContext();
+  const messages = messageIds.map((id) => ({ id }));
+
+  await addLog(`[분류] 지정된 메일 ${messages.length}건 분류 중...`);
   const summary = await classifyAndLabelMessages(token, categoryDefs, labelCache, messages, null);
   await chrome.storage.local.set({
     latestAiData: trimAiDataForContentScript(summary.results),
@@ -3816,6 +4007,7 @@ async function checkAutoClassifyTrigger() {
   try {
     const apiKeys = await getActiveAiCredentials();
     if (!apiKeys.length) return; // API 키 없으면 자동 실행 안 함
+    if (!(await hasUsableAiCredential())) return; // API 키 없으면 자동 실행 안 함
 
     const categories = getCategoryNames(await getCategoryDefinitions());
     const { token } = await initGmailOnlyContext();
@@ -3870,6 +4062,7 @@ async function checkAutoSummaryTrigger() {
   try {
     const apiKeys = await getActiveAiCredentials();
     if (!apiKeys.length) return;
+    if (!(await hasUsableAiCredential())) return;
 
     const { token } = await initGmailOnlyContext();
     const maxCount = Math.max(1, Math.min(100, parseInt(settings.automation.autoSummary.maxCount, 10) || 20));
@@ -3940,7 +4133,23 @@ function summaryMessage(summary) {
   return base;
 }
 
-function notifyCompletion(title, summary) {
+// 알림 설정(notifications.browser.*)은 스키마와 옵션 UI에 있었지만 아무도 읽지 않아서,
+// 사용자가 브라우저 알림을 꺼도 계속 알림이 떴다.
+async function isBrowserNotificationEnabled(kind) {
+  try {
+    const settings = await SettingsStore.getSettings();
+    const browser = settings.notifications?.browser;
+    if (!browser || browser.enabled !== true) return false;
+    if (kind === "error") return browser.onClassifyError !== false;
+    if (kind === "summary") return browser.onSummaryComplete !== false;
+    return browser.onClassifyComplete !== false;
+  } catch (e) {
+    return false;
+  }
+}
+
+async function notifyCompletion(title, summary) {
+  if (!(await isBrowserNotificationEnabled("complete"))) return;
   chrome.notifications.create(`gmail-labeler-${Date.now()}`, {
     type: "basic",
     iconUrl: chrome.runtime.getURL("icon128.png"),
@@ -3950,7 +4159,8 @@ function notifyCompletion(title, summary) {
   });
 }
 
-function notifyError(title, errMsg) {
+async function notifyError(title, errMsg) {
+  if (!(await isBrowserNotificationEnabled("error"))) return;
   chrome.notifications.create(`gmail-labeler-error-${Date.now()}`, {
     type: "basic",
     iconUrl: chrome.runtime.getURL("icon128.png"),
@@ -3988,6 +4198,22 @@ async function markJobRunning(jobKind) {
   });
 }
 
+const MAX_RECENT_JOBS = 10;
+
+// 팝업의 "최근 활동" 카드가 읽는 목록.
+// 예전에는 팝업이 recentJobs를 읽기만 하고 쓰는 코드가 아예 없어서
+// 항상 "No recent activity"만 표시됐다.
+async function recordRecentJob(name, status, resultText) {
+  try {
+    const stored = await new Promise((resolve) => chrome.storage.local.get(["recentJobs"], resolve));
+    const jobs = Array.isArray(stored.recentJobs) ? stored.recentJobs : [];
+    jobs.unshift({ name, status, result: resultText || "", at: Date.now() });
+    await chrome.storage.local.set({ recentJobs: jobs.slice(0, MAX_RECENT_JOBS) });
+  } catch (e) {
+    // 기록 실패가 작업 결과에 영향을 주면 안 된다.
+  }
+}
+
 async function runJob(jobFn, notifyTitleKey, notifyTitleParams) {
   await i18nInit();
   const notifyTitle = t(notifyTitleKey, notifyTitleParams);
@@ -4004,7 +4230,8 @@ async function runJob(jobFn, notifyTitleKey, notifyTitleParams) {
     await addLog(
       summary.quotaExhausted ? t("logJobQuotaExceeded") : summary.cancelled ? t("logJobCancelled") : t("logJobDone")
     );
-    notifyCompletion(notifyTitle, summary);
+    await notifyCompletion(notifyTitle, summary);
+    await recordRecentJob(notifyTitle, finalStatus === "done" ? "done" : finalStatus, summaryMessage(summary));
   } catch (err) {
     const errMsg = String(err.message || err);
     const apiService = /gemini/i.test(errMsg) ? "Gemini API" : /oauth|google sign-in/i.test(errMsg) ? "Google OAuth" : /gmail/i.test(errMsg) ? "Gmail API" : "";
@@ -4017,11 +4244,13 @@ async function runJob(jobFn, notifyTitleKey, notifyTitleParams) {
       const summary = { total: 0, success: 0, failMessages: [], requestsUsed: 0, cancelled: true, quotaExhausted: false };
       await chrome.storage.local.set({ jobStatus: "cancelled", jobResult: summary, jobFinishedAt: Date.now() });
       await addLog(t("logJobCancelled"));
-      notifyCompletion(notifyTitle, summary);
+      await notifyCompletion(notifyTitle, summary);
+      await recordRecentJob(notifyTitle, "cancelled", t("logJobCancelled"));
     } else {
       await chrome.storage.local.set({ jobStatus: "error", jobError: errMsg, jobFinishedAt: Date.now() });
       await addLog(t("logJobError", [errMsg]), "error");
-      notifyError(t("notifyTitleErrorSuffix", [notifyTitle]), errMsg);
+      await notifyError(t("notifyTitleErrorSuffix", [notifyTitle]), errMsg);
+      await recordRecentJob(notifyTitle, "error", errMsg.slice(0, 200));
     }
   } finally {
     stopKeepAlive();
@@ -4035,6 +4264,196 @@ function isJobRunning() {
   return new Promise((resolve) => {
     chrome.storage.local.get(["jobStatus"], (result) => resolve(result.jobStatus === "running"));
   });
+}
+
+// ---------------- job.start 디스패처 ----------------
+// 팝업/사이드패널/옵션은 모두 { action: "job.start", jobType, payload } 하나로 작업을 시작한다.
+// 예전 구현에는 두 가지 문제가 있었다.
+//  1. gmail_classify / gmail_summarize 분기가 정의되지 않은 startClassification() /
+//     startLabelSummary()를 불러서 즉시 ReferenceError로 죽었다.
+//  2. 사이드패널이 보내는 gmail_classify_thread / gmail_summarize_thread /
+//     calendar_apply_colors는 분기가 아예 없어서 sendResponse 없이 리스너를 빠져나갔다.
+//     팝업은 응답 콜백에서 창을 닫으므로, 아무것도 시작되지 않은 채 그냥 닫혔다.
+const JOB_TYPE_ALIASES = {
+  "gmail.classification": "gmail_classify",
+  "gmail.summary": "gmail_summarize",
+  "calendar.classification": "calendar_classify",
+};
+
+// 설정의 dateRange를 실제 기간으로 바꾼다.
+// 예전에는 이 설정을 아무도 읽지 않고 항상 "오늘 ~ +7일"로 고정돼 있었다.
+function resolveCalendarRange(payload, settings) {
+  if (payload.startDate && payload.endDate) {
+    return { startDate: payload.startDate, endDate: payload.endDate };
+  }
+
+  const range = settings.calendar?.classification?.dateRange || "week";
+  const start = new Date();
+  start.setHours(0, 0, 0, 0);
+  const end = new Date(start);
+
+  if (range === "today") end.setDate(end.getDate() + 1);
+  else if (range === "month") end.setMonth(end.getMonth() + 1);
+  else end.setDate(end.getDate() + 7); // week, custom(기간 미지정) 기본값
+
+  return { startDate: start.toISOString(), endDate: end.toISOString() };
+}
+
+// 콘텐츠 스크립트가 저장해둔 "지금 Gmail에서 열려 있는 메일" 정보를 읽는다.
+async function resolveOpenThreadMessageIds() {
+  const stored = await new Promise((resolve) => chrome.storage.local.get(["gmailPageContext"], resolve));
+  const context = stored.gmailPageContext;
+  if (!context || !Array.isArray(context.messageIds) || !context.messageIds.length) return [];
+  // 오래된 컨텍스트로 엉뚱한 메일을 건드리지 않도록 유효 시간을 둔다.
+  if (!context.at || Date.now() - context.at > 10 * 60 * 1000) return [];
+  return context.messageIds;
+}
+
+async function processGenerateCalendarCategories(calendarId) {
+  if (!(await hasUsableAiCredential())) throw new Error(t("errNoApiKey"));
+
+  const settings = await SettingsStore.getSettings();
+  const targetCalendar = calendarId || settings.calendar?.general?.defaultCalendar || "primary";
+
+  // 최근 30일 일정을 표본으로 카테고리 초안을 만든다.
+  await addLog("[캘린더] 최근 일정을 분석해 카테고리를 생성합니다...");
+  const events = await calendarEventsListAll(
+    targetCalendar,
+    {
+      timeMin: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
+      timeMax: new Date().toISOString(),
+      singleEvents: true,
+      orderBy: "startTime",
+      maxResults: 250,
+    },
+    100
+  );
+
+  if (!events.length) {
+    throw new Error("최근 30일 안에 분석할 일정이 없습니다. 캘린더에 일정을 추가한 뒤 다시 시도하세요.");
+  }
+
+  // getAvailableCalendarColors()는 { "1": {background, foreground, name}, ... } 맵을 돌려준다.
+  // 예전에는 Object.keys(colorsData.event)로 만든 배열을 넘겨서 colorId가 한 칸씩 밀렸다.
+  const availableColors = await getAvailableCalendarColors();
+  const categories = await initializeCalendarCategoriesWithAI(events, availableColors, i18nCurrentLocale());
+
+  if (!categories.length) {
+    throw new Error("AI가 카테고리를 만들지 못했습니다. 잠시 후 다시 시도하세요.");
+  }
+
+  await SettingsStore.setSetting("calendar.categories", categories);
+  await addLog(`[캘린더] 카테고리 ${categories.length}개를 생성했습니다.`);
+
+  return {
+    total: categories.length,
+    success: categories.length,
+    failMessages: [],
+    requestsUsed: 1,
+    batchSize: 1,
+    cancelled: false,
+    quotaExhausted: false,
+  };
+}
+
+async function startJobByType(jobType, payload) {
+  const normalized = JOB_TYPE_ALIASES[jobType] || jobType;
+
+  if (await isJobRunning()) {
+    return { ok: false, messageKey: "errorAlreadyRunning" };
+  }
+
+  const settings = await SettingsStore.getSettings();
+
+  switch (normalized) {
+    case "gmail_classify": {
+      const requested = Number(payload.count) > 0
+        ? Number(payload.count)
+        : Number(settings.gmail?.fetching?.limit) || BATCH_SIZE;
+      const count = Math.max(1, Math.min(MAX_EMAIL_COUNT_PER_RUN, Math.floor(requested)));
+      await markJobRunning("classify");
+      runJob(() => processRecentEmails(count), "notifyTitleClassify");
+      return { ok: true, started: true, messageKey: "resultRequesting", messageParams: [count] };
+    }
+
+    case "gmail_classify_thread": {
+      const messageIds = Array.isArray(payload.messageIds) && payload.messageIds.length
+        ? payload.messageIds
+        : await resolveOpenThreadMessageIds();
+      if (!messageIds.length) {
+        return { ok: false, error: "열려 있는 메일을 찾지 못했습니다. Gmail에서 메일을 열고 다시 시도하세요." };
+      }
+      await markJobRunning("classify");
+      runJob(() => processSpecificMessages(messageIds), "notifyTitleClassify");
+      return { ok: true, started: true };
+    }
+
+    case "gmail_summarize": {
+      const labelName = String(payload.labelName || settings.automation?.autoSummary?.label || "").trim();
+      if (!labelName) {
+        return { ok: false, messageKey: "errorSelectSummaryLabel" };
+      }
+      await markJobRunning("labelSummary");
+      runJob(
+        () => processSummarizeLabelEmails(labelName, payload.count, payload.filterCriteria),
+        "notifyTitleSummary"
+      );
+      return { ok: true, started: true, messageKey: "summaryRequesting" };
+    }
+
+    case "gmail_summarize_thread": {
+      const messageIds = Array.isArray(payload.messageIds) && payload.messageIds.length
+        ? payload.messageIds
+        : await resolveOpenThreadMessageIds();
+      if (!messageIds.length) {
+        return { ok: false, error: "열려 있는 메일을 찾지 못했습니다. Gmail에서 메일을 열고 다시 시도하세요." };
+      }
+      await markJobRunning("labelSummary");
+      runJob(
+        () =>
+          processSummarizeLabelEmails("", messageIds.length, payload.filterCriteria, { messageIds }),
+        "notifyTitleSummary"
+      );
+      return { ok: true, started: true };
+    }
+
+    case "calendar_classify":
+    case "calendar_apply_colors": {
+      const range = resolveCalendarRange(payload, settings);
+      const calendarId =
+        payload.calendarId || settings.calendar?.general?.defaultCalendar || "primary";
+      // "색상 적용"은 이미 색이 지정된 일정까지 다시 칠하는 것이 사용자 의도다.
+      const overwrite =
+        normalized === "calendar_apply_colors"
+          ? true
+          : payload.overwriteExistingColors !== undefined
+          ? !!payload.overwriteExistingColors
+          : undefined;
+
+      await markJobRunning("calendarClassify");
+      runJob(
+        () =>
+          runCalendarClassification({
+            calendarId,
+            startDate: range.startDate,
+            endDate: range.endDate,
+            overwriteExistingColors: overwrite,
+            applyColors: normalized === "calendar_apply_colors" ? true : undefined,
+          }),
+        "notifyTitleCalendarClassify"
+      );
+      return { ok: true, started: true };
+    }
+
+    case "calendar_init_categories": {
+      await markJobRunning("calendarCategories");
+      runJob(() => processGenerateCalendarCategories(payload.calendarId), "notifyTitleCalendarCategories");
+      return { ok: true, started: true };
+    }
+
+    default:
+      return { ok: false, error: `지원하지 않는 작업 유형입니다: ${jobType}` };
+  }
 }
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
@@ -4089,6 +4508,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       }, "Generate Calendar Categories").then(res => sendResponse(res)).catch(e => sendResponse({ error: e.message }));
       return true;
     }
+    // 알 수 없는 jobType도 반드시 응답한다. 응답이 없으면 포트가 닫히면서
+    // 팝업이 "시작됐다"고 착각한 채 닫힌다.
+    startJobByType(request.jobType, request.payload || {})
+      .then((res) => sendResponse(res))
+      .catch((e) => sendResponse({ ok: false, error: String(e.message || e) }));
+    return true;
   }
 
   if (request.action === "authorizeOAuth") {
@@ -4135,7 +4560,25 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
 
   if (request.action === "getQuotaUsage") {
-    getQuotaUsage().then((usage) => sendResponse(usage));
+    getQuotaUsage()
+      .then((usage) => sendResponse(usage))
+      .catch((e) => sendResponse({ error: String(e.message || e) }));
+    return true;
+  }
+
+  // 대시보드의 캘린더 목록 새로고침. 예전에는 이 액션에 핸들러가 없어서
+  // (응답이 undefined) 버튼을 눌러도 조용히 아무 일도 일어나지 않았다.
+  if (request.action === "listCalendars") {
+    calendarList({ minAccessRole: "writer", maxResults: 250 })
+      .then((data) => {
+        const calendars = (data.items || []).map((cal) => ({
+          id: cal.id,
+          summary: cal.summary || cal.id,
+          primary: !!cal.primary,
+        }));
+        sendResponse({ ok: true, calendars });
+      })
+      .catch((e) => sendResponse({ ok: false, error: String(e.message || e) }));
     return true;
   }
 
@@ -4431,8 +4874,18 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === "backupToDrive") {
     isJobRunning().then(async (running) => {
       if (running) { sendResponse({ messageKey: "errorAlreadyRunning", ok: false }); return; }
+      // 예전에는 includeCredentials를 무조건 false로, 암호는 빈 문자열로 넘겨서
+      // 설정의 "자격 증명 포함" 옵션과 암호 입력이 전혀 반영되지 않았다.
+      const settings = await SettingsStore.getSettings();
+      const includeCredentials =
+        request.includeCredentials !== undefined
+          ? !!request.includeCredentials
+          : settings.data?.backup?.includeCredentials === true;
       await markJobRunning("driveBackup");
-      runJob(() => processBackupToDrive(false, ""), "notifyTitleDriveBackup");
+      runJob(
+        () => processBackupToDrive(includeCredentials, request.passphrase || ""),
+        "notifyTitleDriveBackup"
+      );
       sendResponse({ messageKey: "driveBackupRequesting", ok: true, started: true });
     });
     return true;
