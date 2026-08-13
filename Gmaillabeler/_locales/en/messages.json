@@ -3138,6 +3138,116 @@
   "aiConfirmDelete": {
     "message": "Are you sure you want to delete this credential?"
   },
+  "optionsMenuCalendar": {
+    "message": "Calendar"
+  },
+  "calendarPanelDesc": {
+    "message": "Configure calendar event analysis and colors."
+  },
+  "calendarAiSettings": {
+    "message": "Calendar AI Settings"
+  },
+  "calendarEnableIntegration": {
+    "message": "Enable Calendar Integration"
+  },
+  "calendarEnableClassification": {
+    "message": "Enable Automatic Classification"
+  },
+  "calendarDateRange": {
+    "message": "Classification Date Range"
+  },
+  "calendarRangeToday": {
+    "message": "Today"
+  },
+  "calendarRangeWeek": {
+    "message": "This Week"
+  },
+  "calendarRangeMonth": {
+    "message": "This Month"
+  },
+  "calendarApplyColors": {
+    "message": "Apply Colors to Events"
+  },
+  "calendarCategoriesTitle": {
+    "message": "Calendar AI Categories"
+  },
+  "calendarCategoriesDesc": {
+    "message": "Map AI categories to Google Calendar colors."
+  },
+  "calendarGenerateBtn": {
+    "message": "Generate AI Categories"
+  },
+  "calendarGeneratingStatus": {
+    "message": "Generating (may take a minute)..."
+  },
+  "navGeneral": {
+    "message": "General"
+  },
+  "navConnections": {
+    "message": "Account & Connections"
+  },
+  "navGmail": {
+    "message": "Gmail"
+  },
+  "navAi": {
+    "message": "AI"
+  },
+  "navAutomation": {
+    "message": "Automation"
+  },
+  "navNotifications": {
+    "message": "Notifications"
+  },
+  "navDataBackup": {
+    "message": "Data & Backup"
+  },
+  "navAdvanced": {
+    "message": "Advanced"
+  },
+  "connGoogleAccountTitle": {
+    "message": "Google Account"
+  },
+  "connOauthConfigTitle": {
+    "message": "Google OAuth Configuration"
+  },
+  "gmailClassificationTitle": {
+    "message": "Classification Settings"
+  },
+  "gmailCategoriesTitle": {
+    "message": "Categories"
+  },
+  "gmailImportanceCriteriaTitle": {
+    "message": "Importance Criteria"
+  },
+  "gmailPersonalizationTitle": {
+    "message": "Personalization"
+  },
+  "gmailFilterRulesTitle": {
+    "message": "Filter Rules"
+  },
+  "gmailMailFetchingTitle": {
+    "message": "Mail Fetching & Learning"
+  },
+  "autoGmailClassificationTitle": {
+    "message": "Automatic Gmail Classification"
+  },
+  "autoSummaryTitle": {
+    "message": "Automatic Summary"
+  },
+  "notifDiscordTitle": {
+    "message": "Discord Notifications"
+  },
+  "dataLocalTitle": {
+    "message": "Local Data"
+  },
+  "dataDriveSyncTitle": {
+    "message": "Google Drive Sync"
+  },
+  "advDebuggingTitle": {
+    "message": "Debugging"
+  },
+  "advDangerZoneTitle": {
+    "message": "Danger Zone"
   "dashFilterRulesEmpty": {
     "message": "No filter rules yet. Add one to label matching mail without calling the AI."
   },

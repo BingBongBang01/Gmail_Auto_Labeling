@@ -7,6 +7,7 @@ importScripts(
   "settings/settings_schema.js",
   "settings/settings_defaults.js",
   "settings/settings_store.js",
+  "settings/settings_migration.js",
   "i18n.js",
   "crypto-helper.js",
   "ai/ai_provider_registry.js",
@@ -112,6 +113,11 @@ try {
 
 // 파이프라인: 인증 -> 메일 수집 -> (배치 단위) AI 분석(필요시 신규 카테고리 생성) -> 라벨 확인/생성 -> 라벨 즉시 적용(배타적) -> 진행도/로그 기록
 
+// 이하 GEMINI_* 상수는 AIRequestRouter 도입 이전, Gemini 단일 Provider 시절의 배치 크기/호출 간격
+// 계산에 여전히 쓰인다(BATCH_SIZE, MIN_CALL_INTERVAL_MS). Provider별로 다른 rate limit을 반영하려면
+// 이 계산을 Provider capability 기반으로 재설계해야 하지만, 기존 Gmail 자동 분류 동작을 깨뜨릴
+// 위험이 있어 이번 단계에서는 유지한다(README "알려진 제한 사항" 참고). 실제로 쓰이지 않던
+// GEMINI_MODEL 상수만 제거했다.
 // 실제로 쓰는 모델은 ai.credentials의 각 항목이 들고 있다(공급자별로 다르다).
 // 아래 한도 값들은 배치 크기를 계산하기 위한 Gemini 무료 티어 기준 추정치다.
 const GEMINI_RPM_LIMIT = 15;
@@ -126,6 +132,10 @@ const BATCH_SIZE = Math.max(
   Math.min(MAX_BATCH_SIZE_FOR_ACCURACY, Math.floor(TOKEN_BUDGET_PER_REQUEST / AVG_TOKENS_PER_EMAIL_ESTIMATE))
 );
 
+const MIN_CALL_INTERVAL_MS = Math.ceil(60000 / GEMINI_RPM_LIMIT) + 200;
+// (예전에 선언되어 있던 GEMINI_REQUEST_TIMEOUT_MS는 실제로 어떤 fetch에도 연결되어 있지 않던
+// 죽은 상수였다. AI Provider들의 fetch() 호출에는 여전히 명시적 timeout/AbortController가 없어서,
+// 네트워크가 응답을 영영 안 주는 경우 요청이 무기한 대기할 수 있다 - 알려진 제한 사항으로 남긴다.)
 const MAX_BATCH_COUNT_PER_RUN = 50; // UI 상 설정 가능한 상한. 실제 안전 제한은 computeSafeEmailCount()가 그날 남은 RPD 추정치로 별도 수행
 const MAX_EMAIL_COUNT_PER_RUN = BATCH_SIZE * MAX_BATCH_COUNT_PER_RUN;
 const MAX_MESSAGES_PER_LABEL_FETCH = 1000; // 라벨 하나에서 메일을 조회할 때 한 번에 가져올 상한 (전체 재작업/라벨 정리용)
@@ -175,6 +185,8 @@ function sleep(ms) {
 const GMAIL_FETCH_CONCURRENCY = 8;
 
 // AI 분류 배치를 몇 개까지 겹쳐서 진행할지.
+// RPM 상한은 AIRequestRouter/AIQuotaManager가 오류 발생 시 반응적으로 관리하므로, 이 값은
+// "응답 대기 시간을 얼마나 겹쳐서 감출지"만 결정한다.
 // 분당 요청 수 상한은 AIPacer(ai/ai_request_router.js)가 따로 지키므로, 이 값은
 // "응답 대기 시간을 얼마나 겹쳐서 감출지"만 결정한다(값을 올려도 RPM을 더 쓰지는 않는다).
 const GEMINI_BATCH_CONCURRENCY = 3;
@@ -283,6 +295,9 @@ function matchesFilterRule(detail, rule) {
 // 설치 시점(최초 1회)에 감지된 브라우저 언어로 라벨 카테고리 기본값을 고정 저장.
 // 이후 사용자가 설정에서 언어를 바꾸더라도, 이미 만들어둔 라벨 이름까지 자동으로 바뀌진 않는다(의도된 동작).
 chrome.runtime.onInstalled.addListener(async (details) => {
+  if (typeof migrateToLatestSettings === "function") {
+    await migrateToLatestSettings();
+  }
   registerAutoClassifyAlarm();
   delayInitialAutoClassifyCheck();
   // 전용 '나와 관련된 메일 웹훅'은 없어졌다(커스텀 웹훅의 onlyPersonal 조건으로 대체).
@@ -313,6 +328,15 @@ function normalizeLabelName(name) {
   return String(name).trim().replace(/\s+/g, "").toLowerCase();
 }
 
+// 예전 버전은 API 키를 하나만 저장했는데, 이제는 여러 개를 등록해서 한 키의 일일 할당량이 다 차면
+// 자동으로 다음 키로 넘어가도록 한다(무료 티어 키 여러 개를 돌려쓰면 사실상 처리량이 늘어남).
+async function getActiveAiCredentials() {
+  const credentials = await AIKeyManager.getActiveCredentials();
+  return credentials.filter((c) => c && c.apiKey);
+}
+
+async function saveAiCredentials(keys) {
+  await SettingsStore.setSetting("ai.credentials", keys);
 // API 키는 ai.credentials 한 곳에만 저장한다(공급자/모델/우선순위를 함께 들고 있는 형태).
 // 예전 이 함수는 settings.ai.geminiApiKeys를 읽었는데, 그 경로는 v3 스키마에도 기본값에도 없고
 // 어디서도 쓰지 않았다. 그래서 항상 빈 배열을 돌려줬고, 이 값을 "키가 있는지" 판단에 쓰던
@@ -605,6 +629,11 @@ const BACKUP_RUNTIME_KEYS = [
   "lastLabelSummary",
   "criteriaScratchpad",
 ];
+// v1/v2 시절의 평면 storage key. v3 마이그레이션 이후에는 실제로 존재하지 않지만, 마이그레이션을
+// 아직 거치지 않은 아주 오래된 설치본을 위해 하위호환으로만 남겨둔다. 새 credential은
+// appSettings.ai.credentials / appSettings.google.oauth에 저장되며, 아래 processBackupToDrive에서
+// 이 값들을 직접 백업/복원한다.
+const BACKUP_CREDENTIAL_KEYS = ["geminiApiKeys", "oauthClientId", "oauthClientSecret"];
 
 // 설정 blob에서 자격 증명을 떼어낸다.
 // API 키와 OAuth 시크릿이 평문으로 드라이브에 올라가지 않게 하기 위한 분리다.
@@ -660,6 +689,15 @@ async function findOrCreateDriveBackupFileId() {
 
 async function processBackupToDrive(includeCredentials, passphrase) {
   await addLog(t("logDriveBackupStart"));
+  const stored = await new Promise((resolve) =>
+    chrome.storage.local.get([...BACKUP_SETTING_KEYS, ...BACKUP_CREDENTIAL_KEYS, "appSettings"], resolve)
+  );
+
+  const settings = {};
+  const credentials = {};
+  for (const key of BACKUP_SETTING_KEYS) if (key in stored) settings[key] = stored[key];
+  // 구버전(v1/v2) 하위호환용 평면 credential key. v3 마이그레이션이 끝난 설치본에는 존재하지 않는다.
+  for (const key of BACKUP_CREDENTIAL_KEYS) if (key in stored) credentials[key] = stored[key];
 
   // 설정 본체는 appSettings 하나다. 예전에는 이 키가 백업 목록에 아예 없어서
   // v3 설정(카테고리, 필터, 웹훅, ai.credentials 전체)이 백업되지 않았고,
@@ -677,6 +715,26 @@ async function processBackupToDrive(includeCredentials, passphrase) {
     (credentials.aiCredentials && credentials.aiCredentials.length) ||
     credentials.oauth?.clientId ||
     credentials.oauth?.clientSecret;
+
+  // v3 중앙 설정(appSettings)에는 ai.credentials(API Key 포함)와 google.oauth(clientSecret 포함)처럼
+  // 민감한 정보가 함께 들어있다. 항상 백업되는 settings에는 민감 정보를 제거한 사본을 넣고,
+  // 실제 값은 includeCredentials가 켜졌을 때만 credentials 쪽(암호화 대상)에 담는다.
+  if (stored.appSettings) {
+    const appSettingsSnapshot = JSON.parse(JSON.stringify(stored.appSettings));
+    if (includeCredentials) {
+      credentials.appSettingsSecrets = {
+        aiCredentialApiKeys: (appSettingsSnapshot.ai?.credentials || []).map((c) => ({ id: c.id, apiKey: c.apiKey })),
+        oauthClientSecret: appSettingsSnapshot.google?.oauth?.clientSecret || ""
+      };
+    }
+    if (appSettingsSnapshot.ai?.credentials) {
+      appSettingsSnapshot.ai.credentials = appSettingsSnapshot.ai.credentials.map((c) => ({ ...c, apiKey: "" }));
+    }
+    if (appSettingsSnapshot.google?.oauth) {
+      appSettingsSnapshot.google.oauth = { ...appSettingsSnapshot.google.oauth, clientSecret: "" };
+    }
+    settings.appSettings = appSettingsSnapshot;
+  }
 
   const payload = {
     backupVersion: 3,
@@ -754,6 +812,25 @@ async function processRestoreFromDrive(passphrase) {
       credentials = await decryptWithPassphrase(passphrase, payload.encryptedCredentials);
     } catch (e) {
       throw new Error(t("errBackupPassphraseWrong"));
+    }
+
+    // appSettingsSecrets는 appSettings 안에 도로 병합해야 하는 특수 항목이라 별도 처리한다.
+    const { appSettingsSecrets, ...flatCredentials } = credentials;
+    Object.assign(settings, flatCredentials);
+    restoredCount += Object.keys(flatCredentials).length;
+
+    if (appSettingsSecrets && settings.appSettings) {
+      const appSettings = settings.appSettings;
+      if (Array.isArray(appSettingsSecrets.aiCredentialApiKeys) && appSettings.ai?.credentials) {
+        const keyById = new Map(appSettingsSecrets.aiCredentialApiKeys.map((k) => [k.id, k.apiKey]));
+        appSettings.ai.credentials = appSettings.ai.credentials.map((c) =>
+          keyById.has(c.id) ? { ...c, apiKey: keyById.get(c.id) } : c
+        );
+      }
+      if (appSettingsSecrets.oauthClientSecret && appSettings.google?.oauth) {
+        appSettings.google.oauth.clientSecret = appSettingsSecrets.oauthClientSecret;
+      }
+      restoredCount += 1;
     }
   }
 
@@ -1117,6 +1194,8 @@ async function initGmailOnlyContext() {
 }
 
 async function initGeminiAndGmailContext() {
+  const apiKeys = await getActiveAiCredentials();
+  if (!apiKeys.length) {
   if (!(await hasUsableAiCredential())) {
     throw new Error(t("errNoApiKey"));
   }
@@ -1259,6 +1338,9 @@ async function applyLabelExclusive(token, detail, newLabel, allCategories, label
   return removeLabelIds.length > 0;
 }
 
+// (예전에는 여기서 lastGeminiCallAt/currentCallIntervalMs로 호출 간 간격을 직접 조절하는
+// 선제적 스로틀을 구현했으나, 실제로는 어디서도 참조되지 않는 죽은 코드였다. Rate limit 대응은
+// 이제 AIRequestRouter -> AIFailoverManager -> AIQuotaManager가 오류 발생 시 반응적으로 처리한다.)
 // ---------------- AI 호출 어댑터 ----------------
 // 요청 간격 조절(분당 상한)과 할당량 추적은 ai/ai_request_router.js의 AIPacer와
 // ai/ai_quota_manager.js가 담당한다. 예전에 이 자리에 있던 lastGeminiCallAt /
@@ -1314,7 +1396,7 @@ async function getQuotaUsage() {
   };
 }
 
-async function callGeminiForJson(requestBody) {
+async function callAiForJson(requestBody) {
   const prompt = requestBody.contents[0].parts[0].text;
   const schema = requestBody.generationConfig?.responseSchema;
   return await AIRequestRouter.generateStructured(prompt, schema);
@@ -1365,7 +1447,7 @@ async function classifyTopLevelBatch(items, categoryDefs, correctionHint) {
     },
   };
 
-  const parsedArray = await callGeminiForJson(requestBody);
+  const parsedArray = await callAiForJson(requestBody);
   if (!Array.isArray(parsedArray)) throw new Error(t("errGeminiNotArray"));
   return parsedArray.filter((e) => typeof e.idx === "number" && e.labelName);
 }
@@ -1963,6 +2045,8 @@ async function flushDeferredCategoryLearning() {
 async function applyLearnedCategoryDescription(pattern) {
   let requestConsumed = false;
   try {
+    const apiKeys = await getActiveAiCredentials();
+    if (!apiKeys.length) return false;
     if (!(await hasUsableAiCredential())) return false;
 
     const exampleText = pattern.examples
@@ -1990,7 +2074,7 @@ async function applyLearnedCategoryDescription(pattern) {
       },
     };
 
-    const result = await callGeminiForJson(requestBody);
+    const result = await callAiForJson(requestBody);
     requestConsumed = true;
     const newNote = (result && result.description && result.description.trim()) || "";
     if (!newNote) return requestConsumed;
@@ -2056,7 +2140,7 @@ async function processTranslateCategories(targetLocale) {
     },
   };
 
-  const result = await callGeminiForJson(requestBody);
+  const result = await callAiForJson(requestBody);
   if (!Array.isArray(result) || !result.length) throw new Error(t("errTranslateNoResult"));
 
   const translatedDefs = categoryDefs.map((c, i) => {
@@ -2201,7 +2285,7 @@ async function analyzeOneLabelCriteria(token, categoryDefs, labelName) {
     },
   };
 
-  const result = await callGeminiForJson(requestBody);
+  const result = await callAiForJson(requestBody);
   const suggestion = (result && result.description && result.description.trim()) || "";
   if (!suggestion) throw new Error(t("errAnalysisNoSuggestion"));
 
@@ -2358,7 +2442,7 @@ async function generateSummaryCriteriaWithAI(labelName, sampleCount) {
     },
   };
 
-  const parsed = await callGeminiForJson(requestBody);
+  const parsed = await callAiForJson(requestBody);
   await addLog(`[기준 생성] 메일 ${details.length}건을 근거로 요약 판단 기준 초안을 만들었습니다.`);
 
   return {
@@ -2449,7 +2533,7 @@ async function learnFromSummaryFeedback() {
     },
   };
 
-  const parsed = await callGeminiForJson(requestBody);
+  const parsed = await callAiForJson(requestBody);
 
   const updated = {
     lastSummaryCriteria: parsed.filterCriteria || stored.lastSummaryCriteria || "",
@@ -2656,7 +2740,7 @@ async function processSummarizeLabelEmails(labelName, maxEmails, filterCriteria,
     },
   };
 
-  const parsedResult = await callGeminiForJson(requestBody);
+  const parsedResult = await callAiForJson(requestBody);
 
   // 커스텀 웹훅의 '분류(라벨) 조건'이 쓸 수 있도록, 각 메일이 실제로 달고 있는 라벨 이름을 함께 담는다.
   // (라벨 ID는 그대로 두면 사람이 읽을 수 없으므로 목록을 한 번 받아 이름으로 바꾼다)
@@ -3274,6 +3358,7 @@ async function classifyAndLabelMessages(token, categoryDefs, labelCache, message
   if (excludeLabel) await addLog(t("logSplitModeExclude", [excludeLabel]));
   await reportProgress(1, 3);
 
+  // 배치끼리는 서로 의존하지 않으므로 겹쳐서 보낸다. 이렇게 하면 앞 요청의 응답 대기 시간 동안
   // 배치끼리는 서로 의존하지 않으므로 겹쳐서 보낸다.
   // RPM 상한은 AIPacer가 지키고, 이렇게 하면 앞 요청의 응답 대기 시간 동안
   // 다음 요청이 출발해서 "간격 + 응답지연"이 배치마다 누적되던 것을 없앨 수 있다.
@@ -3892,7 +3977,10 @@ async function delayInitialAutoClassifyCheck() {
   }, AUTO_CLASSIFY_STARTUP_DELAY_MS);
 }
 
-chrome.runtime.onStartup.addListener(() => {
+chrome.runtime.onStartup.addListener(async () => {
+  if (typeof migrateToLatestSettings === "function") {
+    await migrateToLatestSettings();
+  }
   registerAutoClassifyAlarm();
   delayInitialAutoClassifyCheck();
   chrome.storage.local.get(["jobStatus"], (result) => {
@@ -3917,6 +4005,8 @@ async function checkAutoClassifyTrigger() {
   const threshold = Math.max(1, Math.min(BATCH_SIZE, parseInt(settings.automation.autoClassify.threshold, 10) || 1));
 
   try {
+    const apiKeys = await getActiveAiCredentials();
+    if (!apiKeys.length) return; // API 키 없으면 자동 실행 안 함
     if (!(await hasUsableAiCredential())) return; // API 키 없으면 자동 실행 안 함
 
     const categories = getCategoryNames(await getCategoryDefinitions());
@@ -3970,6 +4060,8 @@ async function checkAutoSummaryTrigger() {
   if (running) return;
 
   try {
+    const apiKeys = await getActiveAiCredentials();
+    if (!apiKeys.length) return;
     if (!(await hasUsableAiCredential())) return;
 
     const { token } = await initGmailOnlyContext();
@@ -4366,6 +4458,56 @@ async function startJobByType(jobType, payload) {
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === "job.start") {
+    const jobType = request.jobType;
+    if (jobType === "gmail.classification" || jobType === "gmail_classify") {
+      startClassification().then(res => sendResponse(res)).catch(e => sendResponse({ error: e.message }));
+      return true;
+    } else if (jobType === "gmail.summary" || jobType === "gmail_summarize") {
+      startLabelSummary().then(res => sendResponse(res)).catch(e => sendResponse({ error: e.message }));
+      return true;
+    } else if (jobType === "calendar.classification" || jobType === "calendar_classify") {
+      const payload = request.payload || {};
+      const startDate = payload.startDate || new Date(new Date().setHours(0,0,0,0)).toISOString();
+      const endDate = payload.endDate || new Date(Date.now() + 7*24*60*60*1000).toISOString();
+      runCalendarClassification({
+        calendarId: payload.calendarId || "primary",
+        startDate,
+        endDate,
+        overwriteExistingColors: payload.overwriteExistingColors || false
+      }).then(res => sendResponse(res)).catch(e => sendResponse({ error: e.message }));
+      return true;
+    } else if (jobType === "calendar_init_categories") {
+      runJob(async () => {
+        const events = await calendarEventsListAll("primary", {
+          timeMin: new Date(Date.now() - 30*24*60*60*1000).toISOString(),
+          timeMax: new Date().toISOString(),
+          singleEvents: true,
+          orderBy: "startTime",
+          maxResults: 100
+        });
+        const colorsData = await calendarColorsGet();
+        const availableColors = colorsData.event || {};
+        const generated = await initializeCalendarCategoriesWithAI(events, availableColors, i18nCurrentLocale());
+
+        // 사용자가 직접 지정한 색상(colorSource === "user")은 이름이 같은 새 category가 생성되어도
+        // AI가 임의로 덮어쓰지 않는다.
+        const settings = await SettingsStore.getSettings();
+        const existingByName = new Map((settings.calendar.categories || []).map((c) => [c.name, c]));
+        const categories = generated.map((c) => {
+          const existing = existingByName.get(c.name);
+          if (existing && existing.colorSource === "user") {
+            return { ...c, colorId: existing.colorId, colorSource: "user" };
+          }
+          return c;
+        });
+
+        settings.calendar.categories = categories;
+        await SettingsStore.setSetting('calendar.categories', categories);
+
+        return { total: categories.length, success: categories.length, failMessages: [], requestsUsed: 1, batchSize: 1, cancelled: false, quotaExhausted: false };
+      }, "Generate Calendar Categories").then(res => sendResponse(res)).catch(e => sendResponse({ error: e.message }));
+      return true;
+    }
     // 알 수 없는 jobType도 반드시 응답한다. 응답이 없으면 포트가 닫히면서
     // 팝업이 "시작됐다"고 착각한 채 닫힌다.
     startJobByType(request.jobType, request.payload || {})

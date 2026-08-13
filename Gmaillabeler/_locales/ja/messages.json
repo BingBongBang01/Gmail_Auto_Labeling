@@ -3138,6 +3138,116 @@
   "aiConfirmDelete": {
     "message": "この認証情報を削除してもよろしいですか？"
   },
+  "optionsMenuCalendar": {
+    "message": "カレンダー"
+  },
+  "calendarPanelDesc": {
+    "message": "カレンダーイベントの分析と色を設定します。"
+  },
+  "calendarAiSettings": {
+    "message": "カレンダーAI設定"
+  },
+  "calendarEnableIntegration": {
+    "message": "カレンダー連携を有効にする"
+  },
+  "calendarEnableClassification": {
+    "message": "自動分類を有効にする"
+  },
+  "calendarDateRange": {
+    "message": "分類対象期間"
+  },
+  "calendarRangeToday": {
+    "message": "今日"
+  },
+  "calendarRangeWeek": {
+    "message": "今週"
+  },
+  "calendarRangeMonth": {
+    "message": "今月"
+  },
+  "calendarApplyColors": {
+    "message": "イベントに色を適用"
+  },
+  "calendarCategoriesTitle": {
+    "message": "カレンダーAIカテゴリ"
+  },
+  "calendarCategoriesDesc": {
+    "message": "AIカテゴリをGoogleカレンダーの色にマッピングします。"
+  },
+  "calendarGenerateBtn": {
+    "message": "AIカテゴリを生成"
+  },
+  "calendarGeneratingStatus": {
+    "message": "生成中です（最大1分程度かかります）..."
+  },
+  "navGeneral": {
+    "message": "一般"
+  },
+  "navConnections": {
+    "message": "アカウントと連携"
+  },
+  "navGmail": {
+    "message": "Gmail"
+  },
+  "navAi": {
+    "message": "AI"
+  },
+  "navAutomation": {
+    "message": "自動化"
+  },
+  "navNotifications": {
+    "message": "通知"
+  },
+  "navDataBackup": {
+    "message": "データとバックアップ"
+  },
+  "navAdvanced": {
+    "message": "詳細設定"
+  },
+  "connGoogleAccountTitle": {
+    "message": "Googleアカウント"
+  },
+  "connOauthConfigTitle": {
+    "message": "Google OAuth設定"
+  },
+  "gmailClassificationTitle": {
+    "message": "分類設定"
+  },
+  "gmailCategoriesTitle": {
+    "message": "カテゴリ"
+  },
+  "gmailImportanceCriteriaTitle": {
+    "message": "重要度基準"
+  },
+  "gmailPersonalizationTitle": {
+    "message": "パーソナライズ"
+  },
+  "gmailFilterRulesTitle": {
+    "message": "フィルタルール"
+  },
+  "gmailMailFetchingTitle": {
+    "message": "メール取得と学習"
+  },
+  "autoGmailClassificationTitle": {
+    "message": "Gmail自動分類"
+  },
+  "autoSummaryTitle": {
+    "message": "自動要約"
+  },
+  "notifDiscordTitle": {
+    "message": "Discord通知"
+  },
+  "dataLocalTitle": {
+    "message": "ローカルデータ"
+  },
+  "dataDriveSyncTitle": {
+    "message": "Google Drive同期"
+  },
+  "advDebuggingTitle": {
+    "message": "デバッグ"
+  },
+  "advDangerZoneTitle": {
+    "message": "危険な操作"
   "dashFilterRulesEmpty": {
     "message": "フィルタルールがまだありません。追加すると AI を呼ばずにラベルを付けます。"
   },

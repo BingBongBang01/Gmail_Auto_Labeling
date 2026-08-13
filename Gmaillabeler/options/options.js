@@ -422,6 +422,9 @@ function initCalendarSettings(settings) {
         sel.addEventListener('change', (e) => {
           const idx = parseInt(e.target.getAttribute('data-idx'), 10);
           settings.calendar.categories[idx].colorId = e.target.value;
+          // 사용자가 직접 고른 색상은 "user" 출처로 표시한다. 이후 AI로 category를 다시 생성해도
+          // 이 색상은 덮어쓰지 않는다.
+          settings.calendar.categories[idx].colorSource = "user";
           scheduleSave('calendar.categories', settings.calendar.categories);
         });
       });

@@ -1,5 +1,31 @@
 // ai/providers/anthropic_provider.js
 
+// Claude는 markdown 코드펜스나 앞뒤 설명을 함께 출력하는 경우가 있어, 순수 JSON.parse()만으로는
+// 부서지기 쉽다. 코드펜스를 벗겨내고, 그래도 실패하면 첫 '{'~마지막 '}' 구간만 다시 추출해 재시도한다.
+function parseJsonFromModelText(rawText) {
+  let text = rawText.trim();
+
+  const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
+  if (fenced) text = fenced[1].trim();
+
+  try {
+    return JSON.parse(text);
+  } catch (e) {
+    // 앞뒤에 설명 문장이 섞여 있거나 응답이 중간에 잘린 경우, 가장 바깥 JSON 객체 구간만 추출해본다.
+    const start = text.indexOf("{");
+    const end = text.lastIndexOf("}");
+    if (start !== -1 && end !== -1 && end > start) {
+      try {
+        return JSON.parse(text.slice(start, end + 1));
+      } catch (e2) {
+        // fall through
+      }
+    }
+    throw new Error(`Failed to parse JSON from Anthropic response: ${e.message}`);
+  }
+}
+
+class AnthropicProvider {
 const ANTHROPIC_RESULT_TOOL = "emit_structured_result";
 
 class AnthropicProvider extends AIProviderBase {
@@ -53,6 +79,12 @@ class AnthropicProvider extends AIProviderBase {
       throw { status: 200, raw: null, isBadResponse: true };
     }
 
+    const text = data.content[0]?.text;
+    if (!text || !text.trim()) {
+      throw new Error("Empty response text from Anthropic");
+    }
+
+    return parseJsonFromModelText(text);
     // tool input은 이미 파싱된 객체로 온다. 문자열 파싱이 필요 없다.
     return AISchema.unwrapRoot(toolUse.input, wrapped);
   }
@@ -85,6 +117,10 @@ class AnthropicProvider extends AIProviderBase {
       return { type: "invalid_request", retryable: false, message: this.extractMessage(error) };
     }
 
+if (typeof self !== "undefined") {
+  self.AnthropicProvider = AnthropicProvider;
+  if (self.AIProviderRegistry) {
+    self.AIProviderRegistry.register(new AnthropicProvider());
     // 529 overloaded_error는 5xx가 아니라 잠시 뒤 재시도 대상이다.
     if (status === 529 || type === "overloaded_error") {
       return {

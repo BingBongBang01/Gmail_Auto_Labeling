@@ -212,6 +212,9 @@ if (typeof chrome !== "undefined" && chrome.storage) {
   });
 }
 
+if (typeof self !== "undefined") {
+  self.SettingsStore = SettingsStore;
+}
 globalThis.SettingsStore = SettingsStore;
 if (typeof module !== "undefined" && module.exports) {
   module.exports = SettingsStore;

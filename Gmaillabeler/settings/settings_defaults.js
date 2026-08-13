@@ -143,6 +143,9 @@ const SETTINGS_DEFAULTS = {
   }
 };
 
+if (typeof self !== "undefined") {
+  self.SETTINGS_DEFAULTS = SETTINGS_DEFAULTS;
+}
 // 서비스워커에는 window가 없다. window로만 내보내면 background.js에서 이 값이 사라진다.
 globalThis.SETTINGS_DEFAULTS = SETTINGS_DEFAULTS;
 if (typeof module !== "undefined" && module.exports) {

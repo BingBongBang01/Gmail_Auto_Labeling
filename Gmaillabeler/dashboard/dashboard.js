@@ -779,6 +779,7 @@ function showSettingsAutoSaveMark() {
 }
 
 // ---------------- 설정 탭 ----------------
+let dashApiKeys = []; // [{label, key}] - 중앙 설정의 ai.credentials 중 provider "google" 항목과 매핑
 // API 키 관리 UI는 옵션 페이지(설정 > AI 공급자)로 옮겨졌다.
 // 여기 남아 있던 dashApiKeys / dashAddApiKeyBtn / dashSaveKeyBtn 코드는 대응하는 DOM이
 // dashboard.html에서 이미 제거돼 실행되지 않았고, 저장 대상도 아무도 읽지 않는
@@ -1367,6 +1368,52 @@ function initEvents() {
   }
 
   // --- 설정 탭 ---
+  const addApiKeyBtn = $("dashAddApiKeyBtn");
+  if (addApiKeyBtn) {
+    addApiKeyBtn.addEventListener("click", () => {
+      collectApiKeysFromDom();
+      dashApiKeys.push({ label: "", key: "" });
+      renderApiKeyInputs();
+    });
+  }
+
+  const saveKeyBtn = $("dashSaveKeyBtn");
+  if (saveKeyBtn) {
+    saveKeyBtn.addEventListener("click", () => {
+      collectApiKeysFromDom();
+      const validKeys = dashApiKeys.filter((k) => k.key);
+      if (!validKeys.length) {
+        alert(t("dashMsgNeedApiKey"));
+        return;
+      }
+      // 중앙 설정(ai.credentials)에 provider "google" 항목으로 반영한다. 다른 provider(OpenAI/Anthropic)
+      // credential은 그대로 유지하고, google 항목만 여기서 입력한 키 목록으로 교체한다.
+      (async () => {
+        const settings = await SettingsStore.getSettings();
+        const existingCreds = settings.ai?.credentials || [];
+        const nonGoogleCreds = existingCreds.filter((c) => c.provider !== "google");
+        const existingGoogleCreds = existingCreds.filter((c) => c.provider === "google");
+        const basePriority = nonGoogleCreds.reduce((max, c) => Math.max(max, c.priority || 0), 0);
+        const googleCreds = validKeys.map((k, idx) => {
+          const prior = existingGoogleCreds[idx];
+          return {
+            id: (prior && prior.id) || `google-${Date.now()}-${idx}`,
+            provider: "google",
+            name: k.label || `Gemini ${idx + 1}`,
+            apiKey: k.key,
+            model: (prior && prior.model) || "gemini-1.5-flash",
+            enabled: true,
+            priority: basePriority + idx + 1,
+            status: "Ready"
+          };
+        });
+        await SettingsStore.setSetting("ai.credentials", [...nonGoogleCreds, ...googleCreds]);
+        dashApiKeys = validKeys;
+        renderApiKeyInputs();
+        alert(t("dashMsgKeysSaved", [validKeys.length]));
+      })();
+    });
+  }
   // API 키 추가/저장 핸들러는 제거했다. 대응하는 버튼이 dashboard.html에 없어서
   // 애초에 연결되지 않았고, 지금은 옵션 페이지가 ai.credentials로 키를 관리한다.
 
@@ -1524,6 +1571,14 @@ async function main() {
   i18nApplyToDom(document);
 
   initTheme();
+  // 중앙 설정(ai.credentials)의 google provider 항목을 불러와 API Key 입력란을 채운다.
+  if (typeof SettingsStore !== "undefined") {
+    SettingsStore.getSettings((settings) => {
+      const googleCreds = (settings.ai?.credentials || []).filter((c) => c.provider === "google");
+      dashApiKeys = googleCreds.map((c) => ({ label: c.name || "", key: c.apiKey || "" }));
+      renderApiKeyInputs();
+    });
+  }
   // 저장된 판정을 먼저 읽어야 요약 리포트의 피드백 버튼이 눌린 상태로 그려진다.
   loadSummaryFeedback();
   // 필터 규칙 행의 라벨 자동완성이 카테고리 목록을 쓰므로 카테고리를 먼저 읽는다.

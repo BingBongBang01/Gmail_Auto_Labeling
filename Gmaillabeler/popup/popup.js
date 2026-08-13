@@ -43,6 +43,11 @@ function initTheme(settings) {
 function initStatus(settings) {
   chrome.runtime.sendMessage({ action: "getOAuthStatus" }, (oauth) => {
     const connected = oauth && oauth.connected;
+    const credentials = (settings && settings.ai && settings.ai.credentials) || [];
+    const activeCredentials = credentials.filter((c) => c && c.enabled && c.apiKey);
+    const readyCredentials = activeCredentials.filter((c) => c.status !== "invalid" && c.status !== "rate_limited" && c.status !== "quota_exhausted" && c.status !== "unavailable");
+    const hasApiKey = activeCredentials.length > 0;
+
     // API 키는 ai.credentials에 저장된다.
     // 예전에는 settings.ai.geminiApiKeys를 봤는데 그 경로는 스키마에 없어서
     // 키를 몇 개 등록해도 항상 "Missing Key / Setup Required"로 표시됐다.
@@ -59,21 +64,25 @@ function initStatus(settings) {
         googleStatus.className = "status-value error";
       }
     }
-    
+
     const geminiStatus = $("geminiStatusText");
     if (geminiStatus) {
-      if (hasApiKey) {
-        geminiStatus.textContent = "● Ready";
-        geminiStatus.className = "status-value success";
-      } else {
+      if (!hasApiKey) {
         geminiStatus.textContent = "● Missing Key";
         geminiStatus.className = "status-value error";
+      } else if (readyCredentials.length === 0) {
+        geminiStatus.textContent = `● ${activeCredentials.length} credential(s), all unavailable`;
+        geminiStatus.className = "status-value error";
+      } else {
+        const top = [...readyCredentials].sort((a, b) => (a.priority ?? 0) - (b.priority ?? 0))[0];
+        geminiStatus.textContent = `● Ready (${top.provider}/${top.model}, ${activeCredentials.length} active)`;
+        geminiStatus.className = "status-value success";
       }
     }
 
     const globalStatus = $("globalStatusText");
     if (globalStatus) {
-      if (connected && hasApiKey) {
+      if (connected && readyCredentials.length > 0) {
         globalStatus.textContent = "Ready";
         globalStatus.parentElement.className = "status-pill connected";
       } else {

@@ -137,6 +137,8 @@ const SETTINGS_SCHEMA = {
   }
 };
 
+if (typeof self !== "undefined") {
+  self.SETTINGS_SCHEMA = SETTINGS_SCHEMA;
 // 값이 정해진 문자열 설정. 예전에는 주석으로만 적혀 있어서 아무도 확인하지 않았다.
 const SETTINGS_ENUMS = {
   "general.language": ["ko", "en", "ja", "zh_CN", "system"],
