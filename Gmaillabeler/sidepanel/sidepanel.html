@@ -15,49 +15,68 @@
   <script src="../settings/settings_store.js"></script>
 </head>
 <body>
-  
-  <header class="sidepanel-header">
-    <div class="header-main">
-      <img src="../icon32.png" alt="Logo" class="header-logo">
-      <div class="header-text">
-        <div class="title-small" data-i18n="sidepanelWorkspace">AI Workspace</div>
-      </div>
-    </div>
-  </header>
+  <nav class="service-nav">
+    <button class="service-btn active" title="Gmail">
+      <span class="service-icon">📧</span>
+      <span class="service-label">Gmail</span>
+    </button>
+    <button class="service-btn" title="Calendar">
+      <span class="service-icon">📅</span>
+      <span class="service-label">캘린더</span>
+    </button>
+    <button class="service-btn" title="Drive">
+      <span class="service-icon">📁</span>
+      <span class="service-label">드라이브</span>
+    </button>
+    <button class="service-btn" title="Edit">
+      <span class="service-icon">✏️</span>
+      <span class="service-label">편집</span>
+    </button>
+    <button class="service-btn" title="Settings">
+      <span class="service-icon">⚙️</span>
+      <span class="service-label">설정</span>
+    </button>
+  </nav>
 
-  <main class="sidepanel-content">
+  <main class="sidepanel-content" id="mainContent">
+    <div class="progress-section" id="progressSection">
+      <span class="label-medium progress-text" id="progressText">0%</span>
+      <progress id="progressBar" value="0" max="100" class="progress-bar"></progress>
+      <button class="btn-small" id="btnPause" style="background: transparent; border: none; color: #ff9800; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 4px;" title="일시중지">
+        <svg xmlns="http://www.w3.org/2000/svg" height="18" viewBox="0 -960 960 960" width="18" fill="currentColor">
+          <path d="M520-200v-560h160v560H520Zm-280 0v-560h160v560H240Z"/>
+        </svg>
+      </button>
+      <button class="btn-small" id="btnForceStop" style="background: transparent; border: none; color: #b71c1c; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 4px;" title="강제중지">
+        <svg xmlns="http://www.w3.org/2000/svg" height="18" viewBox="0 -960 960 960" width="18" fill="currentColor">
+          <path d="M240-240v-480h480v480H240Z"/>
+        </svg>
+      </button>
+    </div>
     
-    <!-- Context Card (Changes based on what the user is viewing) -->
-    <div class="context-card card card-elevated">
-      <div class="context-header">
-        <span class="label-small" id="contextService">Gmail</span>
-      </div>
-      <div class="title-medium" id="contextTitle" data-i18n="sidepanelInbox">Inbox</div>
-      <div class="body-small" id="contextDesc" style="color:var(--md-sys-color-on-surface-variant); margin-top:4px;" data-i18n="sidepanelReady">
-        Ready to assist
-      </div>
+    <div class="action-nav">
+      <button class="service-btn" title="Start Labeling">
+        <span class="service-icon">▶️</span>
+        <span class="service-label">라벨링시작</span>
+      </button>
+      <button class="service-btn" title="Auto Labeling Settings">
+        <span class="service-icon">🤖</span>
+        <span class="service-label">자동라벨링설정</span>
+      </button>
+      <button class="service-btn" title="Label Settings">
+        <span class="service-icon">🏷️</span>
+        <span class="service-label">라벨설정</span>
+      </button>
+      <button class="service-btn" title="Empty">
+        <span class="service-icon">❓</span>
+        <span class="service-label">빈칸</span>
+      </button>
+      <button class="service-btn" title="Empty">
+        <span class="service-icon">❓</span>
+        <span class="service-label">빈칸</span>
+      </button>
     </div>
-
-    <!-- Dynamic Actions -->
-    <div class="dynamic-actions" id="dynamicActions">
-      <!-- Injected by sidepanel.js based on context -->
-      <button class="btn btn-primary action-btn" data-i18n="sidepanelClassifyVisible">Classify This Mail</button>
-      <button class="btn btn-secondary action-btn" data-i18n="sidepanelSummarizeSender">Summarize Sender</button>
-    </div>
-
-    <!-- Quick Tools (Always available) -->
-    <div class="section-title label-small" style="margin-top:24px; margin-bottom:8px;" data-i18n="sidepanelAITools">AI Tools</div>
-    <div class="tool-list">
-      <button class="btn btn-outlined tool-btn" data-i18n="sidepanelWriteEmail">Write Email</button>
-      <button class="btn btn-outlined tool-btn" data-i18n="sidepanelAskGemini">Ask Gemini</button>
-    </div>
-
   </main>
-
-  <footer class="sidepanel-footer">
-    <button class="btn btn-text footer-btn" id="btnSettings" data-i18n="sidepanelSettingsBtn">⚙️ Settings</button>
-    <button class="btn btn-text footer-btn" id="btnDashboard" data-i18n="sidepanelDashboardBtn">▣ Dashboard</button>
-  </footer>
 
   <script src="../i18n.js"></script>
   <script src="sidepanel.js"></script>
