@@ -3248,6 +3248,7 @@
   },
   "advDangerZoneTitle": {
     "message": "危険な操作"
+  },
   "dashFilterRulesEmpty": {
     "message": "フィルタルールがまだありません。追加すると AI を呼ばずにラベルを付けます。"
   },

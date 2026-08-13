@@ -3248,6 +3248,7 @@
   },
   "advDangerZoneTitle": {
     "message": "危险区域"
+  },
   "dashFilterRulesEmpty": {
     "message": "暂无筛选规则。添加后可跳过 AI 直接贴标签。"
   },

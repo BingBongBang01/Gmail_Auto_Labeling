@@ -3248,6 +3248,7 @@
   },
   "advDangerZoneTitle": {
     "message": "위험 구역"
+  },
   "dashFilterRulesEmpty": {
     "message": "아직 필터 규칙이 없습니다. 규칙을 추가하면 AI를 부르지 않고 바로 라벨을 붙입니다."
   },

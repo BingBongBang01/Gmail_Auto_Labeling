@@ -3248,6 +3248,7 @@
   },
   "advDangerZoneTitle": {
     "message": "Danger Zone"
+  },
   "dashFilterRulesEmpty": {
     "message": "No filter rules yet. Add one to label matching mail without calling the AI."
   },
