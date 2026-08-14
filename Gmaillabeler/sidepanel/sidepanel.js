@@ -968,14 +968,6 @@ function startJob(jobType, payload = {}) {
   });
 }
 
-function resetCurrentServiceActions() {
-  const defaultList = DEFAULT_SERVICE_ACTIONS[activeServiceId] || [];
-  currentActionList = [...defaultList];
-  saveActionOrder(activeServiceId);
-  renderActionNav();
-  setActionFeedback("중간 액션 타일 순서가 기본값으로 초기화되었습니다.");
-}
-
 function resetTopServiceOrder() {
   currentServiceList = [...SERVICE_REGISTRY];
   saveServiceOrder();
@@ -1187,14 +1179,18 @@ function bindSettingsPanelEvents(sectionId, settings) {
       chrome.runtime.sendMessage({ action: "getOAuthStatus" }, (res) => {
         if (chrome.runtime.lastError || !res || !res.connected) {
           if (badge) {
-            badge.textContent = "미연결";
+            badge.textContent = res && res.connecting ? "로그인 진행 중" : "미연결";
             badge.className = "oauth-status-badge error";
           }
-          if (desc) desc.textContent = "Google 계정에 로그인하여 AI 자동 라벨링 및 캘린더 기능을 연동하세요.";
+          if (desc) {
+            desc.textContent = res && res.connecting
+              ? "Google 로그인 창에서 인증을 완료해 주세요."
+              : "Google 계정에 로그인하여 AI 자동 라벨링 및 캘린더 기능을 연동하세요.";
+          }
           if (btnConnect) {
             btnConnect.textContent = "Google 계정 로그인 / 연결";
             btnConnect.style.display = "inline-flex";
-            btnConnect.disabled = false;
+            btnConnect.disabled = !!(res && res.connecting);
           }
           if (btnDisconnect) btnDisconnect.style.display = "none";
         } else {
@@ -1215,28 +1211,58 @@ function bindSettingsPanelEvents(sectionId, settings) {
 
     refreshOAuthStatus();
 
-    btnConnect?.addEventListener("click", () => {
+    // 배경 스크립트가 로그인 성공/실패 직후 알려준다. 예전에는 3.5초짜리 타이머 하나에만
+    // 의존해서, 계정 선택과 동의를 마치는 데 그보다 오래 걸리면(거의 항상) 로그인에 성공해도
+    // 화면은 계속 "미연결"로 남았다.
+    if (!bindSettingsPanelEvents._oauthListenerBound) {
+      bindSettingsPanelEvents._oauthListenerBound = true;
+      chrome.runtime.onMessage.addListener((msg) => {
+        if (msg && (msg.action === "oauthStatusUpdated" || msg.type === "oauthStatusUpdated")) {
+          if (currentSettingsSection === "oauth") renderSettingsPanel("oauth");
+        }
+      });
+    }
+
+    // Client ID/Secret을 저장하고 나서 인증 창을 연다.
+    // 백그라운드는 저장된 설정만 읽으므로, 입력만 하고 연결을 누르면 예전 값(또는 빈 값)으로 시도했다.
+    function saveOAuthCredentials(done) {
       const clientId = ($("spOAuthClientId")?.value || "").trim();
-      if (!clientId) {
-        showSettingsToast("먼저 아래에 Client ID를 입력하고 저장해 주세요.");
+      const clientSecret = ($("spOAuthClientSecret")?.value || "").trim();
+      SettingsStore.updateCategory("google", { oauth: { clientId, clientSecret } }, () => done(clientId));
+    }
+
+    btnConnect?.addEventListener("click", () => {
+      if (!($("spOAuthClientId")?.value || "").trim()) {
+        showSettingsToast("먼저 아래에 Client ID를 입력해 주세요.");
         return;
       }
       btnConnect.disabled = true;
-      if (desc) desc.textContent = "Google 로그인 창이 열렸습니다. 인증을 완료해 주세요...";
-      chrome.runtime.sendMessage({ action: "authorizeOAuth" }, () => {
-        if (chrome.runtime.lastError) {
-          showSettingsToast(chrome.runtime.lastError.message || "OAuth 시작 실패");
+      saveOAuthCredentials(() => {
+        if (desc) desc.textContent = "Google 로그인 창이 열렸습니다. 인증을 완료해 주세요...";
+        chrome.runtime.sendMessage({ action: "authorizeOAuth" }, (res) => {
+          if (chrome.runtime.lastError) {
+            showSettingsToast(chrome.runtime.lastError.message || "OAuth 시작 실패");
+          } else if (res && res.ok === false) {
+            showSettingsToast(res.error || "OAuth 시작 실패");
+          } else {
+            showSettingsToast("Google 로그인이 시작되었습니다.");
+          }
           refreshOAuthStatus();
-        } else {
-          showSettingsToast("Google 로그인이 시작되었습니다.");
-          setTimeout(refreshOAuthStatus, 3500);
-        }
+        });
       });
     });
 
     btnDisconnect?.addEventListener("click", () => {
-      chrome.runtime.sendMessage({ action: "disconnectOAuth" }, () => {
-        showSettingsToast("Google 계정 연동이 해제되었습니다.");
+      btnDisconnect.disabled = true;
+      chrome.runtime.sendMessage({ action: "disconnectOAuth" }, (res) => {
+        btnDisconnect.disabled = false;
+        if (chrome.runtime.lastError) {
+          showSettingsToast(chrome.runtime.lastError.message || "연동 해제 실패");
+        } else if (res && res.ok === false) {
+          showSettingsToast(res.error || "연동 해제 실패");
+        } else {
+          showSettingsToast("Google 계정 연동이 해제되었습니다.");
+        }
         refreshOAuthStatus();
       });
     });
@@ -1244,11 +1270,7 @@ function bindSettingsPanelEvents(sectionId, settings) {
     const saveBtn = $("btnSaveOAuth");
     if (saveBtn) {
       saveBtn.addEventListener("click", () => {
-        const clientId = ($("spOAuthClientId")?.value || "").trim();
-        const clientSecret = ($("spOAuthClientSecret")?.value || "").trim();
-        SettingsStore.updateCategory("google", {
-          oauth: { clientId, clientSecret }
-        }, () => {
+        saveOAuthCredentials(() => {
           showSettingsToast("OAuth 설정이 저장되었습니다.");
           refreshOAuthStatus();
         });

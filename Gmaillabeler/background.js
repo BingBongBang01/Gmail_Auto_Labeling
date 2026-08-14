@@ -20,7 +20,6 @@ importScripts(
   "ai/providers/google_provider.js",
   "ai/providers/openai_provider.js",
   "ai/providers/anthropic_provider.js",
-  "settings/settings_migration.js",
   "calendar/calendar_api.js",
   "calendar/calendar_colors.js",
   "calendar/calendar_categories.js",
@@ -328,19 +327,11 @@ function normalizeLabelName(name) {
   return String(name).trim().replace(/\s+/g, "").toLowerCase();
 }
 
-// 예전 버전은 API 키를 하나만 저장했는데, 이제는 여러 개를 등록해서 한 키의 일일 할당량이 다 차면
-// 자동으로 다음 키로 넘어가도록 한다(무료 티어 키 여러 개를 돌려쓰면 사실상 처리량이 늘어남).
-async function getActiveAiCredentials() {
-  const credentials = await AIKeyManager.getActiveCredentials();
-  return credentials.filter((c) => c && c.apiKey);
-}
-
-async function saveAiCredentials(keys) {
-  await SettingsStore.setSetting("ai.credentials", keys);
 // API 키는 ai.credentials 한 곳에만 저장한다(공급자/모델/우선순위를 함께 들고 있는 형태).
 // 예전 이 함수는 settings.ai.geminiApiKeys를 읽었는데, 그 경로는 v3 스키마에도 기본값에도 없고
 // 어디서도 쓰지 않았다. 그래서 항상 빈 배열을 돌려줬고, 이 값을 "키가 있는지" 판단에 쓰던
 // initGeminiAndGmailContext()가 사용자가 키를 몇 개 등록했든 무조건 errNoApiKey로 실패했다.
+// 여러 키를 등록해두면 한 키의 일일 할당량이 다 찼을 때 라우터가 다음 키로 넘어간다.
 async function getActiveAiCredentials() {
   return await AIKeyManager.getActiveCredentials();
 }
@@ -388,6 +379,23 @@ async function clearStoredOAuthTokens() {
   await chrome.storage.local.remove(["oauthTokens", "myEmailAddress"]);
 }
 
+// 로그인 창을 두 번 겹쳐 띄우지 않기 위한 플래그. jobStatus와 달리 워커가 죽으면 같이 사라지므로,
+// 예전처럼 "작업 중" 상태가 저장소에 남아 재로그인을 영영 막는 일이 없다.
+let oauthFlowInProgress = false;
+
+// 옵션 페이지와 사이드패널은 연동 상태를 직접 폴링할 방법이 없다.
+// 예전에는 두 화면 모두 이 메시지를 기다리는 리스너를 달아놨는데 정작 보내는 쪽이 없어서,
+// 로그인이 실제로 성공해도 몇 초 뒤 한 번 걸어둔 타이머가 지나가면 화면은 계속 "미연결"로 남았다.
+// (구글 로그인 창에서 계정 선택 + 동의까지는 보통 그 타이머보다 오래 걸린다)
+function broadcastOAuthStatusChanged() {
+  try {
+    const maybePromise = chrome.runtime.sendMessage({ action: "oauthStatusUpdated" });
+    if (maybePromise && typeof maybePromise.catch === "function") maybePromise.catch(() => {});
+  } catch (e) {
+    // 열려 있는 확장 페이지가 없으면 수신자가 없다. 무해하다.
+  }
+}
+
 function createOAuthReauthRequiredError() {
   const err = new Error("Google sign-in is required. Open the extension and connect your Google account again.");
   err.isOAuthReauthRequired = true;
@@ -398,6 +406,7 @@ async function markOAuthReauthRequired() {
   // Keep OAuth client settings; only remove the expired or revoked login token.
   await clearStoredOAuthTokens();
   await chrome.storage.local.set({ oauthReauthRequired: true });
+  broadcastOAuthStatusChanged();
   throw createOAuthReauthRequiredError();
 }
 
@@ -457,7 +466,19 @@ async function launchOAuthFlow() {
     });
   });
 
-  const code = new URL(redirectUrl).searchParams.get("code");
+  // 구글이 거부하면 code 대신 error가 실려서 돌아온다(access_denied, invalid_client 등).
+  // 예전에는 그 값을 버리고 "코드 없음"만 알려줘서, 실제 원인(동의 거부인지 클라이언트 설정
+  // 문제인지)을 사용자가 알 방법이 없었다.
+  const redirectParams = new URL(redirectUrl).searchParams;
+  const authError = redirectParams.get("error");
+  if (authError) {
+    throw new Error(
+      `Google OAuth: ${authError}${
+        redirectParams.get("error_description") ? ` - ${redirectParams.get("error_description")}` : ""
+      }`
+    );
+  }
+  const code = redirectParams.get("code");
   if (!code) throw new Error(t("errOAuthNoCode"));
 
   const tokenParams = {
@@ -689,19 +710,13 @@ async function findOrCreateDriveBackupFileId() {
 
 async function processBackupToDrive(includeCredentials, passphrase) {
   await addLog(t("logDriveBackupStart"));
-  const stored = await new Promise((resolve) =>
-    chrome.storage.local.get([...BACKUP_SETTING_KEYS, ...BACKUP_CREDENTIAL_KEYS, "appSettings"], resolve)
-  );
-
-  const settings = {};
-  const credentials = {};
-  for (const key of BACKUP_SETTING_KEYS) if (key in stored) settings[key] = stored[key];
-  // 구버전(v1/v2) 하위호환용 평면 credential key. v3 마이그레이션이 끝난 설치본에는 존재하지 않는다.
-  for (const key of BACKUP_CREDENTIAL_KEYS) if (key in stored) credentials[key] = stored[key];
 
   // 설정 본체는 appSettings 하나다. 예전에는 이 키가 백업 목록에 아예 없어서
   // v3 설정(카테고리, 필터, 웹훅, ai.credentials 전체)이 백업되지 않았고,
   // 대신 이미 쓰이지 않는 옛 평면 키만 올라가고 있었다.
+  // v3 중앙 설정에는 ai.credentials(API Key 포함)와 google.oauth(clientSecret 포함)처럼
+  // 민감한 정보가 함께 들어있다. 항상 백업되는 safeSettings에는 민감 정보를 제거한 사본을 넣고,
+  // 실제 값은 includeCredentials가 켜졌을 때만 credentials 쪽(암호화 대상)에 담는다.
   const allSettings = await SettingsStore.getSettings();
   const { safeSettings, credentials } = splitSettingsAndCredentials(allSettings);
 
@@ -715,26 +730,6 @@ async function processBackupToDrive(includeCredentials, passphrase) {
     (credentials.aiCredentials && credentials.aiCredentials.length) ||
     credentials.oauth?.clientId ||
     credentials.oauth?.clientSecret;
-
-  // v3 중앙 설정(appSettings)에는 ai.credentials(API Key 포함)와 google.oauth(clientSecret 포함)처럼
-  // 민감한 정보가 함께 들어있다. 항상 백업되는 settings에는 민감 정보를 제거한 사본을 넣고,
-  // 실제 값은 includeCredentials가 켜졌을 때만 credentials 쪽(암호화 대상)에 담는다.
-  if (stored.appSettings) {
-    const appSettingsSnapshot = JSON.parse(JSON.stringify(stored.appSettings));
-    if (includeCredentials) {
-      credentials.appSettingsSecrets = {
-        aiCredentialApiKeys: (appSettingsSnapshot.ai?.credentials || []).map((c) => ({ id: c.id, apiKey: c.apiKey })),
-        oauthClientSecret: appSettingsSnapshot.google?.oauth?.clientSecret || ""
-      };
-    }
-    if (appSettingsSnapshot.ai?.credentials) {
-      appSettingsSnapshot.ai.credentials = appSettingsSnapshot.ai.credentials.map((c) => ({ ...c, apiKey: "" }));
-    }
-    if (appSettingsSnapshot.google?.oauth) {
-      appSettingsSnapshot.google.oauth = { ...appSettingsSnapshot.google.oauth, clientSecret: "" };
-    }
-    settings.appSettings = appSettingsSnapshot;
-  }
 
   const payload = {
     backupVersion: 3,
@@ -812,25 +807,6 @@ async function processRestoreFromDrive(passphrase) {
       credentials = await decryptWithPassphrase(passphrase, payload.encryptedCredentials);
     } catch (e) {
       throw new Error(t("errBackupPassphraseWrong"));
-    }
-
-    // appSettingsSecrets는 appSettings 안에 도로 병합해야 하는 특수 항목이라 별도 처리한다.
-    const { appSettingsSecrets, ...flatCredentials } = credentials;
-    Object.assign(settings, flatCredentials);
-    restoredCount += Object.keys(flatCredentials).length;
-
-    if (appSettingsSecrets && settings.appSettings) {
-      const appSettings = settings.appSettings;
-      if (Array.isArray(appSettingsSecrets.aiCredentialApiKeys) && appSettings.ai?.credentials) {
-        const keyById = new Map(appSettingsSecrets.aiCredentialApiKeys.map((k) => [k.id, k.apiKey]));
-        appSettings.ai.credentials = appSettings.ai.credentials.map((c) =>
-          keyById.has(c.id) ? { ...c, apiKey: keyById.get(c.id) } : c
-        );
-      }
-      if (appSettingsSecrets.oauthClientSecret && appSettings.google?.oauth) {
-        appSettings.google.oauth.clientSecret = appSettingsSecrets.oauthClientSecret;
-      }
-      restoredCount += 1;
     }
   }
 
@@ -1194,8 +1170,6 @@ async function initGmailOnlyContext() {
 }
 
 async function initGeminiAndGmailContext() {
-  const apiKeys = await getActiveAiCredentials();
-  if (!apiKeys.length) {
   if (!(await hasUsableAiCredential())) {
     throw new Error(t("errNoApiKey"));
   }
@@ -4517,33 +4491,75 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
 
   if (request.action === "authorizeOAuth") {
-    isJobRunning().then(async (running) => {
-      if (running) {
-        sendResponse({ messageKey: "errorAlreadyRunning", ok: false });
+    // 로그인은 배치 작업이 아니라 사용자의 즉시 조작이다. 예전에는 이걸 runJob으로 감싸고
+    // isJobRunning()으로 막았는데, 그 바람에 (1) 다른 작업이 도는 동안 로그인을 아예 할 수 없었고
+    // (2) 작업이 비정상 종료돼 jobStatus가 "running"으로 남으면 재로그인 경로가 영구히 막혔다.
+    (async () => {
+      await i18nInit();
+      const { clientId } = await getOAuthCredentials();
+      if (!clientId) {
+        sendResponse({ ok: false, error: t("errNoOAuthClientId") });
         return;
       }
-      await markJobRunning("oauthConnect");
-      runJob(async () => {
-        await launchOAuthFlow();
-        return { total: 1, success: 1, failMessages: [], requestsUsed: 0, batchSize: 1, cancelled: false, quotaExhausted: false };
-      }, "notifyTitleOAuthConnect");
+      if (oauthFlowInProgress) {
+        sendResponse({ ok: false, error: "이미 Google 로그인 창이 열려 있습니다." });
+        return;
+      }
+      oauthFlowInProgress = true;
+      // 로그인 창이 떠 있는 동안 서비스워커가 유휴로 종료되면 launchWebAuthFlow 콜백이 사라진다.
+      startKeepAlive();
+
       // Google 로그인 창이 뜨는 순간 팝업이 포커스를 잃고 닫힐 수 있으므로, 인증이 끝날 때까지 기다리지 않고
-      // 시작 확인만 바로 응답한다("message port closed" 오류 방지). 완료 여부는 팝업이 별도로 폴링해서 확인한다.
+      // 시작 확인만 바로 응답한다("message port closed" 오류 방지).
+      // 완료/실패는 oauthStatusUpdated 브로드캐스트로 알린다.
       sendResponse({ messageKey: "oauthConnectRequesting", ok: true, started: true });
-    });
+
+      try {
+        await launchOAuthFlow();
+        await addLog(t("logJobStarted", [t("notifyTitleOAuthConnect")]) + " → " + t("logJobDone"));
+      } catch (e) {
+        const message = String(e?.message || e);
+        await chrome.storage.local.set({
+          lastApiError: { service: "Google OAuth", message: message.slice(0, 400), at: Date.now() },
+        });
+        await addLog(`Google 로그인 실패: ${message}`, "error");
+      } finally {
+        oauthFlowInProgress = false;
+        // 배치 작업이 동시에 돌고 있다면 그쪽 keepalive를 끊으면 안 된다.
+        if (!(await isJobRunning())) stopKeepAlive();
+        broadcastOAuthStatusChanged();
+      }
+    })();
     return true;
   }
 
   if (request.action === "getOAuthStatus") {
-    Promise.all([getStoredOAuthTokens(), getOAuthCredentials()]).then(([tokens, credentials]) => {
+    Promise.all([
+      getStoredOAuthTokens(),
+      getOAuthCredentials(),
+      new Promise((resolve) => chrome.storage.local.get(["myEmailAddress"], resolve)),
+    ]).then(([tokens, credentials, cached]) => {
       const connected = !!(tokens && tokens.refreshToken);
-      sendResponse({ connected, requiresLogin: !connected && !!credentials.clientId });
+      sendResponse({
+        connected,
+        // 두 설정 화면 모두 res.email을 그려주지만 예전에는 이 필드를 아예 보내지 않았다.
+        email: connected ? cached.myEmailAddress || "" : "",
+        connecting: oauthFlowInProgress,
+        requiresLogin: !connected && !!credentials.clientId,
+        hasClientId: !!credentials.clientId,
+      });
     });
     return true;
   }
 
   if (request.action === "disconnectOAuth") {
-    clearStoredOAuthTokens().then(() => chrome.storage.local.set({ oauthReauthRequired: false })).then(() => sendResponse({ ok: true }));
+    clearStoredOAuthTokens()
+      .then(() => chrome.storage.local.set({ oauthReauthRequired: false }))
+      .then(() => {
+        broadcastOAuthStatusChanged();
+        sendResponse({ ok: true });
+      })
+      .catch((e) => sendResponse({ ok: false, error: String(e.message || e) }));
     return true;
   }
 

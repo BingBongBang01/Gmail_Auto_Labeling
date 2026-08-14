@@ -43,17 +43,15 @@ function initTheme(settings) {
 function initStatus(settings) {
   chrome.runtime.sendMessage({ action: "getOAuthStatus" }, (oauth) => {
     const connected = oauth && oauth.connected;
-    const credentials = (settings && settings.ai && settings.ai.credentials) || [];
-    const activeCredentials = credentials.filter((c) => c && c.enabled && c.apiKey);
-    const readyCredentials = activeCredentials.filter((c) => c.status !== "invalid" && c.status !== "rate_limited" && c.status !== "quota_exhausted" && c.status !== "unavailable");
-    const hasApiKey = activeCredentials.length > 0;
-
     // API 키는 ai.credentials에 저장된다.
     // 예전에는 settings.ai.geminiApiKeys를 봤는데 그 경로는 스키마에 없어서
     // 키를 몇 개 등록해도 항상 "Missing Key / Setup Required"로 표시됐다.
     const credentials = Array.isArray(settings?.ai?.credentials) ? settings.ai.credentials : [];
-    const hasApiKey = credentials.some((c) => c && c.enabled && c.apiKey);
-    
+    const activeCredentials = credentials.filter((c) => c && c.enabled && c.apiKey);
+    const readyCredentials = activeCredentials.filter((c) => c.status !== "invalid" && c.status !== "rate_limited" && c.status !== "quota_exhausted" && c.status !== "unavailable");
+    const hasApiKey = activeCredentials.length > 0;
+
+
     const googleStatus = $("googleStatusText");
     if (googleStatus) {
       if (connected) {

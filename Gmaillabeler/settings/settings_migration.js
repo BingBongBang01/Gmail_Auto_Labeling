@@ -13,97 +13,6 @@
 
 const SETTINGS_TARGET_SCHEMA_VERSION = 3;
 
-      console.log(`Starting settings migration from v${currentVersion} to v3...`);
-      
-      const migratedSettings = JSON.parse(JSON.stringify(SETTINGS_DEFAULTS)); // Deep copy defaults
-      migratedSettings.schemaVersion = 3;
-
-      // Use either the existing nested structure (v2) or fallback to v1 top-level keys
-      const existing = allData.appSettings || {};
-
-      // 1. General & Theme
-      if (existing.general?.themeMode) migratedSettings.general.themeMode = existing.general.themeMode;
-      else if (allData.themeMode) migratedSettings.general.themeMode = allData.themeMode;
-      else if (allData.dashboardTheme) migratedSettings.general.themeMode = allData.dashboardTheme;
-      
-      let lang = existing.general?.language || allData.uiLanguage;
-      if (!lang || lang === "system") {
-        const browserLang = chrome.i18n.getUILanguage().toLowerCase();
-        if (browserLang.startsWith("ko")) lang = "ko";
-        else if (browserLang.startsWith("ja")) lang = "ja";
-        else if (browserLang.startsWith("zh")) lang = "zh_CN";
-        else lang = "en";
-      }
-      migratedSettings.general.language = lang;
-
-      // 2. Google OAuth
-      if (existing.google?.oauth?.clientId) migratedSettings.google.oauth.clientId = existing.google.oauth.clientId;
-      else if (allData.oauthClientId) migratedSettings.google.oauth.clientId = allData.oauthClientId;
-      
-      if (existing.google?.oauth?.clientSecret) migratedSettings.google.oauth.clientSecret = existing.google.oauth.clientSecret;
-      else if (allData.oauthClientSecret) migratedSettings.google.oauth.clientSecret = allData.oauthClientSecret;
-
-      // 3. AI & API Keys (Migration to ai.credentials)
-      migratedSettings.ai.credentials = [];
-      let priorityCounter = 1;
-
-      // Provider의 등록된(존재하는) 모델 중 첫 번째를 검증된 fallback으로 사용한다.
-      // "${providerId}-default-model" 같은 존재하지 않는 모델 ID를 임의로 만들어내지 않는다.
-      function validatedFallbackModel(providerId) {
-        const knownModels = (typeof AIProviderRegistry !== "undefined" && AIProviderRegistry.SUPPORTED_MODELS?.[providerId]) || [];
-        return knownModels[0]?.id || null;
-      }
-
-      // Try migrating from v2 providers structure
-      if (existing.ai?.providers) {
-        Object.keys(existing.ai.providers).forEach(providerId => {
-          const provider = existing.ai.providers[providerId];
-          if (provider.apiKeys && Array.isArray(provider.apiKeys)) {
-            provider.apiKeys.forEach(k => {
-              const knownModels = (typeof AIProviderRegistry !== "undefined" && AIProviderRegistry.SUPPORTED_MODELS?.[providerId]) || [];
-              const isKnownModel = provider.selectedModel && knownModels.some(m => m.id === provider.selectedModel);
-              const model = isKnownModel ? provider.selectedModel : validatedFallbackModel(providerId);
-              migratedSettings.ai.credentials.push({
-                id: k.id || (crypto.randomUUID ? crypto.randomUUID() : Math.random().toString()),
-                provider: providerId,
-                name: k.label || k.name || `Migrated ${providerId} Key`,
-                apiKey: k.key || k.apiKey,
-                model,
-                modelNeedsSelection: !model,
-                enabled: k.enabled !== false,
-                priority: priorityCounter++,
-                status: "Ready"
-              });
-            });
-          }
-        });
-      }
-      // Fallback migrating from v1 flat keys
-      else if (allData.geminiApiKeys && Array.isArray(allData.geminiApiKeys) && allData.geminiApiKeys.length > 0) {
-        allData.geminiApiKeys.forEach((k) => {
-          migratedSettings.ai.credentials.push({
-            id: crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(),
-            provider: "google",
-            name: k.label || `Migrated Key ${priorityCounter}`,
-            apiKey: k.key,
-            model: "gemini-1.5-flash",
-            enabled: k.active !== false,
-            priority: priorityCounter++,
-            status: "Ready"
-          });
-        });
-      } else if (allData.geminiApiKey) {
-        migratedSettings.ai.credentials.push({
-          id: crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(),
-          provider: "google",
-          name: "Default Migrated Key",
-          apiKey: allData.geminiApiKey,
-          model: "gemini-1.5-flash",
-          enabled: true,
-          priority: priorityCounter++,
-          status: "Ready"
-        });
-      }
 function migrationNewId() {
   try {
     if (crypto && typeof crypto.randomUUID === "function") return crypto.randomUUID();
@@ -191,8 +100,6 @@ function migrationCollectLegacyCredentials(existing, allData) {
   return credentials;
 }
 
-if (typeof self !== "undefined") {
-  self.migrateToLatestSettings = migrateToLatestSettings;
 function migrationResolveLanguage(existing, allData) {
   const stored = existing.general?.language || allData.uiLanguage;
   if (stored && stored !== "system") return stored;
@@ -349,6 +256,7 @@ async function migrateToLatestSettings() {
 }
 
 globalThis.migrateToLatestSettings = migrateToLatestSettings;
+if (typeof self !== "undefined") self.migrateToLatestSettings = migrateToLatestSettings;
 if (typeof module !== "undefined" && module.exports) {
   module.exports = migrateToLatestSettings;
 }

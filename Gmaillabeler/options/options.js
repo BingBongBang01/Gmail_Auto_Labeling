@@ -172,9 +172,11 @@ function initConnectionsSettings(settings) {
     if (!statusBox) return;
     chrome.runtime.sendMessage({ action: "getOAuthStatus" }, (oauth) => {
       if (chrome.runtime.lastError || !oauth || !oauth.connected) {
-        statusBox.innerHTML = `<span style="color:var(--md-sys-color-error)" data-i18n="settingsOAuthNotConnected">Not Connected</span>`;
+        statusBox.innerHTML = oauth && oauth.connecting
+          ? `<span style="color:var(--md-sys-color-primary)" data-i18n="settingsOAuthConnecting">Opening Google login...</span>`
+          : `<span style="color:var(--md-sys-color-error)" data-i18n="settingsOAuthNotConnected">Not Connected</span>`;
         if (btnConnect) {
-          btnConnect.disabled = false;
+          btnConnect.disabled = !!(oauth && oauth.connecting);
           btnConnect.textContent = "Connect Google Account";
         }
         if (btnDisconnect) btnDisconnect.disabled = true;
@@ -205,18 +207,24 @@ function initConnectionsSettings(settings) {
   btnConnect?.addEventListener('click', () => {
     btnConnect.disabled = true;
     if (statusBox) statusBox.innerHTML = `<span style="color:var(--md-sys-color-primary)" data-i18n="settingsOAuthConnecting">Opening Google login...</span>`;
-    
-    chrome.runtime.sendMessage({ action: "authorizeOAuth" }, (response) => {
-      if (chrome.runtime.lastError) {
-        showSnackbar(chrome.runtime.lastError.message || "Failed to start OAuth");
+
+    // Client ID/Secret 입력은 500ms 디바운스로 저장된다. 입력 직후 바로 연결을 누르면
+    // 백그라운드가 아직 저장되지 않은 예전 값을 읽으므로, 지금 화면의 값을 먼저 확정 저장한다.
+    const pendingSave = Promise.all([
+      SettingsStore.setSetting('google.oauth.clientId', (inputClientId?.value || '').trim()),
+      SettingsStore.setSetting('google.oauth.clientSecret', (inputClientSecret?.value || '').trim()),
+    ]);
+
+    pendingSave.then(() => {
+      chrome.runtime.sendMessage({ action: "authorizeOAuth" }, (response) => {
+        if (chrome.runtime.lastError) {
+          showSnackbar(chrome.runtime.lastError.message || "Failed to start OAuth");
+        } else if (response && (response.error || response.ok === false)) {
+          showSnackbar(response.error || "Failed to start OAuth");
+        }
+        // 완료 여부는 백그라운드가 보내는 'oauthStatusUpdated'로 갱신된다.
         updateOAuthStatusUI();
-      } else if (response && response.error) {
-        showSnackbar(response.error);
-        updateOAuthStatusUI();
-      } else {
-        // We wait for the background to complete and send 'oauthStatusUpdated', or we poll as fallback
-        setTimeout(updateOAuthStatusUI, 5000); // fallback polling
-      }
+      });
     });
   });
   

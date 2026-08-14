@@ -4,11 +4,8 @@ class AIKeyManager {
   static async getActiveCredentials() {
     const settings = await SettingsStore.getSettings();
     const creds = settings.ai?.credentials || [];
-    // model이 없거나 사용자가 아직 모델을 고르지 않은(modelNeedsSelection) Credential은 그대로
-    // Provider를 호출하면 잘못된 모델 ID로 요청하게 되므로 활성 목록에서 제외한다.
-    return creds
-      .filter(k => k.enabled && k.model && !k.modelNeedsSelection)
-      .sort((a, b) => a.priority - b.priority);
+    // 모델은 라우터가 AIProviderRegistry.getDefaultModel()로 메워주므로 여기서 거르지 않는다.
+    // priority가 없는 옛 항목이 섞여 있어도 정렬이 NaN으로 무너지지 않게 기본값을 준다.
     return creds
       .filter((k) => k && k.enabled && k.apiKey)
       .sort((a, b) => (a.priority ?? 0) - (b.priority ?? 0));

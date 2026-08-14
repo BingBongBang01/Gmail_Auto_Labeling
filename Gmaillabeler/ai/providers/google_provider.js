@@ -22,8 +22,6 @@ function normalizeSchemaForGemini(schema) {
   return out;
 }
 
-class GoogleProvider {
-// Gemini의 responseSchema는 이 저장소가 쓰는 대문자 타입 방언을 그대로 받으므로 변환하지 않는다.
 class GoogleProvider extends AIProviderBase {
   id = "google";
   name = "Google Gemini";
@@ -37,15 +35,7 @@ class GoogleProvider extends AIProviderBase {
       contents: [{ role: "user", parts: [{ text: prompt }] }],
       generationConfig: {
         responseMimeType: "application/json",
-        responseSchema: normalizeSchemaForGemini(schema)
-      }
-    };
-
-    const res = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload)
-        responseSchema: schema,
+        responseSchema: normalizeSchemaForGemini(schema),
         temperature: 0,
       },
     });
@@ -81,35 +71,8 @@ class GoogleProvider extends AIProviderBase {
   }
 
   normalizeError(error) {
-    // 판단 순서: (1) 응답 본문의 명시적 quota/rate-limit 신호 → (2) HTTP status → (3) 일반 fallback.
+    // 판단 순서: (1) 응답 본문의 명시적 신호 → (2) HTTP status → (3) 공통 fallback.
     // status만 보고 성격을 단정하지 않는다 (예: 429가 항상 "하루 quota 소진"은 아님).
-    const message = (error.raw?.error?.message || "").toLowerCase();
-    const status = error.raw?.error?.status || "";
-
-    if (message.includes("quota") || status === "RESOURCE_EXHAUSTED") {
-      return { type: "quota", scope: "unknown", retryable: false };
-    }
-    if (error.status === 429) {
-      return { type: "rate_limit", scope: "minute", waitMs: 15000, retryable: true };
-    }
-    if (error.status === 401 || error.status === 403) {
-      return { type: "invalid_key", retryable: false };
-    }
-    if (error.status === 400) {
-      // 잘못된 요청/모델/파라미터일 수 있다. API Key 문제로 단정하여 credential을 비활성화하지 않는다.
-      return { type: "invalid_request", retryable: false };
-    }
-    if (error.status >= 500) {
-      return { type: "server_error", retryable: true };
-    }
-    return { type: "unknown", retryable: false };
-  }
-}
-
-if (typeof self !== "undefined") {
-  self.GoogleProvider = GoogleProvider;
-  if (self.AIProviderRegistry) {
-    self.AIProviderRegistry.register(new GoogleProvider());
     const message = this.extractMessage(error).toLowerCase();
     const status = error?.status;
 
@@ -161,3 +124,4 @@ if (typeof self !== "undefined") {
 
 AIProviderRegistry.register(new GoogleProvider());
 globalThis.GoogleProvider = GoogleProvider;
+if (typeof self !== "undefined") self.GoogleProvider = GoogleProvider;
