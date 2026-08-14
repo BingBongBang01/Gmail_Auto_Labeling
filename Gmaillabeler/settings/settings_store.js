@@ -178,6 +178,31 @@ const SettingsStore = {
   },
 
   /**
+   * Updates settings within a specific top-level category (e.g., 'general', 'google', 'ai').
+   */
+  updateCategory: function (category, partialData, callback) {
+    return this.setSettings({ [category]: partialData }, callback);
+  },
+
+  /**
+   * Saves settings object.
+   */
+  saveSettings: function (settings, callback) {
+    return this.setSettings(settings, callback);
+  },
+
+  /**
+   * Exports settings as a formatted JSON string.
+   */
+  exportSettings: function (callback) {
+    return this.getSettings().then((settings) => {
+      const jsonStr = JSON.stringify(settings, null, 2);
+      if (callback) callback(jsonStr);
+      return jsonStr;
+    });
+  },
+
+  /**
    * Resets all settings to their defaults.
    */
   resetAllSettings: function (callback) {
@@ -198,6 +223,13 @@ const SettingsStore = {
     const result = this._writeChain.then(run, run);
     this._writeChain = result.catch(() => {});
     return result;
+  },
+
+  /**
+   * Alias for resetAllSettings.
+   */
+  resetToDefaults: function (callback) {
+    return this.resetAllSettings(callback);
   },
 };
 

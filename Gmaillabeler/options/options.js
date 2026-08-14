@@ -128,6 +128,7 @@ function initGeneralSettings(settings) {
     selectThemeMode.value = settings.general.themeMode;
     applyTheme(settings.general.themeMode); // Apply immediately on load
     selectThemeMode.addEventListener('change', (e) => {
+      applyTheme(e.target.value); // Instant 0ms visual change
       scheduleSave('general.themeMode', e.target.value);
     });
   }

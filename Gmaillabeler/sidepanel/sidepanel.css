@@ -410,3 +410,293 @@ body {
 .footer-btn:first-child {
   border-right: 1px solid var(--md-sys-color-outline-variant);
 }
+
+/* In-Panel Settings Styling */
+.settings-panel-wrapper {
+  width: 100%;
+  box-sizing: border-box;
+  animation: fadeInSettings 0.22s ease;
+}
+
+@keyframes fadeInSettings {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.settings-card {
+  background-color: var(--md-sys-color-surface-container);
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: 12px;
+  padding: 12px;
+  box-sizing: border-box;
+}
+
+.settings-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 8px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid var(--md-sys-color-outline-variant);
+  position: relative;
+}
+
+.settings-header-icon {
+  font-size: 18px;
+}
+
+.settings-header-title {
+  font-size: 14px;
+  font-weight: 600;
+  margin: 0;
+  flex: 1;
+  color: var(--md-sys-color-on-surface);
+}
+
+.settings-feedback-pill {
+  font-size: 11px;
+  font-weight: 600;
+  color: #2e7d32;
+  background-color: rgba(46, 125, 50, 0.12);
+  padding: 2px 8px;
+  border-radius: 10px;
+  opacity: 0;
+  transform: scale(0.9);
+  transition: all 0.2s ease;
+  pointer-events: none;
+}
+
+.settings-feedback-pill.show {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.settings-status-banner {
+  padding: 8px 10px;
+  border-radius: 8px;
+  font-size: 12px;
+  margin-bottom: 12px;
+  line-height: 1.4;
+}
+
+.settings-status-banner.success {
+  background-color: rgba(46, 125, 50, 0.1);
+  color: #2e7d32;
+  border: 1px solid rgba(46, 125, 50, 0.3);
+}
+
+.settings-status-banner.warning {
+  background-color: rgba(239, 108, 0, 0.1);
+  color: #ef6c00;
+  border: 1px solid rgba(239, 108, 0, 0.3);
+}
+
+.settings-status-banner.info {
+  background-color: rgba(26, 115, 232, 0.1);
+  color: var(--md-sys-color-primary);
+  border: 1px solid rgba(26, 115, 232, 0.3);
+}
+
+.settings-body .form-group {
+  margin-bottom: 12px;
+}
+
+.settings-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--md-sys-color-on-surface-variant);
+  margin-bottom: 4px;
+}
+
+.settings-input,
+.settings-select {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 7px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--md-sys-color-outline);
+  background-color: var(--md-sys-color-surface);
+  color: var(--md-sys-color-on-surface);
+  font-size: 12px;
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+
+.settings-input:focus,
+.settings-select:focus {
+  border-color: var(--md-sys-color-primary);
+}
+
+.checkbox-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--md-sys-color-on-surface);
+  cursor: pointer;
+}
+
+.settings-btn-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.settings-btn-row .btn {
+  flex: 1;
+  font-size: 12px;
+  padding: 8px 12px;
+}
+
+.settings-btn-column {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.settings-btn-column .btn {
+  width: 100%;
+  font-size: 12px;
+  padding: 8px 12px;
+  justify-content: center;
+}
+
+/* OAuth Account Box */
+.oauth-account-card {
+  background-color: var(--md-sys-color-surface);
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: 10px;
+  padding: 12px;
+  box-sizing: border-box;
+}
+
+.oauth-account-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.oauth-account-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--md-sys-color-on-surface);
+}
+
+.oauth-status-badge {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 12px;
+  background-color: var(--md-sys-color-surface-container-high);
+  color: var(--md-sys-color-on-surface-variant);
+}
+
+.oauth-status-badge.success {
+  background-color: rgba(46, 125, 50, 0.12);
+  color: #2e7d32;
+  border: 1px solid rgba(46, 125, 50, 0.3);
+}
+
+.oauth-status-badge.error {
+  background-color: rgba(211, 47, 47, 0.12);
+  color: #d32f2f;
+  border: 1px solid rgba(211, 47, 47, 0.3);
+}
+
+.oauth-account-desc {
+  font-size: 12px;
+  color: var(--md-sys-color-on-surface-variant);
+  line-height: 1.4;
+  margin-bottom: 10px;
+}
+
+.oauth-btn-group {
+  display: flex;
+  gap: 8px;
+}
+
+.oauth-btn-group .btn {
+  font-size: 12px;
+  padding: 7px 12px;
+  flex: 1;
+}
+
+/* Workspace Cards */
+.workspace-card {
+  background-color: var(--md-sys-color-surface-container);
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: 12px;
+  padding: 14px;
+  box-sizing: border-box;
+  animation: fadeInSettings 0.22s ease;
+}
+
+.workspace-card-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.workspace-icon {
+  font-size: 20px;
+}
+
+.workspace-title {
+  font-size: 14px;
+  font-weight: 600;
+  margin: 0;
+  color: var(--md-sys-color-on-surface);
+}
+
+.workspace-btn-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.workspace-btn-grid .btn {
+  width: 100%;
+  font-size: 12px;
+  padding: 9px 12px;
+  justify-content: center;
+}
+
+/* AI Chips */
+.ai-chips-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ai-chip {
+  text-align: left;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--md-sys-color-outline-variant);
+  background-color: var(--md-sys-color-surface);
+  color: var(--md-sys-color-on-surface);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.ai-chip:hover {
+  background-color: var(--md-sys-color-surface-container-high);
+  border-color: var(--md-sys-color-primary);
+  transform: translateX(2px);
+}
