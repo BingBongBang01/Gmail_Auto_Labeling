@@ -453,8 +453,8 @@ function renderServiceNav(prevRects = null) {
 const DEFAULT_SERVICE_ACTIONS = {
   gmail: [
     { id: "gmail_classify", label: "라벨링시작", icon: "▶️", title: "라벨링 시작", handler: () => startJob("gmail_classify") },
-    { id: "gmail_auto_settings", label: "자동라벨설정", icon: "🤖", title: "자동 라벨링 설정", handler: () => chrome.runtime.openOptionsPage?.() },
-    { id: "gmail_label_settings", label: "라벨설정", icon: "🏷️", title: "라벨 설정", handler: () => chrome.runtime.openOptionsPage?.() },
+    { id: "gmail_auto_settings", label: "자동설정", icon: "🤖", title: "자동 라벨링 설정", handler: () => renderGmailAutoSettingsWorkspace() },
+    { id: "gmail_label_settings", label: "라벨설정", icon: "🏷️", title: "라벨 설정", handler: () => renderGmailLabelSettingsWorkspace() },
     { id: "gmail_summarize", label: "메일요약", icon: "📝", title: "메일 전체 요약", handler: () => startJob("gmail_summarize") },
     { id: "gmail_clean", label: "메일정리", icon: "🧹", title: "불필요 메일 정리", handler: () => startJob("gmail_clean") },
     { id: "gmail_filter", label: "필터생성", icon: "🔍", title: "스마트 필터 생성", handler: () => startJob("gmail_filter") },
@@ -478,14 +478,11 @@ const DEFAULT_SERVICE_ACTIONS = {
   ],
   docs: [
     { id: "docs_new", label: "새문서", icon: "📄", title: "새 문서 생성", handler: () => window.open("https://docs.new", "_blank") },
-    { id: "docs_proofread", label: "맞춤법검사", icon: "✍️", title: "AI 교정 교열", handler: () => startJob("docs_proofread") },
-    { id: "docs_summarize", label: "문서요약", icon: "📝", title: "핵심 요약 생성", handler: () => startJob("docs_summarize") },
-    { id: "docs_translate", label: "번역하기", icon: "🌐", title: "다국어 번역", handler: () => startJob("docs_translate") }
+    { id: "docs_summary", label: "문서요약", icon: "📋", title: "문서 내용 요약", handler: () => startJob("docs_summary") },
+    { id: "docs_proofread", label: "문장교정", icon: "✏️", title: "맞춤법 및 문장 교정", handler: () => startJob("docs_proofread") },
+    { id: "docs_translate", label: "문서번역", icon: "🌐", title: "다국어 번역", handler: () => startJob("docs_translate") }
   ],
   sheets: [
-    { id: "sheets_new", label: "새시트", icon: "📊", title: "새 시트 생성", handler: () => window.open("https://sheets.new", "_blank") },
-    { id: "sheets_formula", label: "수식생성", icon: "📐", title: "AI 수식 자동 생성", handler: () => startJob("sheets_formula") },
-    { id: "sheets_chart", label: "차트추천", icon: "📈", title: "데이터 시각화 차트", handler: () => startJob("sheets_chart") },
     { id: "sheets_clean", label: "데이터정제", icon: "🧹", title: "결측치 및 중복 제거", handler: () => startJob("sheets_clean") }
   ],
   slides: [
@@ -1036,13 +1033,589 @@ function renderGmailWorkspace() {
     </p>
     <div class="workspace-btn-grid">
       <button class="btn btn-primary" id="btnSpGmailClassify">▶️ 메일 AI 라벨링 시작</button>
+      <button class="btn btn-outlined" id="btnSpGmailAutoSettings">🤖 자동 라벨링 규칙 & 주기 설정</button>
+      <button class="btn btn-outlined" id="btnSpGmailLabelSettings">🏷️ 라벨 분류기준 관리 & AI 자동생성</button>
       <button class="btn btn-outlined" id="btnSpGmailSummarize">📝 중요 메일 브리핑 요약</button>
     </div>
   `;
   container.appendChild(card);
 
   $("btnSpGmailClassify")?.addEventListener("click", () => startJob("gmail_classify"));
+  $("btnSpGmailAutoSettings")?.addEventListener("click", () => renderGmailAutoSettingsWorkspace());
+  $("btnSpGmailLabelSettings")?.addEventListener("click", () => renderGmailLabelSettingsWorkspace());
   $("btnSpGmailSummarize")?.addEventListener("click", () => startJob("gmail_summarize"));
+}
+
+function renderGmailAutoSettingsWorkspace() {
+  isLabelSettingsActive = false;
+  const container = $("panelContainer");
+  if (!container) return;
+
+  container.innerHTML = "";
+
+  updateContextUI({
+    service: "Gmail",
+    pageType: "auto_settings",
+    title: "자동 라벨링 설정",
+    desc: "실시간/주기적 자동 라벨링, AI 신뢰도 기준, 후속 조치를 설정합니다."
+  });
+
+  const wrapper = document.createElement("div");
+  wrapper.className = "auto-settings-workspace";
+  wrapper.id = "autoSettingsWorkspace";
+
+  wrapper.innerHTML = `
+    <div class="auto-settings-topbar">
+      <div style="display:flex; align-items:center; gap:6px;">
+        <span class="auto-badge" id="autoStatusBadge">⚪ 로딩 중...</span>
+      </div>
+      <div style="display:flex; align-items:center; gap:6px;">
+        <label class="switch-compact" title="자동 라벨링 전체 ON/OFF">
+          <input type="checkbox" id="checkAutoClassifyMaster">
+          <span class="slider-compact"></span>
+        </label>
+        <span style="font-size:11px; font-weight:600;" id="txtAutoMaster">자동 실행</span>
+      </div>
+    </div>
+
+    <!-- 1. 실행 방식 & 주기 -->
+    <div class="auto-section-card">
+      <div class="auto-section-head">
+        <span class="auto-section-title">⏱️ 1. 실행 방식 & 주기 (Trigger & Schedule)</span>
+      </div>
+      <div class="auto-section-body">
+        <div class="auto-field-row">
+          <label class="auto-field-label">검사 및 실행 주기</label>
+          <select class="settings-select-compact" id="selectAutoInterval">
+            <option value="5">⚡ 5분마다 (빠른 검사)</option>
+            <option value="15">⏱️ 15분마다 (권장)</option>
+            <option value="30">🕒 30분마다</option>
+            <option value="60">🕐 1시간마다</option>
+            <option value="manual">🖐️ 수동 실행만</option>
+          </select>
+        </div>
+        <label class="auto-check-row">
+          <input type="checkbox" id="checkWorkHoursOnly">
+          <span>⏰ 평일 업무 시간(09:00 ~ 19:00)에만 자동 실행</span>
+        </label>
+        <label class="auto-check-row">
+          <input type="checkbox" id="checkNewMailOnly">
+          <span>📥 새로 수신된 신규 메일만 처리 (기존 메일 스킵)</span>
+        </label>
+      </div>
+    </div>
+
+    <!-- 2. AI 분류 정확도 & 신뢰도 -->
+    <div class="auto-section-card">
+      <div class="auto-section-head">
+        <span class="auto-section-title">🧠 2. AI 분류 정확도 & 신뢰도 (AI Confidence)</span>
+      </div>
+      <div class="auto-section-body">
+        <div class="auto-field-row">
+          <label class="auto-field-label">정확도 신뢰도 기준</label>
+          <select class="settings-select-compact" id="selectConfidenceThreshold">
+            <option value="90">🎯 엄격 (90% 이상) - 확실한 메일만 분류</option>
+            <option value="80">⚖️ 보통 (80%) - 균형적인 권장값</option>
+            <option value="70">⚡ 적극적 (70%) - 가능한 모든 메일 분류</option>
+          </select>
+        </div>
+        <div class="auto-field-row">
+          <label class="auto-field-label">애매한 메일(신뢰도 미달) 처리</label>
+          <select class="settings-select-compact" id="selectFallbackAction">
+            <option value="skip">⏭️ 라벨 미부착 (건너뛰기)</option>
+            <option value="review_label">❓ '[검토필요]' 라벨 부착</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. 라벨링 후 자동 조치 -->
+    <div class="auto-section-card">
+      <div class="auto-section-head">
+        <span class="auto-section-title">⚡ 3. 라벨링 후 자동 조치 (Post-Action)</span>
+      </div>
+      <div class="auto-section-body">
+        <label class="auto-check-row">
+          <input type="checkbox" id="checkArchivePromo">
+          <span>📦 영수증/뉴스레터/알림 라벨은 받은편지함 자동 보관 (Skip Inbox)</span>
+        </label>
+        <label class="auto-check-row">
+          <input type="checkbox" id="checkMarkAsReadLow">
+          <span>👀 프로모션/뉴스레터 등 저중요도 메일 자동 읽음 처리</span>
+        </label>
+        <label class="auto-check-row">
+          <input type="checkbox" id="checkStarImportant">
+          <span>⭐ 업무/긴급 등 중요 라벨 분류 시 자동 별표(⭐) 표시</span>
+        </label>
+      </div>
+    </div>
+
+    <div class="auto-actions-row">
+      <button class="btn btn-primary btn-auto-save" id="btnSaveAutoSettings">
+        💾 설정 저장
+      </button>
+      <button class="btn btn-outlined btn-auto-test" id="btnTestAutoClassify">
+        🧪 즉시 1회 실행
+      </button>
+    </div>
+  `;
+
+  container.appendChild(wrapper);
+
+  loadAndBindAutoSettings();
+}
+
+function loadAndBindAutoSettings() {
+  const masterSwitch = $("checkAutoClassifyMaster");
+  const statusBadge = $("autoStatusBadge");
+  const intervalSelect = $("selectAutoInterval");
+  const workHoursCheck = $("checkWorkHoursOnly");
+  const newMailCheck = $("checkNewMailOnly");
+  const thresholdSelect = $("selectConfidenceThreshold");
+  const fallbackSelect = $("selectFallbackAction");
+  const archivePromoCheck = $("checkArchivePromo");
+  const markAsReadLowCheck = $("checkMarkAsReadLow");
+  const starImportantCheck = $("checkStarImportant");
+
+  function updateStatusUI(enabled) {
+    if (!statusBadge) return;
+    if (enabled) {
+      statusBadge.textContent = "🟢 자동 실행 중";
+      statusBadge.className = "auto-badge active";
+    } else {
+      statusBadge.textContent = "⚪ 비활성";
+      statusBadge.className = "auto-badge";
+    }
+  }
+
+  const getter = typeof SettingsStore !== "undefined"
+    ? SettingsStore.getSettings()
+    : new Promise((res) => chrome.storage.sync.get(["appSettings"], (r) => res(r?.appSettings || {})));
+
+  getter.then((settings) => {
+    const auto = settings?.automation?.autoClassify || {};
+    const isEnabled = auto.enabled !== false;
+
+    if (masterSwitch) masterSwitch.checked = isEnabled;
+    updateStatusUI(isEnabled);
+
+    if (intervalSelect) intervalSelect.value = String(auto.interval || "15");
+    if (workHoursCheck) workHoursCheck.checked = !!auto.workHoursOnly;
+    if (newMailCheck) newMailCheck.checked = auto.newMailOnly !== false;
+    if (thresholdSelect) thresholdSelect.value = String(auto.threshold || "80");
+    if (fallbackSelect) fallbackSelect.value = auto.fallbackAction || "skip";
+    if (archivePromoCheck) archivePromoCheck.checked = !!auto.archivePromo;
+    if (markAsReadLowCheck) markAsReadLowCheck.checked = !!auto.markAsReadLow;
+    if (starImportantCheck) starImportantCheck.checked = auto.starImportant !== false;
+  }).catch(() => {
+    updateStatusUI(true);
+  });
+
+  masterSwitch?.addEventListener("change", (e) => {
+    updateStatusUI(e.target.checked);
+  });
+
+  $("btnSaveAutoSettings")?.addEventListener("click", () => {
+    const newValues = {
+      enabled: masterSwitch?.checked ?? true,
+      interval: intervalSelect?.value || "15",
+      workHoursOnly: !!workHoursCheck?.checked,
+      newMailOnly: newMailCheck?.checked !== false,
+      threshold: parseInt(thresholdSelect?.value || "80", 10),
+      fallbackAction: fallbackSelect?.value || "skip",
+      archivePromo: !!archivePromoCheck?.checked,
+      markAsReadLow: !!markAsReadLowCheck?.checked,
+      starImportant: starImportantCheck?.checked !== false
+    };
+
+    if (typeof SettingsStore !== "undefined") {
+      SettingsStore.getSettings().then((settings) => {
+        if (!settings.automation) settings.automation = {};
+        if (!settings.automation.autoClassify) settings.automation.autoClassify = {};
+        Object.assign(settings.automation.autoClassify, newValues);
+        SettingsStore.setSetting("automation.autoClassify", settings.automation.autoClassify).then(() => {
+          showSettingsToast("자동 라벨링 설정이 저장되었습니다.");
+        });
+      });
+    } else {
+      chrome.storage.sync.get(["appSettings"], (res) => {
+        const appSettings = res?.appSettings || {};
+        if (!appSettings.automation) appSettings.automation = {};
+        if (!appSettings.automation.autoClassify) appSettings.automation.autoClassify = {};
+        Object.assign(appSettings.automation.autoClassify, newValues);
+        chrome.storage.sync.set({ appSettings }, () => {
+          showSettingsToast("자동 라벨링 설정이 저장되었습니다.");
+        });
+      });
+    }
+  });
+
+  $("btnTestAutoClassify")?.addEventListener("click", () => {
+    startJob("gmail_classify");
+  });
+}
+
+let labelSettingsCategoryDefs = [];
+let generatedSuggestions = new Map(); // labelName -> { suggestion, status: 'pending'|'done'|'error', errorMsg }
+let isLabelSettingsActive = false;
+
+function renderGmailLabelSettingsWorkspace() {
+  isLabelSettingsActive = true;
+  const container = $("panelContainer");
+  const dynamicActions = $("dynamicActions");
+  if (!container) return;
+
+  if (dynamicActions) dynamicActions.innerHTML = "";
+  container.innerHTML = "";
+
+  updateContextUI({
+    service: "Gmail",
+    pageType: "settings",
+    title: "라벨 분류기준 설정",
+    desc: "AI를 이용해 라벨별 메일을 분석하고 분류기준을 자동 생성 및 관리합니다."
+  });
+
+  const wrapper = document.createElement("div");
+  wrapper.className = "label-settings-workspace";
+  wrapper.id = "labelSettingsWorkspace";
+
+  wrapper.innerHTML = `
+    <div class="label-settings-topbar" id="labelSettingsTopBar">
+      <!-- Top Sticky Toolbar dynamically populated -->
+    </div>
+
+    <div class="label-cards-list" id="labelCardsList">
+      <div style="text-align:center; padding:16px; color:var(--md-sys-color-on-surface-variant); font-size:11.5px;">
+        라벨 목록을 불러오는 중...
+      </div>
+    </div>
+  `;
+
+  container.appendChild(wrapper);
+
+  loadLabelCategories(() => {
+    renderLabelSettingsCards();
+  });
+}
+
+function loadLabelCategories(callback) {
+  if (typeof SettingsStore !== "undefined") {
+    SettingsStore.getSetting("gmail.categories").then((categories) => {
+      if (Array.isArray(categories) && categories.length > 0) {
+        labelSettingsCategoryDefs = categories.map((c) => ({
+          name: c.name || "",
+          description: c.description || "",
+          colorId: c.colorId,
+          autoLearned: !!c.autoLearned
+        })).filter((c) => c.name);
+      } else {
+        const defaultNames = ["업무", "개인", "영수증", "알림", "뉴스레터"];
+        labelSettingsCategoryDefs = defaultNames.map((name) => ({ name, description: "" }));
+      }
+      if (typeof callback === "function") callback();
+    }).catch(() => {
+      const defaultNames = ["업무", "개인", "영수증", "알림", "뉴스레터"];
+      labelSettingsCategoryDefs = defaultNames.map((name) => ({ name, description: "" }));
+      if (typeof callback === "function") callback();
+    });
+  } else {
+    chrome.storage.sync.get(["appSettings"], (res) => {
+      const cats = res?.appSettings?.gmail?.categories;
+      if (Array.isArray(cats) && cats.length > 0) {
+        labelSettingsCategoryDefs = cats;
+      } else {
+        labelSettingsCategoryDefs = [
+          { name: "업무", description: "" },
+          { name: "개인", description: "" },
+          { name: "영수증", description: "" },
+          { name: "알림", description: "" },
+          { name: "뉴스레터", description: "" }
+        ];
+      }
+      if (typeof callback === "function") callback();
+    });
+  }
+}
+
+function renderLabelSettingsCards() {
+  const topBar = $("labelSettingsTopBar");
+  const list = $("labelCardsList");
+  if (!topBar || !list) return;
+
+  const totalCount = labelSettingsCategoryDefs.length;
+  const pendingCount = Array.from(generatedSuggestions.values()).filter((s) => s.status === "pending").length;
+  const doneCount = Array.from(generatedSuggestions.values()).filter((s) => s.status === "done").length;
+  const isAnalyzing = pendingCount > 0;
+  const isReview = doneCount > 0 && !isAnalyzing;
+
+  // 1. Render Sticky Top Toolbar
+  if (isAnalyzing) {
+    topBar.innerHTML = `
+      <div style="display:flex; align-items:center; gap:6px;">
+        <span class="label-count-badge">⏳ 분석 중 (${pendingCount}개)</span>
+      </div>
+      <button class="btn-pill-small danger" id="btnCancelLabelAnalysis">
+        ⏹️ 중지
+      </button>
+    `;
+    $("btnCancelLabelAnalysis")?.addEventListener("click", () => {
+      chrome.runtime.sendMessage({ action: "cancelJob" }, () => {
+        setActionFeedback("라벨 분석 중지를 요청했습니다.");
+      });
+    });
+  } else if (isReview) {
+    topBar.innerHTML = `
+      <div style="display:flex; align-items:center; gap:5px;">
+        <span class="label-status-tag tag-new">✨ 새 추천 ${doneCount}건</span>
+      </div>
+      <div class="review-toolbar-actions">
+        <button class="btn-pill-small success" id="btnApplyAllLabelSuggestions" title="모든 추천 기준 적용">
+          ✅ 모두 적용 (${doneCount})
+        </button>
+        <button class="btn-pill-small outlined" id="btnReanalyzeAllLabels" title="전체 라벨 다시 분석">
+          🔄 재생성
+        </button>
+        <button class="btn-pill-small secondary" id="btnCancelLabelReview" title="닫기">
+          ✕
+        </button>
+      </div>
+    `;
+    $("btnApplyAllLabelSuggestions")?.addEventListener("click", handleApplyAllSuggestions);
+    $("btnReanalyzeAllLabels")?.addEventListener("click", handleGenerateAllCriteria);
+    $("btnCancelLabelReview")?.addEventListener("click", handleCancelReviewMode);
+  } else {
+    topBar.innerHTML = `
+      <div style="display:flex; align-items:center; gap:5px;">
+        <span class="label-count-badge">🏷️ 라벨 ${totalCount}개</span>
+      </div>
+      <div style="display:flex; align-items:center; gap:4px;">
+        <button class="btn-pill-small primary" id="btnGenerateAllLabelCriteria">
+          ✨ 전체 AI 생성
+        </button>
+      </div>
+    `;
+    $("btnGenerateAllLabelCriteria")?.addEventListener("click", handleGenerateAllCriteria);
+  }
+
+  // 2. Render Edge-to-Edge List Cards
+  if (totalCount === 0) {
+    list.innerHTML = `
+      <div style="text-align:center; padding:20px; color:var(--md-sys-color-on-surface-variant); font-size:11.5px;">
+        등록된 라벨이 없습니다. Gmail 웹에서 라벨을 생성하거나 동기화해 주세요.
+      </div>
+    `;
+    return;
+  }
+
+  list.innerHTML = "";
+
+  labelSettingsCategoryDefs.forEach((cat, idx) => {
+    const labelName = cat.name;
+    const currentDesc = cat.description || "";
+    const suggObj = generatedSuggestions.get(labelName);
+
+    const card = document.createElement("div");
+    card.className = "label-setting-card" + (suggObj?.status === "done" ? " has-suggestion" : suggObj?.status === "pending" ? " is-pending" : "");
+    card.id = `labelCard_${idx}`;
+
+    let statusTagHtml = "";
+    let headActionsHtml = "";
+    let bodyHtml = "";
+
+    if (suggObj?.status === "pending") {
+      statusTagHtml = `<span class="label-status-tag tag-pending">⏳ 분석중</span>`;
+      bodyHtml = `
+        <div class="label-card-body">
+          <div class="old-criteria-inline" style="color:var(--md-sys-color-primary); justify-content:center; padding:6px;">
+            🌀 최근 수신 메일 수집 및 AI 분석 중...
+          </div>
+        </div>
+      `;
+    } else if (suggObj?.status === "done") {
+      statusTagHtml = `<span class="label-status-tag tag-new">✨ 새 추천</span>`;
+      headActionsHtml = `
+        <button class="btn-pill-small success" id="btnApplySugg_${idx}" title="이 기준 적용">✓ 적용</button>
+        <button class="btn-pill-small secondary" id="btnRejectSugg_${idx}" title="기존 유지">✕</button>
+        <button class="btn-pill-small outlined" id="btnReanalyzeSingle_${idx}" title="다시 생성">🔄</button>
+      `;
+      bodyHtml = `
+        <div class="label-card-body">
+          <div class="old-criteria-inline">
+            <span class="old-label">🔹 기존:</span>
+            <span class="old-text">${escapeHtml(currentDesc || "(설정된 기준 없음)")}</span>
+          </div>
+          <textarea class="criteria-edit-area suggestion-glow" id="textareaSugg_${idx}" placeholder="AI가 생성한 분류기준">${escapeHtml(suggObj.suggestion)}</textarea>
+        </div>
+      `;
+    } else {
+      // Normal/Idle state
+      headActionsHtml = `
+        <button class="btn-pill-small outlined" id="btnGenerateSingle_${idx}" title="AI로 이 라벨 기준 생성">✨ AI 생성</button>
+        <button class="btn-pill-small secondary" id="btnSaveManual_${idx}" title="직접 입력한 기준 저장">💾</button>
+      `;
+      bodyHtml = `
+        <div class="label-card-body">
+          <textarea class="criteria-edit-area" id="textareaDesc_${idx}" placeholder="분류기준 입력 (예: 스프린트 일정, 배포 공지)">${escapeHtml(currentDesc)}</textarea>
+        </div>
+      `;
+    }
+
+    card.innerHTML = `
+      <div class="label-card-head">
+        <div class="label-title-wrap">
+          <span>🏷️</span>
+          <span>${escapeHtml(labelName)}</span>
+          ${statusTagHtml}
+        </div>
+        <div class="label-head-actions">
+          ${headActionsHtml}
+        </div>
+      </div>
+      ${bodyHtml}
+    `;
+
+    list.appendChild(card);
+
+    // Event listeners
+    if (suggObj?.status === "done") {
+      $(`btnApplySugg_${idx}`)?.addEventListener("click", () => {
+        const editedVal = $(`textareaSugg_${idx}`)?.value || suggObj.suggestion;
+        handleApplySingleSuggestion(labelName, editedVal);
+      });
+      $(`btnRejectSugg_${idx}`)?.addEventListener("click", () => {
+        handleRejectSingleSuggestion(labelName);
+      });
+      $(`btnReanalyzeSingle_${idx}`)?.addEventListener("click", () => {
+        handleGenerateSingleCriteria(labelName);
+      });
+    } else if (suggObj?.status !== "pending") {
+      $(`btnGenerateSingle_${idx}`)?.addEventListener("click", () => {
+        handleGenerateSingleCriteria(labelName);
+      });
+      $(`btnSaveManual_${idx}`)?.addEventListener("click", () => {
+        const val = $(`textareaDesc_${idx}`)?.value || "";
+        handleSaveManualCriteria(labelName, val);
+      });
+    }
+  });
+}
+
+function handleGenerateAllCriteria() {
+  const targetNames = labelSettingsCategoryDefs.map((c) => c.name).filter(Boolean);
+  if (!targetNames.length) {
+    showSettingsToast("분석할 라벨이 없습니다.");
+    return;
+  }
+
+  targetNames.forEach((name) => {
+    generatedSuggestions.set(name, { suggestion: "", status: "pending" });
+  });
+
+  renderLabelSettingsCards();
+  setActionFeedback(`전체 ${targetNames.length}개 라벨에 대한 AI 분류기준 생성을 시작합니다...`);
+
+  chrome.runtime.sendMessage({ action: "startAnalyzeMultipleLabels", labelNames: targetNames }, (res) => {
+    if (chrome.runtime.lastError || (res && res.ok === false)) {
+      const err = chrome.runtime.lastError?.message || res?.message || "작업 시작 실패";
+      showSettingsToast(`요청 실패: ${err}`);
+      targetNames.forEach((name) => {
+        generatedSuggestions.delete(name);
+      });
+      renderLabelSettingsCards();
+    }
+  });
+}
+
+function handleGenerateSingleCriteria(labelName) {
+  if (!labelName) return;
+
+  generatedSuggestions.set(labelName, { suggestion: "", status: "pending" });
+  renderLabelSettingsCards();
+  setActionFeedback(`"${labelName}" 라벨에 대한 AI 분류기준 생성을 시작합니다...`);
+
+  chrome.runtime.sendMessage({ action: "startAnalyzeLabelCriteria", labelName }, (res) => {
+    if (chrome.runtime.lastError || (res && res.ok === false)) {
+      const err = chrome.runtime.lastError?.message || res?.message || "작업 시작 실패";
+      showSettingsToast(`요청 실패: ${err}`);
+      generatedSuggestions.delete(labelName);
+      renderLabelSettingsCards();
+    }
+  });
+}
+
+function handleApplySingleSuggestion(labelName, newValue) {
+  const item = labelSettingsCategoryDefs.find((c) => c.name === labelName);
+  if (item) {
+    item.description = newValue.trim();
+    saveCategoryDefinitionsToStore(() => {
+      generatedSuggestions.delete(labelName);
+      showSettingsToast(`"${labelName}" 기준이 적용되었습니다.`);
+      renderLabelSettingsCards();
+    });
+  }
+}
+
+function handleRejectSingleSuggestion(labelName) {
+  generatedSuggestions.delete(labelName);
+  showSettingsToast(`"${labelName}" 추천 기준을 취소했습니다.`);
+  renderLabelSettingsCards();
+}
+
+function handleApplyAllSuggestions() {
+  let appliedCount = 0;
+  labelSettingsCategoryDefs.forEach((cat, idx) => {
+    const suggObj = generatedSuggestions.get(cat.name);
+    if (suggObj && suggObj.status === "done") {
+      const editedVal = $(`textareaSugg_${idx}`)?.value || suggObj.suggestion;
+      cat.description = editedVal.trim();
+      appliedCount += 1;
+    }
+  });
+
+  if (appliedCount > 0) {
+    saveCategoryDefinitionsToStore(() => {
+      generatedSuggestions.clear();
+      showSettingsToast(`총 ${appliedCount}개의 분류기준이 모두 적용되었습니다.`);
+      renderLabelSettingsCards();
+    });
+  } else {
+    generatedSuggestions.clear();
+    renderLabelSettingsCards();
+  }
+}
+
+function handleCancelReviewMode() {
+  generatedSuggestions.clear();
+  showSettingsToast("추천 기준 검토를 취소했습니다.");
+  renderLabelSettingsCards();
+}
+
+function handleSaveManualCriteria(labelName, value) {
+  const item = labelSettingsCategoryDefs.find((c) => c.name === labelName);
+  if (item) {
+    item.description = value.trim();
+    saveCategoryDefinitionsToStore(() => {
+      showSettingsToast(`"${labelName}" 분류기준이 저장되었습니다.`);
+      renderLabelSettingsCards();
+    });
+  }
+}
+
+function saveCategoryDefinitionsToStore(callback) {
+  if (typeof SettingsStore !== "undefined") {
+    SettingsStore.setSetting("gmail.categories", labelSettingsCategoryDefs).then(() => {
+      if (typeof callback === "function") callback();
+    });
+  } else {
+    chrome.storage.sync.get(["appSettings"], (res) => {
+      const appSettings = res?.appSettings || {};
+      if (!appSettings.gmail) appSettings.gmail = {};
+      appSettings.gmail.categories = labelSettingsCategoryDefs;
+      chrome.storage.sync.set({ appSettings }, () => {
+        if (typeof callback === "function") callback();
+      });
+    });
+  }
 }
 
 function renderCalendarWorkspace() {
@@ -2002,9 +2575,34 @@ function initProgressSection() {
 
   chrome.storage.onChanged.addListener((changes, areaName) => {
     if (areaName !== "local") return;
-    if (changes.jobProgress || changes.jobStatus) {
-      chrome.storage.local.get(["jobStatus", "jobProgress"], (res) => {
+    if (changes.jobProgress || changes.jobStatus || changes.jobResult) {
+      chrome.storage.local.get(["jobStatus", "jobProgress", "jobResult"], (res) => {
         if (res) updateProgressUI(res.jobProgress, res.jobStatus);
+        if (isLabelSettingsActive && res) {
+          if (res.jobStatus === "done" && res.jobResult) {
+            const result = res.jobResult;
+            if (Array.isArray(result.suggestions) && result.suggestions.length > 0) {
+              result.suggestions.forEach((s) => {
+                if (s && s.labelName && s.suggestion) {
+                  generatedSuggestions.set(s.labelName, { suggestion: s.suggestion, status: "done" });
+                }
+              });
+              renderLabelSettingsCards();
+            } else if (result.labelName && result.suggestion) {
+              generatedSuggestions.set(result.labelName, { suggestion: result.suggestion, status: "done" });
+              renderLabelSettingsCards();
+            }
+          } else if (res.jobStatus === "error" || res.jobStatus === "cancelled") {
+            let hadPending = false;
+            for (const [name, obj] of generatedSuggestions.entries()) {
+              if (obj.status === "pending") {
+                generatedSuggestions.delete(name);
+                hadPending = true;
+              }
+            }
+            if (hadPending) renderLabelSettingsCards();
+          }
+        }
       });
     }
     if (changes.appSettings && typeof SettingsStore !== "undefined") {
@@ -2143,31 +2741,20 @@ function updateContextUI(context) {
   }
 
   const actionsContainer = $("dynamicActions");
-  if (!actionsContainer) return;
-  actionsContainer.innerHTML = "";
+  if (actionsContainer) {
+    actionsContainer.innerHTML = "";
+    const registryKey = `${(currentContext.service || "Web").toLowerCase()}.${currentContext.pageType || "other"}`;
+    const actions = ACTION_REGISTRY[registryKey] || [];
 
-  const registryKey = `${(currentContext.service || "Web").toLowerCase()}.${currentContext.pageType || "other"}`;
-  const actions = ACTION_REGISTRY[registryKey] || [];
-
-  if (actions.length === 0) {
-    // 예전에는 여기서 innerHTML로 버튼을 그렸는데 id도 핸들러도 없어서 아무 동작이 없었다.
-    // 눌러도 아무 일이 없는 버튼을 두는 대신 안내 문구만 남긴다.
-    const note = document.createElement("p");
-    note.className = "label-small";
-    note.style.cssText = "opacity:0.7; text-align:center; padding:12px;";
-    note.textContent = translate("sidepanelAnalyzePage", "이 페이지에서 사용할 수 있는 작업이 없습니다.");
-    actionsContainer.appendChild(note);
-    return;
+    actions.forEach((act) => {
+      const btn = document.createElement("button");
+      btn.className = `btn action-btn ${act.cls}`;
+      btn.id = act.id;
+      btn.textContent = translate(act.label, act.label);
+      btn.addEventListener("click", act.handler);
+      actionsContainer.appendChild(btn);
+    });
   }
-
-  actions.forEach((act) => {
-    const btn = document.createElement("button");
-    btn.className = `btn action-btn ${act.cls}`;
-    btn.id = act.id;
-    btn.textContent = translate(act.label, act.label);
-    btn.addEventListener("click", act.handler);
-    actionsContainer.appendChild(btn);
-  });
 }
 
 function initActionButtons() {

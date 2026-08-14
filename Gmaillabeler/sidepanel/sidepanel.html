@@ -70,42 +70,41 @@
     <div class="resizer-handle"></div>
   </div>
 
+  <div class="action-nav-container" id="actionNavContainer">
+    <nav class="action-nav-track" id="actionNavTrack">
+      <div class="action-page" data-page="0">
+        <button class="service-btn" data-action="gmail_start" title="Start Labeling">
+          <span class="service-icon">▶️</span>
+          <span class="service-label">라벨링시작</span>
+        </button>
+        <button class="service-btn" data-action="gmail_auto_settings" title="Auto Labeling Settings">
+          <span class="service-icon">🤖</span>
+          <span class="service-label">자동설정</span>
+        </button>
+        <button class="service-btn" data-action="gmail_label_settings" title="Label Settings">
+          <span class="service-icon">🏷️</span>
+          <span class="service-label">라벨설정</span>
+        </button>
+        <button class="service-btn" data-action="gmail_summarize" title="Summarize">
+          <span class="service-icon">📝</span>
+          <span class="service-label">메일요약</span>
+        </button>
+        <button class="service-btn" data-action="gmail_clean" title="Clean">
+          <span class="service-icon">🧹</span>
+          <span class="service-label">메일정리</span>
+        </button>
+      </div>
+    </nav>
+    <div class="drag-edge-zone edge-left" id="actionDragEdgeLeft" title="이전 페이지">‹</div>
+    <div class="drag-edge-zone edge-right" id="actionDragEdgeRight" title="다음 페이지">›</div>
+    <div class="page-indicators" id="actionPageIndicators"></div>
+  </div>
+
+  <div class="nav-resizer" id="actionNavResizer" title="중단바 줄 수 조절 (드래그)">
+    <div class="resizer-handle"></div>
+  </div>
+
   <main class="sidepanel-content" id="mainContent">
-    <div class="action-nav-container" id="actionNavContainer">
-      <nav class="action-nav-track" id="actionNavTrack">
-        <div class="action-page" data-page="0">
-          <button class="service-btn" data-action="gmail_start" title="Start Labeling">
-            <span class="service-icon">▶️</span>
-            <span class="service-label">라벨링시작</span>
-          </button>
-          <button class="service-btn" data-action="gmail_auto_settings" title="Auto Labeling Settings">
-            <span class="service-icon">🤖</span>
-            <span class="service-label">자동설정</span>
-          </button>
-          <button class="service-btn" data-action="gmail_label_settings" title="Label Settings">
-            <span class="service-icon">🏷️</span>
-            <span class="service-label">라벨설정</span>
-          </button>
-          <button class="service-btn" data-action="gmail_summarize" title="Summarize">
-            <span class="service-icon">📝</span>
-            <span class="service-label">메일요약</span>
-          </button>
-          <button class="service-btn" data-action="gmail_clean" title="Clean">
-            <span class="service-icon">🧹</span>
-            <span class="service-label">메일정리</span>
-          </button>
-        </div>
-      </nav>
-      <div class="drag-edge-zone edge-left" id="actionDragEdgeLeft" title="이전 페이지">‹</div>
-      <div class="drag-edge-zone edge-right" id="actionDragEdgeRight" title="다음 페이지">›</div>
-      <div class="page-indicators" id="actionPageIndicators"></div>
-    </div>
-
-    <div class="nav-resizer" id="actionNavResizer" title="중단바 줄 수 조절 (드래그)">
-      <div class="resizer-handle"></div>
-    </div>
-
-    <div id="dynamicActions" class="dynamic-actions"></div>
     <div id="panelContainer" class="panel-container"></div>
   </main>
 
