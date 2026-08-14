@@ -15,28 +15,39 @@
   <script src="../settings/settings_store.js"></script>
 </head>
 <body>
-  <nav class="service-nav">
-    <button class="service-btn active" title="Gmail">
-      <span class="service-icon">📧</span>
-      <span class="service-label">Gmail</span>
-    </button>
-    <button class="service-btn" title="Calendar">
-      <span class="service-icon">📅</span>
-      <span class="service-label">캘린더</span>
-    </button>
-    <button class="service-btn" title="Drive">
-      <span class="service-icon">📁</span>
-      <span class="service-label">드라이브</span>
-    </button>
-    <button class="service-btn" title="Edit">
-      <span class="service-icon">✏️</span>
-      <span class="service-label">편집</span>
-    </button>
-    <button class="service-btn" title="Settings">
-      <span class="service-icon">⚙️</span>
-      <span class="service-label">설정</span>
-    </button>
-  </nav>
+  <div class="service-nav-container" id="serviceNavContainer">
+    <nav class="service-nav-track" id="serviceNavTrack">
+      <div class="service-page" data-page="0">
+        <button class="service-btn active" data-service="gmail" title="Gmail">
+          <span class="service-icon">📧</span>
+          <span class="service-label">Gmail</span>
+        </button>
+        <button class="service-btn" data-service="calendar" title="Calendar">
+          <span class="service-icon">📅</span>
+          <span class="service-label">캘린더</span>
+        </button>
+        <button class="service-btn" data-service="drive" title="Drive">
+          <span class="service-icon">📁</span>
+          <span class="service-label">드라이브</span>
+        </button>
+        <button class="service-btn" data-service="edit" title="Edit">
+          <span class="service-icon">✏️</span>
+          <span class="service-label">편집</span>
+        </button>
+        <button class="service-btn" data-service="settings" title="Settings">
+          <span class="service-icon">⚙️</span>
+          <span class="service-label">설정</span>
+        </button>
+      </div>
+    </nav>
+    <div class="drag-edge-zone edge-left" id="dragEdgeLeft" title="이전 페이지">‹</div>
+    <div class="drag-edge-zone edge-right" id="dragEdgeRight" title="다음 페이지">›</div>
+    <div class="page-indicators" id="pageIndicators"></div>
+  </div>
+
+  <div class="nav-resizer" id="navResizer" title="상단바 줄 수 조절 (드래그)">
+    <div class="resizer-handle"></div>
+  </div>
 
   <main class="sidepanel-content" id="mainContent">
     <div class="progress-section" id="progressSection">
@@ -54,7 +65,7 @@
       </button>
     </div>
     
-    <div class="action-nav">
+    <div class="action-nav" id="actionNav">
       <button class="service-btn" title="Start Labeling">
         <span class="service-icon">▶️</span>
         <span class="service-label">라벨링시작</span>
@@ -67,15 +78,18 @@
         <span class="service-icon">🏷️</span>
         <span class="service-label">라벨설정</span>
       </button>
-      <button class="service-btn" title="Empty">
+      <button class="service-btn empty" title="Empty">
         <span class="service-icon">❓</span>
         <span class="service-label">빈칸</span>
       </button>
-      <button class="service-btn" title="Empty">
+      <button class="service-btn empty" title="Empty">
         <span class="service-icon">❓</span>
         <span class="service-label">빈칸</span>
       </button>
     </div>
+
+    <div id="dynamicActions" class="dynamic-actions"></div>
+    <div id="panelContainer" class="panel-container"></div>
   </main>
 
   <script src="../i18n.js"></script>
