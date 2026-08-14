@@ -9,7 +9,8 @@ body {
   background-color: var(--md-sys-color-background);
 }
 
-.service-nav-container {
+.service-nav-container,
+.action-nav-container {
   position: relative;
   width: 100%;
   height: 74px; /* Default 1 row */
@@ -19,7 +20,8 @@ body {
   transition: height 0.18s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.service-nav-track {
+.service-nav-track,
+.action-nav-track {
   display: flex;
   flex-wrap: nowrap;
   width: 100%;
@@ -32,11 +34,13 @@ body {
   -ms-overflow-style: none;
 }
 
-.service-nav-track::-webkit-scrollbar {
+.service-nav-track::-webkit-scrollbar,
+.action-nav-track::-webkit-scrollbar {
   display: none;
 }
 
-.service-page {
+.service-page,
+.action-page {
   flex: 0 0 100%;
   width: 100%;
   height: 100%;
@@ -69,7 +73,8 @@ body {
   opacity: 0;
 }
 
-.service-nav-container.is-dragging .drag-edge-zone {
+.service-nav-container.is-dragging .drag-edge-zone,
+.action-nav-container.is-dragging .drag-edge-zone {
   display: flex;
   pointer-events: auto;
   opacity: 0.4;
