@@ -13,7 +13,8 @@ body {
 .action-nav-container {
   position: relative;
   width: 100%;
-  height: 74px; /* Default 1 row */
+  height: 74px;
+  /* Default 1 row */
   background-color: var(--md-sys-color-surface-dim);
   box-sizing: border-box;
   overflow: hidden;
@@ -188,19 +189,6 @@ body {
   width: 48px;
 }
 
-.action-nav {
-  display: flex;
-  flex-wrap: nowrap;
-  justify-content: center;
-  align-items: center;
-  gap: 7px;
-  padding: 0 7px 7px 7px;
-  border-bottom: 1px solid var(--md-sys-color-outline-variant);
-  margin-bottom: 16px;
-  box-sizing: border-box;
-  overflow: hidden;
-  width: 100%;
-}
 
 .service-btn {
   display: flex;
@@ -322,41 +310,55 @@ body {
   flex-direction: row;
   align-items: center;
   gap: 6px;
-  /* Tighter gap between items */
-  margin-bottom: 7px;
+  padding: 3px 8px;
+  margin: 0;
+  background-color: var(--md-sys-color-surface-dim);
+  border-bottom: 1px solid var(--md-sys-color-outline-variant);
+  box-sizing: border-box;
+  width: 100%;
+  flex-shrink: 0;
 }
 
 .progress-text {
-  min-width: 36px;
+  min-width: 32px;
   text-align: right;
-  font-weight: 500;
-  font-size: 14px;
-  /* Scaled up */
+  font-weight: 600;
+  font-size: 12px;
+  line-height: 1;
+  color: var(--md-sys-color-on-surface);
 }
 
 .progress-bar {
   flex: 1;
-  height: 8px;
-  /* Scaled up to match text */
-  border-radius: 4px;
+  height: 6px;
+  border-radius: 3px;
   appearance: none;
+  border: none;
 }
 
 .progress-bar::-webkit-progress-bar {
   background-color: var(--md-sys-color-surface-variant);
-  border-radius: 4px;
+  border-radius: 3px;
 }
 
 .progress-bar::-webkit-progress-value {
   background-color: var(--md-sys-color-primary);
-  border-radius: 4px;
+  border-radius: 3px;
   transition: width 0.3s ease;
 }
 
 .btn-small {
-  padding: 4px 8px;
+  padding: 2px 4px;
   font-size: 14px;
-  /* Scaled up icons */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: background-color 0.15s ease;
+}
+
+.btn-small:hover {
+  background-color: var(--md-sys-color-surface-container) !important;
 }
 
 .context-card {
