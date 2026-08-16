@@ -1,5 +1,9 @@
 // settings/settings_migration.js
 
+import { AIProviderRegistry } from "../ai/ai_provider_registry.js";
+import { sanitizeCredentialList } from "./settings_schema.js";
+import { SettingsStore } from "./settings_store.js";
+
 /**
  * 예전 저장 구조(v1 = 평면 키, v2 = ai.providers 중첩)를 현재 구조(v3)로 옮긴다.
  *
@@ -25,10 +29,8 @@ function migrationNewId() {
 function migrationDefaultModel(providerId) {
   // 예전에는 `${providerId}-default-model` 같은 문자열을 만들어 넣어서
   // ("openai-default-model") 첫 호출부터 model_not_found 400이 났다.
-  if (typeof AIProviderRegistry !== "undefined") {
-    const known = AIProviderRegistry.getDefaultModel(providerId);
-    if (known) return known;
-  }
+  const known = AIProviderRegistry.getDefaultModel(providerId);
+  if (known) return known;
   return "";
 }
 
@@ -166,12 +168,7 @@ async function migrateToLatestSettings() {
     // 이미 v3 형태의 credentials가 있으면 절대 건드리지 않는다.
     // 예전 구현은 무조건 ai.credentials = [] 로 초기화한 뒤 옛 키에서만 채웠기 때문에,
     // schemaVersion만 낮고 내용은 v3인 상태(설정 초기화 직후 등)에서 키가 전부 삭제됐다.
-    const existingCredentials =
-      typeof sanitizeCredentialList === "function"
-        ? sanitizeCredentialList(existing.ai?.credentials)
-        : Array.isArray(existing.ai?.credentials)
-        ? existing.ai.credentials
-        : [];
+    const existingCredentials = sanitizeCredentialList(existing.ai?.credentials);
 
     if (existingCredentials.length) {
       set("ai.credentials", existingCredentials);
@@ -255,8 +252,4 @@ async function migrateToLatestSettings() {
   }
 }
 
-globalThis.migrateToLatestSettings = migrateToLatestSettings;
-if (typeof self !== "undefined") self.migrateToLatestSettings = migrateToLatestSettings;
-if (typeof module !== "undefined" && module.exports) {
-  module.exports = migrateToLatestSettings;
-}
+export { migrateToLatestSettings, SETTINGS_TARGET_SCHEMA_VERSION };

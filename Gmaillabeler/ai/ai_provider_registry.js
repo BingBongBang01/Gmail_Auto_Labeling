@@ -64,5 +64,4 @@ class AIProviderRegistry {
   }
 }
 
-if (typeof self !== "undefined") self.AIProviderRegistry = AIProviderRegistry;
-globalThis.AIProviderRegistry = AIProviderRegistry;
+export { AIProviderRegistry };

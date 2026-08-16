@@ -170,5 +170,4 @@ class AIQuotaManager {
   }
 }
 
-if (typeof self !== "undefined") self.AIQuotaManager = AIQuotaManager;
-globalThis.AIQuotaManager = AIQuotaManager;
+export { AIQuotaManager };

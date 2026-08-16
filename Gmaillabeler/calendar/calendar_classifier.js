@@ -1,5 +1,7 @@
 // calendar/calendar_classifier.js
 
+import { AIRequestRouter } from "../ai/ai_request_router.js";
+
 async function classifyCalendarEventsWithAI(events, categories, currentLocale) {
   if (!events || events.length === 0) return [];
   // category가 하나도 설정되어 있지 않으면 AI를 호출할 이유가 없다. 존재하지 않는 category 이름을
@@ -67,3 +69,5 @@ ${JSON.stringify(batchData)}
   const data = await AIRequestRouter.generateStructured(prompt, schema);
   return Array.isArray(data?.results) ? data.results : [];
 }
+
+export { classifyCalendarEventsWithAI };

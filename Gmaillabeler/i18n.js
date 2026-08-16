@@ -1,7 +1,9 @@
 // i18n.js
-// 팝업/로그 창(<script> 태그)과 백그라운드 서비스워커(importScripts) 양쪽에서 공용으로 쓰는
+// UI 페이지(<script type="module">)와 백그라운드 서비스워커(import) 양쪽에서 공용으로 쓰는
 // 최소 구현 i18n 로더. chrome.i18n.getMessage()는 브라우저 언어만 따르고 수동 전환이 안 되므로,
 // 사용자가 설정에서 언어를 직접 바꿀 수 있도록 직접 메시지 파일을 읽어와 치환하는 방식으로 구현한다.
+// 콘텐츠 스크립트는 ES 모듈을 직접 로드할 수 없으므로 content/i18n_bridge.js가 이 파일을
+// 동적 import 해서 쓴다.
 
 const I18N_SUPPORTED_LOCALES = ["en", "ko", "ja", "zh_CN"];
 
@@ -115,3 +117,13 @@ function i18nApplyToDom(root) {
     el.setAttribute("title", t(el.getAttribute("data-i18n-title")));
   });
 }
+
+export {
+  I18N_SUPPORTED_LOCALES,
+  i18nMapBrowserLangToSupported,
+  i18nResolveLocale,
+  i18nInit,
+  i18nCurrentLocale,
+  i18nApplyToDom,
+  t,
+};

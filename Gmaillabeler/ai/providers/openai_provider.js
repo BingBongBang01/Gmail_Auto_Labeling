@@ -1,5 +1,9 @@
 // ai/providers/openai_provider.js
 
+import { AIProviderBase } from "../ai_provider_base.js";
+import { AIProviderRegistry } from "../ai_provider_registry.js";
+import { AISchema } from "../ai_schema.js";
+
 class OpenAIProvider extends AIProviderBase {
   id = "openai";
   name = "OpenAI";
@@ -75,5 +79,4 @@ class OpenAIProvider extends AIProviderBase {
 }
 
 AIProviderRegistry.register(new OpenAIProvider());
-globalThis.OpenAIProvider = OpenAIProvider;
-if (typeof self !== "undefined") self.OpenAIProvider = OpenAIProvider;
+export { OpenAIProvider };

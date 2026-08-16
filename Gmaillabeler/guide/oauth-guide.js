@@ -1,3 +1,7 @@
+// guide/oauth-guide.js
+// 이 파일은 ES 모듈이다(HTML에서 <script type="module">로 로드).
+import { t, i18nInit, i18nApplyToDom } from "../i18n.js";
+
 // 이 페이지는 확장 프로그램 안에서 열리므로 chrome.runtime.id로 확장 ID를 바로 읽을 수 있다.
 // 이 값으로 리디렉션 URI를 자동 계산해서 보여주면, 사용자가 chrome://extensions에 따로 갈 필요가 없어진다.
 async function main() {

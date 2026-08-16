@@ -1,4 +1,8 @@
 // ai/ai_failover_manager.js
+
+import { AIKeyManager } from "./ai_key_manager.js";
+import { AIQuotaManager } from "./ai_quota_manager.js";
+
 //
 // 공급자 어댑터가 normalizeError()로 표준화한 오류를 받아, 그 키를 어떻게 처리하고
 // 라우터가 다음에 무엇을 해야 하는지 결정한다.
@@ -45,5 +49,4 @@ class AIFailoverManager {
   }
 }
 
-if (typeof self !== "undefined") self.AIFailoverManager = AIFailoverManager;
-globalThis.AIFailoverManager = AIFailoverManager;
+export { AIFailoverManager };

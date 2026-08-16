@@ -1,5 +1,12 @@
 // calendar/calendar_categories.js
 
+import { AIRequestRouter } from "../ai/ai_request_router.js";
+import {
+  CALENDAR_EVENT_COLOR_NAMES,
+  CALENDAR_VALID_COLOR_IDS,
+  isValidCalendarColorId,
+} from "./calendar_colors.js";
+
 /**
  * Ensures categories don't have exact duplicate names.
  */
@@ -109,3 +116,5 @@ Rules:
     colorSource: "ai",
   }));
 }
+
+export { deduplicateCalendarCategories, newCalendarCategoryId, initializeCalendarCategoriesWithAI };

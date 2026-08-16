@@ -1,5 +1,9 @@
 // ai/providers/anthropic_provider.js
 
+import { AIProviderBase } from "../ai_provider_base.js";
+import { AIProviderRegistry } from "../ai_provider_registry.js";
+import { AISchema } from "../ai_schema.js";
+
 const ANTHROPIC_RESULT_TOOL = "emit_structured_result";
 
 class AnthropicProvider extends AIProviderBase {
@@ -100,5 +104,4 @@ class AnthropicProvider extends AIProviderBase {
 }
 
 AIProviderRegistry.register(new AnthropicProvider());
-globalThis.AnthropicProvider = AnthropicProvider;
-if (typeof self !== "undefined") self.AnthropicProvider = AnthropicProvider;
+export { AnthropicProvider };

@@ -1,6 +1,11 @@
 // calendar/calendar_api.js
 // Calendar API helper wrapper utilizing existing OAuth and fetch logic
 
+import { AIProviderBase } from "../ai/ai_provider_base.js";
+import { fetchWithJobCancellation, isCancelled } from "../bg/core/cancellation.js";
+import { sleep } from "../bg/core/util.js";
+import { getValidAccessToken } from "../bg/platform/google_oauth.js";
+
 const CALENDAR_API_TIMEOUT_MS = 60000;
 
 async function calendarApiRequest(url, options = {}) {
@@ -128,7 +133,7 @@ async function calendarEventsListAll(calendarId, params = {}, maxEvents = Infini
   const MAX_PAGES = 40; // 안전장치
 
   do {
-    if (typeof isCancelled === "function" && isCancelled()) break;
+    if (isCancelled()) break;
 
     const currentParams = { ...params };
     if (pageToken) currentParams.pageToken = pageToken;
@@ -142,3 +147,15 @@ async function calendarEventsListAll(calendarId, params = {}, maxEvents = Infini
 
   return events.length > maxEvents ? events.slice(0, maxEvents) : events;
 }
+
+export {
+  calendarApiRequest,
+  calendarApiGet,
+  calendarApiPatch,
+  calendarEventsList,
+  calendarEventPatch,
+  calendarColorsGet,
+  calendarList,
+  calendarEventGet,
+  calendarEventsListAll,
+};

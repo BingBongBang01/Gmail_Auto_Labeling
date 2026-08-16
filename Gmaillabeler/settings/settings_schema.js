@@ -251,10 +251,4 @@ function validateSettingsAgainstSchema(input) {
   return { value: walk(input, SETTINGS_SCHEMA, "") || {}, errors };
 }
 
-globalThis.SETTINGS_SCHEMA = SETTINGS_SCHEMA;
-globalThis.SETTINGS_ENUMS = SETTINGS_ENUMS;
-globalThis.validateSettingsAgainstSchema = validateSettingsAgainstSchema;
-globalThis.sanitizeCredentialList = sanitizeCredentialList;
-if (typeof module !== "undefined" && module.exports) {
-  module.exports = SETTINGS_SCHEMA;
-}
+export { SETTINGS_SCHEMA, SETTINGS_ENUMS, validateSettingsAgainstSchema, sanitizeCredentialList };

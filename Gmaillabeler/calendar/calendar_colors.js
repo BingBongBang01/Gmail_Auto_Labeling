@@ -1,5 +1,7 @@
 // calendar/calendar_colors.js
 
+import { calendarColorsGet } from "./calendar_api.js";
+
 // Google 캘린더의 일정 색상은 colorId "1"~"11"로 고정돼 있다.
 // /colors API 응답에는 background/foreground만 있고 사람이 읽을 이름이 없어서,
 // 프롬프트나 UI에 쓸 이름은 여기서 보완한다.
@@ -66,7 +68,11 @@ function isValidCalendarColorId(colorId) {
   return typeof colorId === "string" && CALENDAR_VALID_COLOR_IDS.includes(colorId);
 }
 
-globalThis.CALENDAR_EVENT_COLOR_NAMES = CALENDAR_EVENT_COLOR_NAMES;
-globalThis.CALENDAR_VALID_COLOR_IDS = CALENDAR_VALID_COLOR_IDS;
-globalThis.getAvailableCalendarColors = getAvailableCalendarColors;
-globalThis.isValidCalendarColorId = isValidCalendarColorId;
+export {
+  CALENDAR_EVENT_COLOR_NAMES,
+  CALENDAR_EVENT_COLOR_FALLBACK,
+  CALENDAR_VALID_COLOR_IDS,
+  withCalendarColorNames,
+  getAvailableCalendarColors,
+  isValidCalendarColorId,
+};

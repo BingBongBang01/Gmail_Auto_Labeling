@@ -28,13 +28,14 @@
     "https://www.googleapis.com/*"
   ],
   "background": {
-    "service_worker": "background.js"
+    "service_worker": "background.js",
+    "type": "module"
   },
   "content_scripts": [
     {
       "matches": ["*://mail.google.com/*"],
       "js": [
-        "i18n.js",
+        "content/i18n_bridge.js",
         "content/ui_list_badge.js",
         "content/ui_detail_card.js",
         "content/content_main.js"
@@ -43,7 +44,7 @@
   ],
   "web_accessible_resources": [
     {
-      "resources": ["_locales/*/messages.json"],
+      "resources": ["_locales/*/messages.json", "i18n.js"],
       "matches": ["*://mail.google.com/*"]
     }
   ],

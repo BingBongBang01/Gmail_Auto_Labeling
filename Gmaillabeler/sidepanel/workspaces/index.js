@@ -1,0 +1,56 @@
+// sidepanel/workspaces/index.js
+// 어떤 서비스가 선택됐는지에 따라 해당 워크스페이스를 그린다.
+// 서비스를 추가하려면 여기 분기 한 줄과 워크스페이스 파일 하나만 추가하면 된다.
+
+import { $ } from "../ui/dom.js";
+import { renderCalendarWorkspace } from "./calendar.js";
+import { renderEditWorkspace } from "./edit.js";
+import { renderGeminiWorkspace } from "./gemini.js";
+import { renderGenericServiceWorkspace } from "./generic.js";
+import { renderGmailWorkspace } from "./gmail.js";
+import { getCurrentSettingsSection, renderSettingsPanel } from "./settings.js";
+import { renderGmailAutoSettingsWorkspace } from "./gmail_auto_settings.js";
+import { renderGmailLabelSettingsWorkspace } from "./gmail_label_settings.js";
+
+function renderServiceWorkspace(serviceId) {
+  const container = $("panelContainer");
+  const dynamicActions = $("dynamicActions");
+  if (!container) return;
+
+  if (dynamicActions) dynamicActions.innerHTML = "";
+  container.innerHTML = "";
+
+  if (serviceId === "settings") {
+    renderSettingsPanel(getCurrentSettingsSection() || "oauth");
+  } else if (serviceId === "gmail") {
+    renderGmailWorkspace();
+  } else if (serviceId === "calendar") {
+    renderCalendarWorkspace();
+  } else if (serviceId === "gemini") {
+    renderGeminiWorkspace();
+  } else if (serviceId === "edit") {
+    renderEditWorkspace();
+  } else {
+    renderGenericServiceWorkspace(serviceId);
+  }
+}
+
+
+// 서비스 워크스페이스가 아니라 "이름으로 지정한 하위 화면"을 그린다.
+// 액션 타일의 command: "workspace" 가 이걸 부른다.
+// 여기 없는 이름은 조용히 무시하지 않고 콘솔에 남긴다.
+const NAMED_WORKSPACES = {
+  gmail_auto_settings: renderGmailAutoSettingsWorkspace,
+  gmail_label_settings: renderGmailLabelSettingsWorkspace,
+};
+
+function renderWorkspaceByName(name) {
+  const render = NAMED_WORKSPACES[name];
+  if (!render) {
+    console.warn(`[sidepanel] 알 수 없는 워크스페이스: "${name}"`);
+    return;
+  }
+  render();
+}
+
+export { renderServiceWorkspace, renderWorkspaceByName };

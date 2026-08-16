@@ -11,9 +11,6 @@
   <link rel="stylesheet" href="../ui/tokens/components.css">
   <link rel="stylesheet" href="sidepanel.css">
 
-  <script src="../settings/settings_schema.js"></script>
-  <script src="../settings/settings_defaults.js"></script>
-  <script src="../settings/settings_store.js"></script>
 </head>
 
 <body>
@@ -108,8 +105,9 @@
     <div id="panelContainer" class="panel-container"></div>
   </main>
 
-  <script src="../i18n.js"></script>
-  <script src="sidepanel.js"></script>
+  <!-- 페이지 스크립트가 ES 모듈이라 필요한 것을 스스로 import 한다.
+       예전처럼 여러 <script>를 순서대로 나열할 필요가 없다. -->
+  <script type="module" src="sidepanel.js"></script>
 </body>
 
 </html>

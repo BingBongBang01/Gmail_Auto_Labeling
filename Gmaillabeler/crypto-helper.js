@@ -1,7 +1,7 @@
 // crypto-helper.js
 // 백업 파일/Drive에 저장하는 API 키·OAuth 시크릿을 평문 그대로 두지 않고, 사용자가 입력한
-// 암호(비밀번호)로 AES-GCM 암호화해서 저장하기 위한 공용 헬퍼. background.js(importScripts)와
-// popup.js(그냥 <script> 태그) 양쪽에서 그대로 쓸 수 있게 순수 함수로만 구성.
+// 암호(비밀번호)로 AES-GCM 암호화해서 저장하기 위한 공용 헬퍼. 서비스워커와 UI 페이지
+// 양쪽에서 그대로 쓸 수 있게 순수 함수로만 구성.
 // 서버가 없는 순수 클라이언트 확장이라, "암호를 아는 사람만 복호화 가능"하게 만드는 게
 // 현실적으로 취할 수 있는 가장 실질적인 보안 조치다 - 암호 자체는 어디에도 저장하지 않는다.
 
@@ -55,3 +55,11 @@ async function decryptWithPassphrase(passphrase, encBlob) {
   const plainBuf = await crypto.subtle.decrypt({ name: "AES-GCM", iv }, key, ciphertext);
   return JSON.parse(new TextDecoder().decode(plainBuf));
 }
+
+export {
+  cryptoBufferToBase64,
+  cryptoBase64ToBuffer,
+  cryptoDeriveKey,
+  encryptWithPassphrase,
+  decryptWithPassphrase,
+};

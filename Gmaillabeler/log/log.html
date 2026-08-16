@@ -71,7 +71,8 @@
   <div id="logCountHint" style="font-size:11px; opacity:.7; margin-bottom:6px;"></div>
   <div id="logBox"></div>
 
-  <script src="../i18n.js"></script>
-  <script src="log.js"></script>
+  <!-- 페이지 스크립트가 ES 모듈이라 필요한 것을 스스로 import 한다.
+       예전처럼 여러 <script>를 순서대로 나열할 필요가 없다. -->
+  <script type="module" src="log.js"></script>
 </body>
 </html>

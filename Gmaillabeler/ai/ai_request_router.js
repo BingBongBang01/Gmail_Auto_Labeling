@@ -1,5 +1,11 @@
 // ai/ai_request_router.js
 
+import { SettingsStore } from "../settings/settings_store.js";
+import { AIProviderRegistry } from "./ai_provider_registry.js";
+import { AIKeyManager } from "./ai_key_manager.js";
+import { AIQuotaManager } from "./ai_quota_manager.js";
+import { AIFailoverManager } from "./ai_failover_manager.js";
+
 function aiRouterSleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, Math.max(0, ms)));
 }
@@ -183,5 +189,4 @@ class AIRequestRouter {
   }
 }
 
-globalThis.AIPacer = AIPacer;
-globalThis.AIRequestRouter = AIRequestRouter;
+export { AIPacer, AIRequestRouter };

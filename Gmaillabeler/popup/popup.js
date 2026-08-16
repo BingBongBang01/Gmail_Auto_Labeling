@@ -1,4 +1,10 @@
 // popup/popup.js
+// 이 파일은 ES 모듈이다(HTML에서 <script type="module">로 로드).
+// 예전에는 HTML이 공유 스크립트를 순서대로 나열해 전역을 만들어 주는 방식이었다.
+// 이제는 필요한 것을 여기서 직접 import 한다 - 로드 순서에 의존하지 않는다.
+import { SettingsStore } from "../settings/settings_store.js";
+import { i18nInit, i18nApplyToDom } from "../i18n.js";
+
 const $ = (id) => document.getElementById(id);
 
 // 저장된 작업 기록을 innerHTML로 그리므로 이스케이프가 필요하다.

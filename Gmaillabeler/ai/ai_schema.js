@@ -84,4 +84,4 @@ class AISchema {
 
 // 서비스워커(importScripts)와 확장 페이지(<script>) 양쪽에서 같은 이름으로 접근할 수 있게 한다.
 // window로 내보내면 서비스워커에서는 아무것도 등록되지 않는다.
-globalThis.AISchema = AISchema;
+export { AISchema };

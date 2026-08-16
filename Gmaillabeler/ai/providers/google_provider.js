@@ -1,5 +1,8 @@
 // ai/providers/google_provider.js
 
+import { AIProviderBase } from "../ai_provider_base.js";
+import { AIProviderRegistry } from "../ai_provider_registry.js";
+
 // 저장소 여기저기서 schema를 표준 JSON Schema(소문자 "object"/"string"/"array")로 만드는 곳과
 // Gemini 방식(대문자 "OBJECT"/"STRING"/"ARRAY")으로 만드는 곳이 섞여 있다. Gemini REST API의
 // responseSchema는 대문자 enum을 기대하므로, 어느 쪽으로 오든 여기서 대문자로 정규화해 보낸다.
@@ -123,5 +126,4 @@ class GoogleProvider extends AIProviderBase {
 }
 
 AIProviderRegistry.register(new GoogleProvider());
-globalThis.GoogleProvider = GoogleProvider;
-if (typeof self !== "undefined") self.GoogleProvider = GoogleProvider;
+export { GoogleProvider };

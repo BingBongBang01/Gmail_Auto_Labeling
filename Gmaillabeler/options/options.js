@@ -1,4 +1,18 @@
 // options/options.js
+// 이 파일은 ES 모듈이다(HTML에서 <script type="module">로 로드).
+// 예전에는 HTML이 공유 스크립트를 순서대로 나열해 전역을 만들어 주는 방식이었다.
+// 이제는 필요한 것을 여기서 직접 import 한다 - 로드 순서에 의존하지 않는다.
+import { SettingsStore } from "../settings/settings_store.js";
+import { SETTINGS_DEFAULTS } from "../settings/settings_defaults.js";
+import { validateSettingsAgainstSchema } from "../settings/settings_schema.js";
+import { migrateToLatestSettings } from "../settings/settings_migration.js";
+import { t, i18nInit, i18nApplyToDom } from "../i18n.js";
+import { AIProviderRegistry } from "../ai/ai_provider_registry.js";
+// 공급자 어댑터는 로드 시점에 레지스트리에 자신을 등록한다.
+// 예전에는 이 목록을 HTML에서 하나씩 나열했고, 하나라도 빠지면
+// 연결 테스트가 "Provider not found"로 실패했다.
+import "../ai/providers/index.js";
+
 const $ = (id) => document.getElementById(id);
 
 // 이 페이지는 사용자 입력, AI 생성 텍스트, 그리고 가져온 설정 파일의 내용을

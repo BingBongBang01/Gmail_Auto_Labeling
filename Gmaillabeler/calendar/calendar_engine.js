@@ -1,5 +1,14 @@
 // calendar/calendar_engine.js
 
+import { SettingsStore } from "../settings/settings_store.js";
+import { i18nCurrentLocale } from "../i18n.js";
+import { addLog } from "../bg/core/logger.js";
+import { updateProgress } from "../bg/core/progress.js";
+import { isCancelled, isCancellationError } from "../bg/core/cancellation.js";
+import { calendarEventsListAll, calendarEventPatch } from "./calendar_api.js";
+import { classifyCalendarEventsWithAI } from "./calendar_classifier.js";
+import { isValidCalendarColorId } from "./calendar_colors.js";
+
 // 캘린더 분류 실행 결과. 예전에는 모듈 전역 하나를 매 실행마다 덮어써서
 // 동시 실행이 서로의 집계를 망가뜨렸고, 정작 이 값을 읽는 곳도 없었다.
 // 이제는 실행마다 지역 객체를 만들어 그대로 반환한다.
@@ -37,9 +46,7 @@ async function runCalendarClassification({
   const locale =
     settings.general?.language && settings.general.language !== "system"
       ? settings.general.language
-      : typeof i18nCurrentLocale === "function"
-      ? i18nCurrentLocale()
-      : "en";
+      : i18nCurrentLocale();
 
   const shouldApplyColors =
     applyColors !== undefined ? !!applyColors : classificationSettings.applyColors !== false;
@@ -87,7 +94,7 @@ async function runCalendarClassification({
   let cancelled = false;
 
   for (let i = 0; i < targetEvents.length; i += chunkSize) {
-    if (typeof isCancelled === "function" && isCancelled()) {
+    if (isCancelled()) {
       cancelled = true;
       break;
     }
@@ -100,16 +107,14 @@ async function runCalendarClassification({
       requestsUsed += 1;
     } catch (e) {
       // 한 청크가 실패해도 나머지는 계속 처리한다.
-      if (typeof isCancellationError === "function" && isCancellationError(e)) {
+      if (isCancellationError(e)) {
         cancelled = true;
         break;
       }
       const message = String(e?.message || e);
       failMessages.push(message);
       result.failed += chunk.length;
-      if (typeof addLog === "function") {
-        await addLog(`[캘린더] 일정 ${chunk.length}건 분류 실패: ${message}`, "error");
-      }
+      await addLog(`[캘린더] 일정 ${chunk.length}건 분류 실패: ${message}`, "error");
       continue;
     }
 
@@ -155,7 +160,7 @@ async function runCalendarClassification({
         await calendarEventPatch(calendarId, event.id, { colorId: String(category.colorId) });
         result.updatedColors += 1;
       } catch (e) {
-        if (typeof isCancellationError === "function" && isCancellationError(e)) {
+        if (isCancellationError(e)) {
           cancelled = true;
           break;
         }
@@ -167,22 +172,18 @@ async function runCalendarClassification({
 
     if (cancelled) break;
 
-    if (typeof updateProgress === "function") {
-      await updateProgress({
-        processed: Math.min(i + chunk.length, targetEvents.length),
-        total: targetEvents.length,
-        batchIndex: Math.floor(i / chunkSize) + 1,
-        batchTotal: Math.ceil(targetEvents.length / chunkSize),
-      });
-    }
+    await updateProgress({
+      processed: Math.min(i + chunk.length, targetEvents.length),
+      total: targetEvents.length,
+      batchIndex: Math.floor(i / chunkSize) + 1,
+      batchTotal: Math.ceil(targetEvents.length / chunkSize),
+    });
   }
 
-  if (typeof addLog === "function") {
-    await addLog(
-      `[캘린더] 일정 ${result.totalEvents}건 중 ${result.classified}건 분류, ` +
-        `색상 ${result.updatedColors}건 변경, ${result.unchanged}건 유지, ${result.failed}건 실패.`
-    );
-  }
+  await addLog(
+    `[캘린더] 일정 ${result.totalEvents}건 중 ${result.classified}건 분류, ` +
+      `색상 ${result.updatedColors}건 변경, ${result.unchanged}건 유지, ${result.failed}건 실패.`
+  );
 
   // runJob()이 소비하는 필드를 함께 담아 돌려준다.
   return {
@@ -195,3 +196,5 @@ async function runCalendarClassification({
     quotaExhausted: false,
   };
 }
+
+export { runCalendarClassification, newCalendarRunResult };

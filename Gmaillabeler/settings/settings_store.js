@@ -1,5 +1,7 @@
 // settings/settings_store.js
 
+import { SETTINGS_DEFAULTS } from "./settings_defaults.js";
+
 /**
  * SettingsStore provides the single source of truth for reading and writing settings.
  * It uses the 'appSettings' key in chrome.storage.local to store the nested configuration.
@@ -244,10 +246,4 @@ if (typeof chrome !== "undefined" && chrome.storage) {
   });
 }
 
-if (typeof self !== "undefined") {
-  self.SettingsStore = SettingsStore;
-}
-globalThis.SettingsStore = SettingsStore;
-if (typeof module !== "undefined" && module.exports) {
-  module.exports = SettingsStore;
-}
+export { SettingsStore, SETTINGS_STORAGE_KEY };

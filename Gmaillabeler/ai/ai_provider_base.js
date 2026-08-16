@@ -102,4 +102,4 @@ class AIProviderBase {
   }
 }
 
-globalThis.AIProviderBase = AIProviderBase;
+export { AIProviderBase };

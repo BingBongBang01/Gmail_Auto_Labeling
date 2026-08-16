@@ -1,5 +1,7 @@
 // ai/ai_key_manager.js
 
+import { SettingsStore } from "../settings/settings_store.js";
+
 class AIKeyManager {
   static async getActiveCredentials() {
     const settings = await SettingsStore.getSettings();
@@ -49,5 +51,4 @@ class AIKeyManager {
   }
 }
 
-if (typeof self !== "undefined") self.AIKeyManager = AIKeyManager;
-globalThis.AIKeyManager = AIKeyManager;
+export { AIKeyManager };
