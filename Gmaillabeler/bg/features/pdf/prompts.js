@@ -1,5 +1,11 @@
 // bg/features/pdf/prompts.js
-// 원본 PDF 번역기(prompts/*.txt)에서 그대로 옮긴 프롬프트.
+//
+// 출처: PDF_AI_Translater v6.1.4 의 prompts/system_prompt.txt,
+//       system_prompt_local.txt, user_template.txt
+//       https://github.com/BingBongBang01/PDF_AI_Translater
+//       라이선스: Creative Commons Attribution-NonCommercial 4.0 (CC BY-NC 4.0)
+//       CC BY-NC는 저작자 표시를 요구하므로 이 주석을 지우지 말 것.
+//
 // 손으로 옮기면 오타가 나므로 원본 파일에서 생성했다. 내용을 바꿀 일이 있으면
 // 원본 저장소 쪽을 먼저 고치고 다시 생성하는 편이 안전하다.
 //
