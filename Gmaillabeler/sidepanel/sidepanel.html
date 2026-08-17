@@ -101,6 +101,20 @@
     <div class="resizer-handle"></div>
   </div>
 
+  <!-- 컨텍스트 바.
+       panelContainer 밖에 두는 것이 중요하다: 워크스페이스를 그릴 때마다
+       panelContainer.innerHTML을 비우기 때문에, 안에 두면 화면을 바꿀 때마다 사라진다.
+       (예전에 이 영역이 통째로 없어진 뒤로 ui/context.js와 ui/feedback.js가 갱신하던
+       네 요소가 전부 허공을 가리키고 있었다. 작업 시작·실패 메시지도 보이지 않았다.) -->
+  <div class="context-bar" id="contextBar">
+    <div class="context-bar-line">
+      <span class="context-service" id="contextService">Gmail</span>
+      <span class="context-title" id="contextTitle" data-i18n="sidepanelInbox">Inbox</span>
+    </div>
+    <div class="context-desc" id="contextDesc" data-i18n="sidepanelReady">Ready to assist</div>
+    <div class="dynamic-actions" id="dynamicActions"></div>
+  </div>
+
   <main class="sidepanel-content" id="mainContent">
     <div id="panelContainer" class="panel-container"></div>
   </main>

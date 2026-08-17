@@ -62,4 +62,11 @@ function renderWorkspaceByName(name) {
   render();
 }
 
-export { renderServiceWorkspace, renderWorkspaceByName };
+// 타일이 가리키는 화면이 실제로 있는지 nav/tile_state.js가 물어본다.
+// NAMED_WORKSPACES를 통째로 내보내지 않는 이유: 밖에서 표를 고칠 수 있게 되면
+// "화면 목록은 이 파일이 소유한다"는 규칙이 깨진다.
+function hasNamedWorkspace(name) {
+  return Object.prototype.hasOwnProperty.call(NAMED_WORKSPACES, name);
+}
+
+export { renderServiceWorkspace, renderWorkspaceByName, hasNamedWorkspace };

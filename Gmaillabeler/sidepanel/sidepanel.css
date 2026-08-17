@@ -345,6 +345,19 @@ body {
   background-color: var(--md-sys-color-surface-container);
 }
 
+/* 아직 못 하는 일. 눌리기는 하되(누르면 이유를 설명한다) 될 것처럼 보이지는 않게 한다. */
+.service-btn.is-unavailable {
+  opacity: 0.42;
+}
+
+.service-btn.is-unavailable .service-icon {
+  filter: grayscale(1);
+}
+
+.service-btn.is-unavailable:hover {
+  opacity: 0.72;
+}
+
 .service-btn.empty.drag-over {
   opacity: 0.9;
   border-color: var(--md-sys-color-primary);
@@ -448,27 +461,87 @@ body {
   background-color: var(--md-sys-color-surface-container) !important;
 }
 
-.context-card {
-  margin-bottom: 16px;
-  border-left: 4px solid var(--md-sys-color-primary);
+/* ---------- 컨텍스트 바 ----------
+   상단바/중간바와 본문 사이의 한 줄. 세 가지를 여기서만 말한다:
+   지금 무엇을 보고 있는지, 방금 무슨 일이 일어났는지, 이 화면에서 바로 할 수 있는 것.
+   사이드패널은 좁으므로 세로를 최대한 아낀다(빈 줄은 :empty로 접는다). */
+
+.context-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 6px 10px 7px;
+  background-color: var(--sp-card-bg, var(--md-sys-color-surface));
+  border-bottom: 1px solid var(--md-sys-color-outline-variant);
 }
 
-.context-header {
+.context-bar-line {
   display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 4px;
+  align-items: baseline;
+  gap: 6px;
+  min-width: 0;
+}
+
+.context-service {
+  flex-shrink: 0;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
   color: var(--md-sys-color-primary);
+}
+
+.context-title {
+  flex: 1;
+  min-width: 0;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--md-sys-color-on-surface);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.context-desc {
+  font-size: 10px;
+  line-height: 1.4;
+  color: var(--md-sys-color-on-surface-variant);
+  /* 작업 시작/실패 메시지가 여기로 들어온다. 길어도 두 줄까지만 차지한다. */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.context-desc:empty {
+  display: none;
+}
+
+/* 방금 일어난 일(작업 시작/실패)은 화면 설명과 구별되어야 한다. */
+.context-desc.is-feedback {
+  color: var(--md-sys-color-primary);
+  font-weight: 500;
 }
 
 .dynamic-actions {
   display: flex;
-  flex-direction: column;
-  gap: 8px;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 2px;
+}
+
+.dynamic-actions:empty {
+  display: none;
 }
 
 .action-btn {
-  width: 100%;
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 4px 10px;
+  font-size: 10.5px;
+  font-weight: 600;
+  border-radius: 999px;
+  white-space: nowrap;
 }
 
 .tool-list {
@@ -730,6 +803,109 @@ body {
   padding: 14px;
   box-sizing: border-box;
   animation: fadeInSettings 0.22s ease;
+}
+
+/* ---------- 안내 카드 ----------
+   아직 못 하는 타일을 눌렀을 때 본문에 뜨는 것. 오류처럼 보이면 안 되고
+   (사용자가 잘못한 게 아니다), 곧 될 것처럼 보여도 안 된다. */
+
+.notice-card {
+  border-left: 3px solid var(--md-sys-color-outline);
+}
+
+.notice-card.is-planned {
+  border-left-color: var(--md-sys-color-primary);
+}
+
+.notice-card.is-missing {
+  border-left-color: var(--md-sys-color-error);
+}
+
+/* 아이콘 · 배지 · 제목 · 본문이 모두 같은 왼쪽 축에서 시작하게 한다.
+   아이콘을 별도 열로 두면 제목만 들여써져 카드가 어긋나 보인다. */
+.notice-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.notice-icon {
+  font-size: 15px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.notice-badge {
+  display: inline-block;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background-color: var(--md-sys-color-surface-variant);
+  color: var(--md-sys-color-on-surface-variant);
+}
+
+.notice-card.is-planned .notice-badge {
+  background-color: var(--md-sys-color-secondary-container);
+  color: var(--md-sys-color-on-secondary-container);
+}
+
+.notice-card.is-missing .notice-badge {
+  background-color: var(--md-sys-color-error-container);
+  color: var(--md-sys-color-on-error-container);
+}
+
+.notice-title {
+  margin: 0 0 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--md-sys-color-on-surface);
+  word-break: keep-all;
+}
+
+.notice-body {
+  margin: 0;
+  font-size: 11.5px;
+  line-height: 1.6;
+  color: var(--md-sys-color-on-surface-variant);
+  word-break: keep-all;
+}
+
+.notice-scope {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 10px;
+  padding: 7px 9px;
+  border-radius: 8px;
+  background-color: var(--md-sys-color-surface);
+  border: 1px solid var(--md-sys-color-outline-variant);
+}
+
+.notice-scope-label {
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--md-sys-color-on-surface-variant);
+  flex-shrink: 0;
+}
+
+.notice-scope-value {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 10.5px;
+  color: var(--md-sys-color-primary);
+  word-break: break-all;
+}
+
+.notice-foot {
+  margin: 7px 0 0;
+  font-size: 10px;
+  line-height: 1.5;
+  color: var(--md-sys-color-on-surface-variant);
+  opacity: 0.85;
+  word-break: keep-all;
 }
 
 .workspace-card-header {

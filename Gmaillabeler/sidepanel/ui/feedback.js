@@ -4,9 +4,26 @@
 
 import { $ } from "./dom.js";
 
+// 메시지를 이 시간 동안 보여준 뒤 원래 화면 설명으로 되돌린다.
+// 되돌리지 않으면 마지막 작업 메시지가 영구히 남아, "지금 무엇을 보고 있는지"를
+// 알려주는 자리를 잡아먹는다.
+const FEEDBACK_HOLD_MS = 4000;
+
 function setActionFeedback(msg) {
   const desc = $("contextDesc");
-  if (desc) desc.textContent = msg;
+  if (!desc) return;
+
+  // 원래 설명은 updateContextUI가 dataset에 적어둔다. 아직 없으면 지금 값이 원래 값이다.
+  if (desc.dataset.baseDesc === undefined) desc.dataset.baseDesc = desc.textContent || "";
+
+  desc.textContent = msg;
+  desc.classList.add("is-feedback");
+
+  clearTimeout(desc._restoreTimer);
+  desc._restoreTimer = setTimeout(() => {
+    desc.textContent = desc.dataset.baseDesc || "";
+    desc.classList.remove("is-feedback");
+  }, FEEDBACK_HOLD_MS);
 }
 
 

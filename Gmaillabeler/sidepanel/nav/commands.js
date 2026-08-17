@@ -12,6 +12,8 @@ import { setActionFeedback } from "../ui/feedback.js";
 import { renderWorkspaceByName } from "../workspaces/index.js";
 import { renderSettingsPanel } from "../workspaces/settings.js";
 import { resetCurrentServiceActions } from "./action_nav.js";
+import { getTileState } from "./tile_state.js";
+import { renderTileNotice } from "../workspaces/notice.js";
 
 const COMMANDS = {
   // 백그라운드 작업 시작. arg는 jobType.
@@ -37,9 +39,19 @@ const COMMANDS = {
 /**
  * 타일 하나를 실행한다. 모르는 command는 조용히 무시하지 않고 콘솔에 남긴다
  * (오타 난 command가 "눌러도 아무 반응 없음"으로만 나타나면 원인을 찾기 어렵다).
+ *
+ * 아직 못 하는 일이면 실행하지 않고 왜 못 하는지 본문에 띄운다. 실행을 시도해봐야
+ * 백그라운드가 "지원하지 않는 작업"이라고 답할 뿐이고, 사용자는 그 이유를 알 수 없다.
  */
 function runCommand(action) {
   if (!action || !action.command) return;
+
+  const state = getTileState(action);
+  if (!state.available) {
+    renderTileNotice(action, state);
+    return;
+  }
+
   const fn = COMMANDS[action.command];
   if (!fn) {
     console.warn(`[sidepanel] 알 수 없는 command: "${action.command}" (타일: ${action.id})`);
