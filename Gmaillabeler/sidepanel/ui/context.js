@@ -6,6 +6,7 @@ import { startJob } from "../job_client.js";
 import { t } from "../../i18n.js";
 import { SERVICE_REGISTRY } from "../nav/registry.js";
 import { syncActiveServiceTile } from "../nav/service_nav.js";
+import { renderWorkspaceByName } from "../workspaces/index.js";
 import { $ } from "./dom.js";
 
 const CONTEXT_FRESHNESS_MS = 10 * 60 * 1000;
@@ -30,6 +31,20 @@ function detectInitialContext() {
 
     if (url.includes("calendar.google.com")) {
       updateContextUI({ service: "Calendar", pageType: "schedule", title: "Schedule", desc: "Ready to assist" });
+      return;
+    }
+
+    if (url.includes("youtube.com")) {
+      const isWatch = url.includes("/watch") || url.includes("/shorts/");
+      const isStudio = url.includes("studio.youtube.com");
+      const rawTitle = (activeTab && activeTab.title) || "YouTube";
+      const cleanTitle = rawTitle.replace(/ - YouTube$/i, "").trim();
+      updateContextUI({
+        service: "유튜브",
+        pageType: isWatch ? "watch" : isStudio ? "studio" : "home",
+        title: cleanTitle,
+        desc: isWatch ? "현재 동영상을 AI로 분석할 수 있습니다." : "YouTube 연동 준비가 되었습니다.",
+      });
       return;
     }
 
@@ -59,6 +74,18 @@ const ACTION_REGISTRY = {
   "calendar.schedule": [
     { id: "action_classify_schedule", label: "sidepanelClassifySchedule", cls: "btn-primary", handler: () => startJob("calendar_classify") },
     { id: "action_apply_colors", label: "sidepanelApplyColors", cls: "btn-secondary", handler: () => startJob("calendar_apply_colors") }
+  ],
+  "유튜브.watch": [
+    { id: "action_yt_summarize", label: "영상 3줄 요약", cls: "btn-primary", handler: () => renderWorkspaceByName("youtube_workspace") },
+    { id: "action_yt_open_home", label: "유튜브 홈", cls: "btn-secondary", handler: () => window.open("https://www.youtube.com", "_blank") }
+  ],
+  "유튜브.home": [
+    { id: "action_yt_trending", label: "인기 급상승", cls: "btn-primary", handler: () => window.open("https://www.youtube.com/feed/trending", "_blank") },
+    { id: "action_yt_subs", label: "구독 채널", cls: "btn-secondary", handler: () => window.open("https://www.youtube.com/feed/subscriptions", "_blank") }
+  ],
+  "youtube.watch": [
+    { id: "action_yt_summarize_en", label: "영상 3줄 요약", cls: "btn-primary", handler: () => renderWorkspaceByName("youtube_workspace") },
+    { id: "action_yt_open_home_en", label: "유튜브 홈", cls: "btn-secondary", handler: () => window.open("https://www.youtube.com", "_blank") }
   ]
 };
 

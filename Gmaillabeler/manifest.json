@@ -11,14 +11,22 @@
     "alarms",
     "storage",
     "notifications",
-    "sidePanel"
+    "sidePanel",
+    "scripting",
+    "activeTab",
+    "offscreen",
+    "unlimitedStorage"
   ],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'"
+  },
   "side_panel": {
     "default_path": "sidepanel/sidepanel.html"
   },
   "host_permissions": [
     "*://mail.google.com/*",
     "https://calendar.google.com/*",
+    "https://*.youtube.com/*",
     "https://gmail.googleapis.com/*",
     "https://generativelanguage.googleapis.com/*",
     "https://api.openai.com/*",
@@ -40,6 +48,11 @@
         "content/ui_detail_card.js",
         "content/content_main.js"
       ]
+    },
+    {
+      "matches": ["*://*.youtube.com/*"],
+      "js": ["content/youtube_content.js"],
+      "run_at": "document_idle"
     }
   ],
   "web_accessible_resources": [

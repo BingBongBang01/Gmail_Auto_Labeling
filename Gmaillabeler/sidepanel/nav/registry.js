@@ -21,6 +21,7 @@ const SERVICE_REGISTRY = [
   { id: "keep", label: "Keep", icon: "💡", title: "Keep" },
   { id: "tasks", label: "Tasks", icon: "☑️", title: "Tasks" },
   { id: "contacts", label: "연락처", icon: "👤", title: "Contacts" },
+  { id: "youtube", label: "유튜브", icon: "▶️", title: "YouTube" },
   { id: "gemini", label: "Gemini", icon: "✨", title: "Gemini" },
   { id: "edit", label: "편집", icon: "✏️", title: "Edit" },
   { id: "settings", label: "설정", icon: "⚙️", title: "Settings" }
@@ -81,6 +82,17 @@ const DEFAULT_SERVICE_ACTIONS = {
     { id: "contacts_search", label: "연락처검색", icon: "👤", title: "스마트 검색", command: "job", arg: "contacts_search" },
     { id: "contacts_dedup", label: "중복합치기", icon: "🔗", title: "중복 연락처 병합", command: "job", arg: "contacts_dedup" },
     { id: "contacts_group", label: "그룹생성", icon: "👥", title: "스마트 그룹 생성", command: "job", arg: "contacts_group" }
+  ],
+  youtube: [
+    { id: "yt_comments", label: "댓글불러오기", icon: "💬", title: "현재 영상 댓글 불러오기 및 AI 분석", command: "workspace", arg: "youtube_comments" },
+    { id: "yt_summarize", label: "영상요약", icon: "📝", title: "YouTube 영상 AI 요약", command: "workspace", arg: "youtube_workspace" },
+    { id: "yt_open", label: "유튜브홈", icon: "🌐", title: "유튜브 홈 바로가기", command: "openUrl", arg: "https://www.youtube.com" },
+    { id: "yt_studio", label: "스튜디오", icon: "📊", title: "YouTube 스튜디오 열기", command: "openUrl", arg: "https://studio.youtube.com" },
+    { id: "yt_subscriptions", label: "구독채널", icon: "🔔", title: "구독 채널 목록 열기", command: "openUrl", arg: "https://www.youtube.com/feed/subscriptions" },
+    { id: "yt_history", label: "시청기록", icon: "📜", title: "시청 기록 열기", command: "openUrl", arg: "https://www.youtube.com/feed/history" },
+    { id: "yt_trending", label: "인기급상승", icon: "🔥", title: "인기 급상승 동영상", command: "openUrl", arg: "https://www.youtube.com/feed/trending" },
+    { id: "yt_music", label: "YT뮤직", icon: "🎵", title: "YouTube Music 열기", command: "openUrl", arg: "https://music.youtube.com" },
+    { id: "yt_search", label: "동영상검색", icon: "🔍", title: "유튜브 동영상 빠른 검색", command: "workspace", arg: "youtube_workspace" }
   ],
   gemini: [
     { id: "gemini_chat", label: "대화시작", icon: "✨", title: "Gemini AI 질의응답", command: "job", arg: "gemini_chat" },

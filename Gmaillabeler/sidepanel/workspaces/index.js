@@ -11,6 +11,7 @@ import { renderGmailWorkspace } from "./gmail.js";
 import { getCurrentSettingsSection, renderSettingsPanel } from "./settings.js";
 import { renderGmailAutoSettingsWorkspace } from "./gmail_auto_settings.js";
 import { renderGmailLabelSettingsWorkspace } from "./gmail_label_settings.js";
+import { renderYoutubeCommentsWorkspace, renderYoutubeWorkspace } from "./youtube.js";
 
 function renderServiceWorkspace(serviceId) {
   const container = $("panelContainer");
@@ -26,6 +27,8 @@ function renderServiceWorkspace(serviceId) {
     renderGmailWorkspace();
   } else if (serviceId === "calendar") {
     renderCalendarWorkspace();
+  } else if (serviceId === "youtube") {
+    renderYoutubeCommentsWorkspace();
   } else if (serviceId === "gemini") {
     renderGeminiWorkspace();
   } else if (serviceId === "edit") {
@@ -42,6 +45,8 @@ function renderServiceWorkspace(serviceId) {
 const NAMED_WORKSPACES = {
   gmail_auto_settings: renderGmailAutoSettingsWorkspace,
   gmail_label_settings: renderGmailLabelSettingsWorkspace,
+  youtube_workspace: () => renderYoutubeWorkspace(),
+  youtube_comments: () => renderYoutubeCommentsWorkspace(),
 };
 
 function renderWorkspaceByName(name) {

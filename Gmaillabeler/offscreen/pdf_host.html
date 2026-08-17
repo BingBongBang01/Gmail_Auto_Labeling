@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+  <meta charset="UTF-8">
+  <title>PDF engine host</title>
+</head>
+
+<body>
+  <!-- 화면에 보이지 않는 문서다. 서비스워커에는 DOM도 WebAssembly 워커도 없어서
+       mupdf/tesseract WASM을 여기서 돌린다. 사용자가 볼 UI는 사이드패널에 있다. -->
+  <script type="module" src="pdf_host.js"></script>
+</body>
+
+</html>

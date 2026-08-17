@@ -1,0 +1,14 @@
+# 서드파티 런타임 바이너리는 저장소에 넣지 않는다.
+#
+# vendor/mupdf 는 MuPDF WASM(AGPL-3.0-or-later)이다.
+# 이 저장소는 공개(public)이고 Gmaillabeler/LICENSE 는 재배포를 금지한다.
+# AGPL은 결합 저작물을 배포하면 전체를 AGPL로 공개하라고 요구하므로 두 조건이 충돌한다.
+# 그래서 코드만 공개하고 AGPL 바이너리는 각자 로컬에서 받아 쓴다.
+# 받는 방법은 Gmaillabeler/vendor/README.md 참고.
+Gmaillabeler/vendor/*
+!Gmaillabeler/vendor/README.md
+
+# 로컬 작업 부산물
+*.pyc
+__pycache__/
+.coverage

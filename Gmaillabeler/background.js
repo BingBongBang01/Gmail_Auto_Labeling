@@ -55,6 +55,8 @@ import * as calendarFeature from "./bg/features/calendar/index.js";
 import * as discordFeature from "./bg/features/discord/index.js";
 import * as learningFeature from "./bg/features/learning/index.js";
 import * as automationFeature from "./bg/features/automation/index.js";
+import * as youtubeFeature from "./bg/features/youtube/index.js";
+import * as pdfFeature from "./bg/features/pdf/index.js";
 
 appearanceFeature.register();
 oauthFeature.register();
@@ -66,6 +68,8 @@ calendarFeature.register();
 discordFeature.register();
 learningFeature.register();
 automationFeature.register();
+youtubeFeature.register();
+pdfFeature.register();
 
 // ---------------- 설치 / 업데이트 ----------------
 chrome.runtime.onInstalled.addListener(async (details) => {
