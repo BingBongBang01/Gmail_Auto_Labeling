@@ -1937,3 +1937,325 @@ body {
   padding: 12px 0 8px 0;
   width: 100%;
 }
+/* ===================================================================== */
+/* PDF 문서 번역 워크스페이스 (pdf-*)                                      */
+/* 색은 전부 --md-sys-color-* 토큰으로만 쓴다. 그래야 다크모드에서          */
+/* 규칙마다 따로 덮어쓸 필요가 없다.                                       */
+/* ===================================================================== */
+
+.pdf-workspace {
+  display: flex;
+  flex-direction: column;
+  animation: fadeInSettings 0.22s ease;
+}
+
+.pdf-section-card {
+  background-color: var(--sp-card-bg);
+  border-bottom: 1px solid var(--sp-card-border);
+  padding: 9px 10px;
+  box-sizing: border-box;
+}
+
+.pdf-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  margin-bottom: 7px;
+}
+
+.pdf-section-title {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--md-sys-color-on-surface);
+}
+
+.pdf-section-body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.pdf-hint {
+  font-size: 10px;
+  color: var(--md-sys-color-on-surface-variant);
+}
+
+/* ---------- 파일 드롭존 ---------- */
+
+.pdf-dropzone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 16px 10px;
+  border: 1.5px dashed var(--md-sys-color-outline);
+  border-radius: 10px;
+  background-color: var(--md-sys-color-surface);
+  cursor: pointer;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+  outline: none;
+}
+
+.pdf-dropzone:hover,
+.pdf-dropzone:focus-visible,
+.pdf-dropzone.is-over {
+  border-color: var(--md-sys-color-primary);
+  background-color: var(--md-sys-color-surface-container);
+}
+
+.pdf-dropzone.has-file {
+  border-style: solid;
+  border-color: var(--md-sys-color-primary);
+}
+
+.pdf-dropzone-icon {
+  font-size: 18px;
+  line-height: 1;
+}
+
+.pdf-dropzone-text {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--md-sys-color-on-surface);
+  text-align: center;
+  word-break: break-all;
+}
+
+/* ---------- 폼 ---------- */
+
+.pdf-field-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.pdf-field {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.pdf-field-label {
+  font-size: 10.5px;
+  font-weight: 500;
+  color: var(--md-sys-color-on-surface-variant);
+}
+
+.pdf-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 5px 7px;
+  border-radius: 6px;
+  border: 1px solid var(--md-sys-color-outline);
+  background-color: var(--md-sys-color-surface);
+  color: var(--md-sys-color-on-surface);
+  font-size: 11.5px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.pdf-input:focus {
+  border-color: var(--md-sys-color-primary);
+}
+
+.pdf-textarea {
+  resize: vertical;
+  min-height: 34px;
+}
+
+.pdf-advanced {
+  margin-top: 2px;
+}
+
+.pdf-advanced > summary {
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--md-sys-color-primary);
+  cursor: pointer;
+  padding: 3px 0;
+  user-select: none;
+}
+
+/* ---------- 실행 버튼 ---------- */
+
+.pdf-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 10px;
+  background-color: var(--sp-card-bg);
+  border-bottom: 1px solid var(--sp-card-border);
+}
+
+.pdf-btn-run {
+  flex: 1;
+}
+
+.pdf-btn-run:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+/* ---------- 진행 상황 ---------- */
+
+.pdf-stages {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 6px;
+}
+
+.pdf-stage {
+  flex: 1;
+  text-align: center;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 3px 2px;
+  border-radius: 5px;
+  background-color: var(--md-sys-color-surface);
+  color: var(--md-sys-color-on-surface-variant);
+  border: 1px solid var(--md-sys-color-outline-variant);
+}
+
+.pdf-stage.is-active {
+  background-color: var(--md-sys-color-primary);
+  color: var(--md-sys-color-on-primary);
+  border-color: var(--md-sys-color-primary);
+}
+
+.pdf-stage.is-done {
+  background-color: var(--md-sys-color-secondary-container);
+  color: var(--md-sys-color-on-secondary-container);
+  border-color: var(--md-sys-color-secondary-container);
+}
+
+.pdf-progress-track {
+  height: 5px;
+  border-radius: 3px;
+  background-color: var(--md-sys-color-surface-variant);
+  overflow: hidden;
+}
+
+.pdf-progress-fill {
+  height: 100%;
+  width: 0%;
+  border-radius: 3px;
+  background-color: var(--md-sys-color-primary);
+  transition: width 0.3s ease;
+}
+
+.pdf-status-text {
+  margin-top: 5px;
+  font-size: 10.5px;
+  color: var(--md-sys-color-on-surface-variant);
+}
+
+/* ---------- 결과 ---------- */
+
+.pdf-result-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.pdf-result-name {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--md-sys-color-on-surface);
+  word-break: break-all;
+}
+
+.pdf-btn-download {
+  flex-shrink: 0;
+}
+
+.pdf-warn,
+.pdf-error {
+  font-size: 10.5px;
+  line-height: 1.4;
+  padding: 6px 8px;
+  border-radius: 6px;
+  margin-bottom: 6px;
+}
+
+.pdf-warn {
+  background-color: var(--md-sys-color-tertiary-container, var(--md-sys-color-surface-variant));
+  color: var(--md-sys-color-on-tertiary-container, var(--md-sys-color-on-surface));
+}
+
+.pdf-error {
+  background-color: var(--md-sys-color-error-container);
+  color: var(--md-sys-color-on-error-container);
+}
+
+.pdf-fail-list {
+  margin: 4px 0 0;
+  padding: 6px;
+  border-radius: 6px;
+  background-color: var(--md-sys-color-surface);
+  color: var(--md-sys-color-on-surface-variant);
+  font-size: 10px;
+  line-height: 1.45;
+  max-height: 140px;
+  overflow: auto;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+/* ---------- 최근 번역 ---------- */
+
+.pdf-runs {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.pdf-run-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 6px;
+  border-radius: 6px;
+  background-color: var(--md-sys-color-surface);
+}
+
+.pdf-run-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.pdf-run-name {
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--md-sys-color-on-surface);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pdf-run-badge {
+  flex-shrink: 0;
+  font-size: 9.5px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 999px;
+  background-color: var(--md-sys-color-surface-variant);
+  color: var(--md-sys-color-on-surface-variant);
+}
+
+.pdf-run-badge.is-done {
+  background-color: var(--md-sys-color-secondary-container);
+  color: var(--md-sys-color-on-secondary-container);
+}
+
+.pdf-run-badge.is-error,
+.pdf-run-badge.is-failed {
+  background-color: var(--md-sys-color-error-container);
+  color: var(--md-sys-color-on-error-container);
+}

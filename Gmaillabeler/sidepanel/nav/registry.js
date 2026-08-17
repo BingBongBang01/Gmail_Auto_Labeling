@@ -58,7 +58,9 @@ const DEFAULT_SERVICE_ACTIONS = {
     { id: "docs_new", label: "새문서", icon: "📄", title: "새 문서 생성", command: "openUrl", arg: "https://docs.new" },
     { id: "docs_summary", label: "문서요약", icon: "📋", title: "문서 내용 요약", command: "job", arg: "docs_summary" },
     { id: "docs_proofread", label: "문장교정", icon: "✏️", title: "맞춤법 및 문장 교정", command: "job", arg: "docs_proofread" },
-    { id: "docs_translate", label: "문서번역", icon: "🌐", title: "다국어 번역", command: "job", arg: "docs_translate" }
+    // 예전엔 command:"job", arg:"docs_translate" 였는데 그런 잡은 등록된 적이 없어서
+    // 눌러도 아무 일도 일어나지 않는 타일이었다. 실제 번역 화면으로 연결한다.
+    { id: "docs_translate", label: "문서번역", icon: "🌐", title: "PDF 문서 번역 (레이아웃 유지)", command: "workspace", arg: "pdf_translate" }
   ],
   sheets: [
     { id: "sheets_clean", label: "데이터정제", icon: "🧹", title: "결측치 및 중복 제거", command: "job", arg: "sheets_clean" }

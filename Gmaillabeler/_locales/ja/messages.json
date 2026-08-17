@@ -3266,5 +3266,19 @@
   },
   "settingsBackupIncludeCredentials": {
     "message": "API キーと OAuth 情報を含める（パスフレーズが必要・暗号化されます）"
+  },
+  "notifyTitlePdfTranslate": {
+    "message": "「$FILE$」の翻訳",
+    "description": "Notification title for the PDF translation job",
+    "placeholders": {
+      "FILE": {
+        "content": "$1",
+        "example": "report.pdf"
+      }
+    }
+  },
+  "notifyTitleYoutubeSummary": {
+    "message": "YouTube 動画要約",
+    "description": "Notification title for the YouTube summary job"
   }
 }

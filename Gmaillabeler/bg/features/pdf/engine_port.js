@@ -13,6 +13,16 @@ let readyPromise = null;
 let nextRequestId = 1;
 const pending = new Map(); // requestId -> {resolve, reject}
 
+// 엔진이 보내오는 진행 이벤트(extractProgress/renderProgress) 구독자.
+// 긴 추출/재구성 동안 화면이 멈춘 것처럼 보이지 않게 하려는 것이고,
+// 이 트래픽 자체가 서비스워커의 유휴 타이머를 리셋해주는 효과도 있다.
+const eventListeners = new Set();
+
+function onEngineEvent(fn) {
+  eventListeners.add(fn);
+  return () => eventListeners.delete(fn);
+}
+
 // 오프스크린 쪽에서 connect해 오면 여기로 들어온다.
 // 리스너 등록은 register() 안에서 동기적으로 이뤄져야 한다(background.js 헤더의 제약).
 function attachEnginePort(port) {
@@ -23,6 +33,17 @@ function attachEnginePort(port) {
 
     if (msg.evt === "ready") {
       if (readyResolve) readyResolve();
+      return;
+    }
+
+    if (msg.evt) {
+      for (const fn of eventListeners) {
+        try {
+          fn(msg);
+        } catch (e) {
+          // 구독자 하나가 터져도 엔진 통신은 계속돼야 한다.
+        }
+      }
       return;
     }
 
@@ -96,4 +117,4 @@ async function shutdownEngine() {
   readyResolve = null;
 }
 
-export { attachEnginePort, callEngine, ensureEngine, shutdownEngine, PORT_NAME };
+export { attachEnginePort, callEngine, ensureEngine, shutdownEngine, onEngineEvent, PORT_NAME };
