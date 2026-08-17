@@ -26,6 +26,25 @@ function pageToUserMatrix(page) {
   return mupdf.Matrix.invert(page.getTransform());
 }
 
+// mupdf.Rect.transform이 버전마다 있거나 없어서 직접 계산한다.
+// 네 꼭짓점을 모두 옮긴 뒤 최소/최대를 잡는다 - /Rotate가 걸린 페이지에서는 행렬이 회전을
+// 담고 있으므로 두 점만 옮기면 상자가 뒤집힌다.
+function transformPoint(m, x, y) {
+  return [m[0] * x + m[2] * y + m[4], m[1] * x + m[3] * y + m[5]];
+}
+
+function transformRect(m, rect) {
+  const corners = [
+    transformPoint(m, rect[0], rect[1]),
+    transformPoint(m, rect[2], rect[1]),
+    transformPoint(m, rect[2], rect[3]),
+    transformPoint(m, rect[0], rect[3]),
+  ];
+  const xs = corners.map((c) => c[0]);
+  const ys = corners.map((c) => c[1]);
+  return [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)];
+}
+
 // ---------------------------------------------------------------------------
 // 문서 열기
 // ---------------------------------------------------------------------------
@@ -62,6 +81,93 @@ function extractPageBlocks(doc, pageNo) {
   } finally {
     page.destroy();
   }
+}
+
+// 한 쪽에서 뽑은 텍스트가 몇 글자인지 센다. 스캔본 판정용이다 -
+// 스캔된 쪽은 보통 0글자이고, 쪽번호만 텍스트로 얹힌 쪽은 한두 글자가 나온다.
+function countBlockChars(blocks) {
+  let total = 0;
+  for (const block of blocks || []) {
+    if (block.type !== "text" || !Array.isArray(block.lines)) continue;
+    for (const line of block.lines) {
+      if (typeof line.text === "string") {
+        total += line.text.trim().length;
+        continue;
+      }
+      const chars = line.chars || line.spans;
+      if (Array.isArray(chars)) total += chars.length;
+    }
+  }
+  return total;
+}
+
+// ---------------------------------------------------------------------------
+// 페이지 래스터화 (OCR 입력)
+// ---------------------------------------------------------------------------
+// PNG 바이트로 돌려준다. tesseract.js가 확실히 받는 형식이고, 배경색 표본을 뽑을 때도
+// 같은 바이트를 그대로 다시 디코드하면 되므로 픽스맵의 stride/컴포넌트 배치에 의존하지 않는다.
+//
+// 해상도는 상한을 둔다. 300DPI는 본문 10pt를 읽는 데 필요한 최소선이지만, A0 도면 같은
+// 큰 페이지에서 그대로 곱하면 픽스맵 하나가 수백 MB가 되어 WASM 힙이 먼저 죽는다.
+function renderPageImage(doc, pageNo, options = {}) {
+  const dpi = Math.max(72, Number(options.dpi) || 300);
+  const maxPixels = Number(options.maxPixels) || 40e6;
+
+  const page = doc.loadPage(pageNo);
+  try {
+    const bounds = page.getBounds();
+    const widthPt = Math.max(1, bounds[2] - bounds[0]);
+    const heightPt = Math.max(1, bounds[3] - bounds[1]);
+
+    let zoom = dpi / 72;
+    if (widthPt * heightPt * zoom * zoom > maxPixels) {
+      zoom = Math.sqrt(maxPixels / (widthPt * heightPt));
+    }
+
+    const pix = page.toPixmap(mupdf.Matrix.scale(zoom, zoom), mupdf.ColorSpace.DeviceRGB, false);
+    try {
+      return {
+        png: pixmapToPng(pix),
+        width: pix.getWidth(),
+        height: pix.getHeight(),
+        zoom,
+        // 픽스맵 원점. 대부분 (0,0)이지만 CropBox 원점이 (0,0)이 아닌 문서에서는 어긋난다.
+        originX: pix.getX ? pix.getX() : 0,
+        originY: pix.getY ? pix.getY() : 0,
+        bounds,
+      };
+    } finally {
+      pix.destroy();
+    }
+  } finally {
+    page.destroy();
+  }
+}
+
+// asPNG()가 버전에 따라 Uint8Array를 주기도 하고 Buffer 객체를 주기도 한다.
+// Buffer로 오면 asUint8Array()는 WASM 힙을 직접 가리키는 뷰라 반드시 복사해서 나가야 한다.
+function pixmapToPng(pix) {
+  const out = pix.asPNG();
+  if (out instanceof Uint8Array) return out.slice();
+  if (out && typeof out.asUint8Array === "function") {
+    try {
+      return out.asUint8Array().slice();
+    } finally {
+      if (typeof out.destroy === "function") out.destroy();
+    }
+  }
+  throw new Error("페이지 이미지를 PNG로 만들지 못했습니다.");
+}
+
+// 픽셀 좌표 -> 페이지 공간 좌표. renderPageImage가 돌려준 값을 그대로 넘긴다.
+function pixelBoxToPageRect(box, image) {
+  const zoom = image.zoom || 1;
+  return [
+    (image.originX + box.x0) / zoom,
+    (image.originY + box.y0) / zoom,
+    (image.originX + box.x1) / zoom,
+    (image.originY + box.y1) / zoom,
+  ];
 }
 
 // ---------------------------------------------------------------------------
@@ -264,7 +370,10 @@ function layoutInRect(fonts, text, rect, baseFontSize) {
 // ---------------------------------------------------------------------------
 // 페이지 재구성
 // ---------------------------------------------------------------------------
-// items: [{ rect: [x0,y0,x1,y1] (페이지 공간), text, fontSize, color, isOcr }]
+// items: [{ rect: [x0,y0,x1,y1] (페이지 공간), text, fontSize, color, isOcr, bgColor }]
+//
+// isOcr 항목은 원문이 이미지 픽셀이라 redaction으로 지울 수 없다. 대신 bgColor로 상자를
+// 덮고 그 위에 번역문을 그린다(덮지 않으면 원문 글자와 번역문이 겹쳐 둘 다 못 읽는다).
 function rebuildPage(doc, pageNo, items, fonts, options = {}) {
   const page = doc.loadPage(pageNo);
   try {
@@ -293,9 +402,13 @@ function rebuildPage(doc, pageNo, items, fonts, options = {}) {
     //    순서를 바꾸면 방금 넣은 번역문이 redaction에 같이 지워진다.
     const pageObj = page.getObject();
     const toUser = pageToUserMatrix(page);
+    // 덮기(사각형 채우기)를 전부 먼저 하고 글쓰기를 나중에 한다. 항목별로 번갈아 넣으면
+    // 상자가 겹치는 경우 뒤 항목의 배경이 앞 항목의 번역문을 지운다.
+    const fillOps = [];
     const ops = [];
     let overflowCount = 0;
     let drawn = 0;
+    let covered = 0;
 
     for (const item of items) {
       const text = String(item.text || "").trim();
@@ -304,6 +417,20 @@ function rebuildPage(doc, pageNo, items, fonts, options = {}) {
       const baseSize = (item.fontSize || 10) * (options.fontScale || 1);
       const { lines, size, overflow } = layoutInRect(fonts, text, item.rect, baseSize);
       if (overflow) overflowCount += 1;
+
+      if (item.isOcr && item.bgColor) {
+        // OCR 상자는 글자에 딱 붙어 있다. 조금 넓혀 덮지 않으면 원문 글자의 위아래 끝이 남는다.
+        const pad = Math.max(1, size * 0.18);
+        const box = [item.rect[0] - pad, item.rect[1] - pad, item.rect[2] + pad, item.rect[3] + pad];
+        const user = transformRect(toUser, box);
+        const [br, bg, bb] = hexToRgb01(item.bgColor);
+        fillOps.push(
+          `${pdfNum(br)} ${pdfNum(bg)} ${pdfNum(bb)} rg`,
+          `${pdfNum(user[0])} ${pdfNum(user[1])} ${pdfNum(user[2] - user[0])} ${pdfNum(user[3] - user[1])} re`,
+          "f"
+        );
+        covered += 1;
+      }
 
       const [r, g, b] = hexToRgb01(item.color || "#000000");
       ops.push("BT");
@@ -330,10 +457,12 @@ function rebuildPage(doc, pageNo, items, fonts, options = {}) {
 
     if (ops.length > 0) {
       ensureFontResource(doc, pageObj, fonts.resName, fonts.ref());
-      appendContentStream(doc, pageObj, ops.join("\n"));
+      // 채우기는 그래픽 상태(색)를 건드리므로 q/Q로 감싸 뒤따르는 텍스트에 새지 않게 한다.
+      const body = fillOps.length ? `q\n${fillOps.join("\n")}\nQ\n${ops.join("\n")}` : ops.join("\n");
+      appendContentStream(doc, pageObj, body);
     }
 
-    return { redacted, drawn, overflowCount };
+    return { redacted, drawn, overflowCount, covered };
   } finally {
     page.destroy();
   }
@@ -391,11 +520,15 @@ function savePdf(doc, options = {}) {
 export {
   openPdf,
   extractPageBlocks,
+  countBlockChars,
+  renderPageImage,
+  pixelBoxToPageRect,
   rebuildPage,
   savePdf,
   FontRegistry,
   resolveCjkLang,
   pageToUserMatrix,
+  transformRect,
   layoutInRect,
   wrapText,
   hexToRgb01,

@@ -32,13 +32,19 @@
 </head>
 
 <body>
-  <h1>PDF 엔진 자체 점검 (M0)</h1>
+  <h1>PDF 엔진 자체 점검</h1>
   <p class="sub">
     오프스크린 문서에서 MuPDF WASM을 띄우고 <code>열기 → 추출 → 원문 지우기 → 한글 삽입 → 저장</code>이
     한 바퀴 도는지 확인합니다. 이 단계가 통과해야 나머지 이식이 의미가 있습니다.
   </p>
+  <p class="sub">
+    "OCR 점검"은 표본 PDF를 이미지로 렌더한 뒤 그 이미지에서 글자를 다시 읽어냅니다
+    (스캔본과 같은 경로). <code>vendor/tesseract</code>를 넣지 않았으면 여기서 걸립니다 -
+    받는 방법은 <code>vendor/README.md</code>에 있습니다.
+  </p>
 
   <button id="run">점검 실행</button>
+  <button id="runOcr">OCR 점검</button>
   <button id="shutdown">엔진 종료</button>
 
   <div id="status"></div>

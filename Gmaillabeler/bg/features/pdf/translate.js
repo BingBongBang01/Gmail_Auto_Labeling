@@ -21,6 +21,7 @@ import {
   reconcileTranslations,
 } from "../../../pdf/text/batching.js";
 import { pdfSystemPrompt, PDF_USER_TEMPLATE } from "./prompts.js";
+import { attachCacheKeys, applyCachedTranslations, rememberTranslations } from "./seg_cache.js";
 
 // 루트가 OBJECT라서 AISchema.wrapRoot가 그대로 통과시킨다(래핑/언래핑 불필요).
 // 모든 속성을 required에 넣어두는 게 중요하다 - OpenAI strict 모드는
@@ -70,6 +71,22 @@ async function translateBatch(batch, options, prevPairs) {
   return (parsed && parsed.translations) || [];
 }
 
+// 배치 앞에 붙일 직전 문맥. 문서 순서상 이 배치보다 앞에 있고 이미 번역된 세그먼트를
+// 뒤에서부터 모은다.
+//
+// 캐시로 채워진 세그먼트도 문맥에 넣는다. 이어하기로 돌린 실행에서는 실제로 API를 타는
+// 세그먼트가 문서 중간부터 시작하는데, 그때 문맥이 텅 비어 있으면 앞부분에서 정한 용어와
+// 어긋난 번역이 나온다(이어하기의 결과가 한 번에 돌린 결과와 달라지는 지점이다).
+function precedingPairs(targets, upto, limit) {
+  const pairs = [];
+  for (let i = upto - 1; i >= 0 && pairs.length < limit; i -= 1) {
+    const seg = targets[i];
+    if (!seg.translated || seg.translationFailed) continue;
+    pairs.push([seg.text, seg.translated]);
+  }
+  return pairs.reverse();
+}
+
 /**
  * segments를 제자리에서 채운다: s.translated / s.translationFailed / s.failReason.
  * 반환값은 요약 통계.
@@ -80,22 +97,47 @@ async function translateBatch(batch, options, prevPairs) {
  */
 async function translateSegments(segments, options, hooks = {}) {
   const targets = segments.filter((s) => s.needsTranslation);
-  const batches = makeBatches(targets, options.batchChars, options.batchSegs);
 
   const stats = {
     total: targets.length,
     success: 0,
     degraded: 0,
+    cacheHits: 0,
     requestsUsed: 0,
     cancelled: false,
     quotaExhausted: false,
     failMessages: [],
   };
 
-  const prevPairs = [];
-  let processed = 0;
+  // ---- 캐시에서 채울 수 있는 것을 먼저 채운다(= 이어하기) ----
+  await attachCacheKeys(targets, options);
+  if (options.useCache !== false) {
+    stats.cacheHits = await applyCachedTranslations(targets);
+    stats.success += stats.cacheHits;
+  }
 
-  await addLog(`[PDF] 번역 시작: 세그먼트 ${targets.length}개, 배치 ${batches.length}개`);
+  // 캐시로 채워지지 않은 것만 실제로 번역한다.
+  const pending = targets.filter((s) => !s.translated);
+  const batches = makeBatches(pending, options.batchChars, options.batchSegs);
+
+  // 문맥 수집은 targets(문서 순서) 위에서 하므로 배치 첫 세그먼트의 위치를 알아야 한다.
+  const orderIndex = new Map();
+  targets.forEach((seg, i) => orderIndex.set(seg, i));
+
+  let processed = stats.cacheHits;
+
+  if (stats.cacheHits) {
+    await addLog(
+      `[PDF] 캐시에서 세그먼트 ${stats.cacheHits}개를 재사용합니다(남은 ${pending.length}개만 번역).`
+    );
+  }
+  if (!pending.length) {
+    await addLog("[PDF] 번역할 세그먼트가 모두 캐시에 있었습니다. AI 요청 없이 재구성으로 넘어갑니다.");
+    await updateProgress({ processed: targets.length, total: targets.length, batchIndex: 0, batchTotal: 0 }, { force: true });
+    return stats;
+  }
+
+  await addLog(`[PDF] 번역 시작: 세그먼트 ${pending.length}개, 배치 ${batches.length}개`);
 
   for (let bi = 0; bi < batches.length; bi += 1) {
     if (isCancelled()) {
@@ -105,6 +147,7 @@ async function translateSegments(segments, options, hooks = {}) {
     }
 
     const batch = batches[bi];
+    const prevPairs = precedingPairs(targets, orderIndex.get(batch[0]) ?? 0, PREV_CONTEXT_PAIRS);
     let results;
 
     try {
@@ -136,12 +179,14 @@ async function translateSegments(segments, options, hooks = {}) {
         seg.translated = text;
         seg.translationFailed = false;
         stats.success += 1;
-        if (prevPairs.length >= PREV_CONTEXT_PAIRS) prevPairs.shift();
-        prevPairs.push([seg.text, text]);
       } else {
         degrade(seg, reason || "원인 불명", stats);
       }
     }
+
+    // 배치 단위로 바로 캐시에 적는다. 문서 끝에서 한 번에 적으면 그 전에 워커가 죽었을 때
+    // 이 배치의 진행분이 남지 않아 이어하기가 처음부터 다시 번역한다.
+    await rememberTranslations(batch, hooks.docId);
 
     processed += batch.length;
     await updateProgress({
@@ -165,7 +210,10 @@ async function translateSegments(segments, options, hooks = {}) {
     { processed: targets.length, total: targets.length, batchIndex: batches.length, batchTotal: batches.length },
     { force: true }
   );
-  await addLog(`[PDF] 번역 완료: 성공 ${stats.success} / 원문유지 ${stats.degraded} (요청 ${stats.requestsUsed}회)`);
+  await addLog(
+    `[PDF] 번역 완료: 성공 ${stats.success}(캐시 ${stats.cacheHits}) / 원문유지 ${stats.degraded} ` +
+    `(요청 ${stats.requestsUsed}회)`
+  );
 
   return stats;
 }
