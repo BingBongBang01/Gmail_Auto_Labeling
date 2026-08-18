@@ -3009,6 +3009,21 @@
   "sidepanelClassifyVisible": {
     "message": "Classify Visible"
   },
+  "sidepanelSummarizeAll": {
+    "message": "Summarize All"
+  },
+  "sidepanelClassifyThread": {
+    "message": "Classify This Mail"
+  },
+  "sidepanelSummarizeThread": {
+    "message": "Summarize This Mail"
+  },
+  "sidepanelClassifySchedule": {
+    "message": "Classify Schedule"
+  },
+  "sidepanelApplyColors": {
+    "message": "Apply Category Colors"
+  },
   "sidepanelSummarizeSender": {
     "message": "Summarize Sender"
   },

@@ -3009,6 +3009,21 @@
   "sidepanelClassifyVisible": {
     "message": "現在のメールを分類"
   },
+  "sidepanelSummarizeAll": {
+    "message": "メールを全体要約"
+  },
+  "sidepanelClassifyThread": {
+    "message": "このメールを分類"
+  },
+  "sidepanelSummarizeThread": {
+    "message": "このメールを要約"
+  },
+  "sidepanelClassifySchedule": {
+    "message": "予定を自動分類"
+  },
+  "sidepanelApplyColors": {
+    "message": "カテゴリ色を適用"
+  },
   "sidepanelSummarizeSender": {
     "message": "送信者を要約"
   },

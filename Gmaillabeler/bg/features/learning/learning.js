@@ -125,7 +125,12 @@ const MAX_PATTERN_EXAMPLES_STORED = 12;
 async function recordCorrectionPattern(fromLabel, toLabel, subject, from) {
   const key = `${fromLabel}=>${toLabel}`;
   const existing = (await getCorrectionPattern(key)) || { key, fromLabel, toLabel, count: 0, examples: [] };
+  // count는 자동 학습이 반영될 때 0으로 초기화된다(다음 학습까지 다시 세기 위해).
+  // 그래서 "지금까지 몇 번 고쳤는지"는 count로 알 수 없다. 초기화하지 않는 카운터를 따로 둔다.
+  // totalCount가 없는 옛 기록은 그때까지의 count를 시작값으로 삼는다(그 이상은 알 방법이 없다).
+  if (existing.totalCount === undefined) existing.totalCount = existing.count;
   existing.count += 1;
+  existing.totalCount += 1;
   existing.examples.push({ subject, from });
   if (existing.examples.length > MAX_PATTERN_EXAMPLES_STORED) {
     existing.examples.splice(0, existing.examples.length - MAX_PATTERN_EXAMPLES_STORED);

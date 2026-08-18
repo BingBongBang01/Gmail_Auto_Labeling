@@ -3009,6 +3009,21 @@
   "sidepanelClassifyVisible": {
     "message": "현재 메일 분류"
   },
+  "sidepanelSummarizeAll": {
+    "message": "메일 전체 요약"
+  },
+  "sidepanelClassifyThread": {
+    "message": "이 메일 분류"
+  },
+  "sidepanelSummarizeThread": {
+    "message": "이 메일 요약"
+  },
+  "sidepanelClassifySchedule": {
+    "message": "일정 자동 분류"
+  },
+  "sidepanelApplyColors": {
+    "message": "카테고리 색상 적용"
+  },
   "sidepanelSummarizeSender": {
     "message": "발신자 요약"
   },

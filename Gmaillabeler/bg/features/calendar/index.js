@@ -6,6 +6,8 @@ import { registerJob } from "../../core/job_registry.js";
 import { calendarList } from "../../../calendar/calendar_api.js";
 import { runCalendarClassification } from "../../../calendar/calendar_engine.js";
 import { processGenerateCalendarCategories } from "./calendar.js";
+import { createEventFromDraft, parseEventFromMail, parseEventText } from "./quick_event.js";
+import { resolveThreadTargets } from "../../domain/open_thread.js";
 
 function register() {
   // 설정의 dateRange를 실제 기간으로 바꾼다.
@@ -66,6 +68,24 @@ function register() {
     notifyTitleKey: "notifyTitleCalendarCategories",
     resolve: (payload) => ({ run: () => processGenerateCalendarCategories(payload.calendarId) }),
   });
+
+  // ----- 자연어 일정 -----
+  // 읽기와 만들기를 다른 액션으로 갈라 둔다. 한 번에 만드는 경로는 만들지 않는다 -
+  // AI가 읽어낸 날짜는 틀릴 수 있고, 잘못 만들어진 일정은 한참 뒤에야 발견된다.
+  registerAction("calendar.parseText", (request) => parseEventText(request.text));
+
+  registerAction("calendar.parseMail", async (request) => {
+    const messageIds = await resolveThreadTargets(request);
+    return await parseEventFromMail(messageIds);
+  });
+
+  registerAction("calendar.createEvent", (request) =>
+    createEventFromDraft({
+      draft: request.draft,
+      calendarId: request.calendarId,
+      withAttendees: request.withAttendees,
+    })
+  );
 
   // 대시보드의 캘린더 목록 새로고침. 예전에는 이 액션에 핸들러가 없어서
   // (응답이 undefined) 버튼을 눌러도 조용히 아무 일도 일어나지 않았다.

@@ -26,7 +26,7 @@ import { migrateToLatestSettings } from "./settings/settings_migration.js";
 import { t, i18nInit } from "./i18n.js";
 
 import { registerAction, registerMessageRouter } from "./bg/core/message_router.js";
-import { startJob } from "./bg/core/job_registry.js";
+import { startJob, getKnownJobTypes } from "./bg/core/job_registry.js";
 import { requestCancellation } from "./bg/core/cancellation.js";
 import { addLog, clearLogs, getRecentLogs } from "./bg/core/logger.js";
 import { stopKeepAlive } from "./bg/core/keep_alive.js";
@@ -57,6 +57,9 @@ import * as learningFeature from "./bg/features/learning/index.js";
 import * as automationFeature from "./bg/features/automation/index.js";
 import * as youtubeFeature from "./bg/features/youtube/index.js";
 import * as pdfFeature from "./bg/features/pdf/index.js";
+import * as aiFeature from "./bg/features/ai/index.js";
+import * as cleanupFeature from "./bg/features/cleanup/index.js";
+import * as todayFeature from "./bg/features/today/index.js";
 
 appearanceFeature.register();
 oauthFeature.register();
@@ -70,6 +73,9 @@ learningFeature.register();
 automationFeature.register();
 youtubeFeature.register();
 pdfFeature.register();
+aiFeature.register();
+cleanupFeature.register();
+todayFeature.register();
 
 // ---------------- 설치 / 업데이트 ----------------
 chrome.runtime.onInstalled.addListener(async (details) => {
@@ -150,6 +156,10 @@ registerAction("getConfig", () => ({
 }));
 
 registerAction("getQuotaUsage", () => getQuotaUsage());
+
+// 사이드패널이 부팅할 때 한 번 물어본다. 타일이 가리키는 작업이 실제로 등록돼 있는지
+// 화면 쪽에서 확인해, 눌러도 아무 일이 없는 타일을 애초에 비활성으로 그리기 위한 것이다.
+registerAction("job.listTypes", () => ({ ok: true, types: getKnownJobTypes() }));
 
 registerAction("getJobStatus", () =>
   chrome.storage.local.get([

@@ -74,6 +74,22 @@ async function getCorrectionPattern(key) {
   }
 }
 
+// 쌓인 정정 패턴 전체. 학습 화면이 "무엇을 배웠는지" 보여줄 때 쓴다.
+// 개별 조회(getCorrectionPattern)는 분류 도중 키 하나를 확인하는 용도라 목록이 필요 없었다.
+async function getAllCorrectionPatterns() {
+  try {
+    const db = await openLogDb();
+    return await new Promise((resolve, reject) => {
+      const tx = db.transaction(PATTERN_STORE_NAME, "readonly");
+      const req = tx.objectStore(PATTERN_STORE_NAME).getAll();
+      req.onsuccess = () => resolve(req.result || []);
+      req.onerror = () => reject(req.error);
+    });
+  } catch (e) {
+    return [];
+  }
+}
+
 async function saveCorrectionPattern(pattern) {
   try {
     const db = await openLogDb();
@@ -93,5 +109,6 @@ export {
   getAllLabelHistory,
   updateLabelHistoryEntry,
   getCorrectionPattern,
+  getAllCorrectionPatterns,
   saveCorrectionPattern,
 };

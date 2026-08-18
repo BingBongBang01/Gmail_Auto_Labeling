@@ -14,6 +14,16 @@ const FIELDS = [
   ["overflowCount", "상자를 넘친 항목", (v) => `${v}개`],
   ["saveMode", "저장 방식", (v) => (v === "incremental" ? "증분 저장" : "전체 저장")],
   ["outputBytes", "결과 크기", (v) => `${v.toLocaleString()} bytes`],
+  // --- OCR 점검 ---
+  ["ocrLangs", "OCR 언어", (v) => v],
+  ["rasterMs", "페이지 래스터화", (v) => `${v} ms`],
+  ["ocrMs", "글자 인식", (v) => `${v} ms`],
+  ["imageSize", "인식에 쓴 이미지", (v) => `${v} px`],
+  ["paragraphCount", "인식한 문단", (v) => `${v}개`],
+  ["meanConfidence", "평균 신뢰도", (v) => `${v} / 100`],
+  ["backgroundSampled", "배경색 표본", (v) => (v ? "가능(원문 덮기 정상)" : "불가 - 흰색으로 대체")],
+  ["firstRect", "첫 문단 위치(pt)", (v) => `[${v.join(", ")}]`],
+  ["firstBgColor", "첫 문단 배경색", (v) => v],
 ];
 
 function sendMessage(action) {
@@ -37,7 +47,7 @@ function base64ToBlob(b64, type) {
 
 let lastUrl = null;
 
-function renderResult(res) {
+function renderResult(res, okMessage) {
   const box = $("result");
   box.innerHTML = "";
 
@@ -53,7 +63,7 @@ function renderResult(res) {
   }
 
   $("status").className = "ok";
-  $("status").textContent = "통과 — 열기/추출/지우기/삽입/저장이 모두 동작했습니다.";
+  $("status").textContent = okMessage || "통과 — 열기/추출/지우기/삽입/저장이 모두 동작했습니다.";
 
   const table = document.createElement("table");
   for (const [key, label, fmt] of FIELDS) {
@@ -70,7 +80,7 @@ function renderResult(res) {
 
   if (Array.isArray(res.firstTexts) && res.firstTexts.length) {
     const h = document.createElement("p");
-    h.innerHTML = "<strong>추출된 원문 미리보기</strong>";
+    h.innerHTML = "<strong>읽어낸 원문 미리보기</strong>";
     const pre = document.createElement("pre");
     pre.textContent = res.firstTexts.join("\n---\n");
     box.append(h, pre);
@@ -106,6 +116,21 @@ $("run").addEventListener("click", async () => {
     renderResult(await sendMessage("pdf.selftest"));
   } finally {
     $("run").disabled = false;
+  }
+});
+
+$("runOcr").addEventListener("click", async () => {
+  $("runOcr").disabled = true;
+  $("status").className = "";
+  $("status").textContent = "페이지를 이미지로 렌더하고 글자를 읽는 중... (언어 데이터 로드에 몇 초 걸립니다)";
+  $("result").innerHTML = "";
+  try {
+    renderResult(
+      await sendMessage("pdf.ocrSelftest"),
+      "통과 — 래스터화/글자 인식/좌표 변환이 모두 동작했습니다. 스캔본을 번역할 수 있습니다."
+    );
+  } finally {
+    $("runOcr").disabled = false;
   }
 });
 
