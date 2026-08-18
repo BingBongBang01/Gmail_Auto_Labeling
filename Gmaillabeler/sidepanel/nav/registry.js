@@ -41,7 +41,11 @@ const SERVICE_REGISTRY = [
   { id: "tasks", label: "Tasks", icon: "☑️", title: "Tasks" },
   { id: "contacts", label: "연락처", icon: "👤", title: "Contacts" },
   { id: "youtube", label: "유튜브", icon: "▶️", title: "YouTube" },
-  { id: "gemini", label: "Gemini", icon: "✨", title: "Gemini" },
+  // 작업/학습/AI는 새로 모으는 데이터가 없다. 이미 쌓이고 있는데 볼 곳이 없던 것들이다.
+  { id: "activity", label: "작업", icon: "⏱️", title: "Activity" },
+  { id: "learning", label: "학습", icon: "🧠", title: "Learning" },
+  // 'Gemini'를 대체한다. 예전 타일 3개는 등록된 적 없는 작업을 가리키고 있었다.
+  { id: "ai", label: "AI", icon: "✨", title: "AI" },
   { id: "edit", label: "편집", icon: "✏️", title: "Edit" },
   { id: "settings", label: "설정", icon: "⚙️", title: "Settings" }
 ];
@@ -226,22 +230,24 @@ const DEFAULT_SERVICE_ACTIONS = {
     { id: "yt_music", label: "YT뮤직", icon: "🎵", title: "YouTube Music 열기", command: "openUrl", arg: "https://music.youtube.com" },
     { id: "yt_search", label: "동영상검색", icon: "🔍", title: "유튜브 동영상 빠른 검색", command: "workspace", arg: "youtube_workspace" }
   ],
-  gemini: [
-    {
-      id: "gemini_chat", label: "대화시작", icon: "✨", title: "Gemini AI 질의응답",
-      command: "job", arg: "gemini_chat", status: "planned",
-      note: "AI 공급자 상태(키·할당량·페일오버)와 프롬프트 실행기를 한곳에 모은 'AI' 화면으로 다시 만들 예정입니다."
-    },
-    {
-      id: "gemini_prompt", label: "프롬프트", icon: "💭", title: "추천 프롬프트 실행",
-      command: "job", arg: "gemini_prompt", status: "planned",
-      note: "프롬프트를 실제로 보내고 응답을 화면에 띄우는 실행기로 만들 예정입니다. 지금은 눌러도 문구만 바뀝니다."
-    },
-    {
-      id: "gemini_history", label: "대화기록", icon: "📜", title: "지난 대화 기록",
-      command: "job", arg: "gemini_history", status: "planned",
-      note: "대화를 저장하는 기능이 아직 없습니다. 실행기를 먼저 만든 뒤에 붙일 예정입니다."
-    }
+  activity: [
+    { id: "activity_now", label: "진행중", icon: "▶️", title: "실행 중인 작업 보기", command: "workspace", arg: "activity_now" },
+    { id: "activity_recent", label: "최근작업", icon: "🕘", title: "최근 실행한 작업 기록", command: "workspace", arg: "activity_recent" },
+    { id: "activity_logs", label: "로그", icon: "📜", title: "실행 로그 보기", command: "workspace", arg: "activity_logs" },
+    { id: "activity_usage", label: "AI사용량", icon: "📊", title: "오늘 AI 요청 사용량", command: "workspace", arg: "activity_usage" },
+    { id: "activity_stop", label: "중지", icon: "⏹️", title: "실행 중인 작업 중지", command: "cancelJob" },
+    { id: "activity_full_log", label: "로그창", icon: "↗️", title: "전체 로그 페이지 열기", command: "openLogPage" }
+  ],
+  learning: [
+    { id: "learning_patterns", label: "배운것", icon: "🧠", title: "정정 패턴 보기", command: "workspace", arg: "learning_patterns" },
+    { id: "learning_recent", label: "최근분류", icon: "🏷️", title: "최근 분류 기록", command: "workspace", arg: "learning_recent" },
+    { id: "learning_criteria", label: "기준관리", icon: "📋", title: "라벨 분류기준 설정", command: "workspace", arg: "gmail_label_settings" }
+  ],
+  ai: [
+    { id: "ai_run", label: "프롬프트", icon: "💭", title: "AI에게 직접 질문하기", command: "workspace", arg: "ai_run" },
+    { id: "ai_status", label: "공급자", icon: "🔑", title: "AI 키와 할당량 상태", command: "workspace", arg: "ai_status" },
+    { id: "ai_settings", label: "AI설정", icon: "⚙️", title: "AI 공급자 설정 열기", command: "settingsSection", arg: "ai" },
+    { id: "ai_options", label: "키관리", icon: "↗️", title: "전체 설정에서 키 관리", command: "openOptions" }
   ],
   edit: [
     { id: "edit_order", label: "순서편집", icon: "✏️", title: "타일 순서 편집", command: "feedback", arg: "타일을 드래그하여 순서를 변경하세요." },

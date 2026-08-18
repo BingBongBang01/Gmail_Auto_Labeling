@@ -20,6 +20,13 @@
   --sp-card-bg: #ffffff;
   --sp-card-hover-bg: #f8f9fa;
   --sp-card-border: #f0f0f0;
+
+  /* 상태 색. M3 토큰에 tertiary 계열이 없어서(정상/경고가 같은 회색으로 나온다)
+     "되는 것 / 주의 / 안 되는 것"을 구분할 색을 여기서 직접 정한다. */
+  --ws-good: #1a7f37;
+  --ws-good-bg: #e3f4e8;
+  --ws-warn: #8a5a11;
+  --ws-warn-bg: #fdf0d9;
 }
 
 html[data-theme="dark"] {
@@ -42,6 +49,11 @@ html[data-theme="dark"] {
   --sp-card-bg: #1b1d20;
   --sp-card-hover-bg: #24262a;
   --sp-card-border: #282a2e;
+
+  --ws-good: #6cc48d;
+  --ws-good-bg: #14301f;
+  --ws-warn: #dda75c;
+  --ws-warn-bg: #362810;
 }
 
 body {
@@ -940,20 +952,26 @@ body {
 }
 
 /* AI Chips */
+/* 프리셋 칩. 예전 Gemini 화면은 세로로 쌓았는데(칩 3개짜리 화면이었다),
+   가로로 접으면 같은 폭에 네 개가 들어가고 그만큼 입력창이 위로 올라온다.
+   좁은 패널에서는 스크롤 없이 입력창이 보이는 쪽이 훨씬 쓸 만하다. */
 .ai-chips-row {
   display: flex;
-  flex-direction: column;
-  gap: 6px;
+  flex-wrap: wrap;
+  gap: 4px;
 }
 
 .ai-chip {
   text-align: left;
-  padding: 8px 10px;
-  border-radius: 8px;
+  padding: 4px 9px;
+  border-radius: 999px;
   border: 1px solid var(--md-sys-color-outline-variant);
   background-color: var(--md-sys-color-surface);
   color: var(--md-sys-color-on-surface);
-  font-size: 12px;
+  font-size: 10.5px;
+  font-weight: 500;
+  font-family: inherit;
+  white-space: nowrap;
   cursor: pointer;
   transition: all 0.2s ease;
 }
@@ -2380,8 +2398,9 @@ body {
 }
 
 .pdf-warn {
-  background-color: var(--md-sys-color-tertiary-container, var(--md-sys-color-surface-variant));
-  color: var(--md-sys-color-on-tertiary-container, var(--md-sys-color-on-surface));
+  /* tertiary 계열 토큰은 이 저장소에 없다. 있는 것처럼 쓰면 경고가 그냥 회색 상자로 보인다. */
+  background-color: var(--ws-warn-bg);
+  color: var(--ws-warn);
 }
 
 .pdf-error {
@@ -2456,4 +2475,448 @@ body {
 .pdf-run-badge.is-failed {
   background-color: var(--md-sys-color-error-container);
   color: var(--md-sys-color-on-error-container);
+}
+
+/* =========================================================================
+   워크스페이스 공통 (workspaces/shell.js)
+   작업 · 학습 · AI 화면이 같은 조각을 쓴다. 사이드패널은 좁으므로
+   글자와 여백을 전반적으로 한 단계씩 줄여 잡는다.
+   ========================================================================= */
+
+.ws {
+  display: flex;
+  flex-direction: column;
+}
+
+/* ---------- 화면 안 탭 ---------- */
+
+.ws-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 8px 10px 0;
+  background-color: var(--sp-card-bg);
+}
+
+.ws-tab {
+  flex: 1;
+  padding: 6px 4px;
+  font-size: 10.5px;
+  font-weight: 600;
+  font-family: inherit;
+  color: var(--md-sys-color-on-surface-variant);
+  background-color: var(--md-sys-color-surface);
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: 7px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.ws-tab:hover {
+  background-color: var(--md-sys-color-surface-container);
+}
+
+.ws-tab.is-active {
+  background-color: var(--md-sys-color-primary);
+  border-color: var(--md-sys-color-primary);
+  color: var(--md-sys-color-on-primary);
+}
+
+/* ---------- 섹션 ---------- */
+
+.ws-section {
+  background-color: var(--sp-card-bg);
+  border-bottom: 1px solid var(--sp-card-border);
+  padding: 9px 10px;
+  box-sizing: border-box;
+}
+
+.ws-section-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 7px;
+}
+
+.ws-section-title {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--md-sys-color-on-surface);
+  flex-shrink: 0;
+}
+
+.ws-section-actions {
+  margin-left: auto;
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.ws-section-body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ws-hint {
+  font-size: 10px;
+  line-height: 1.45;
+  color: var(--md-sys-color-on-surface-variant);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ws-note {
+  margin: 8px 0 0;
+  font-size: 10px;
+  line-height: 1.5;
+  color: var(--md-sys-color-on-surface-variant);
+  word-break: keep-all;
+}
+
+.ws-empty {
+  padding: 14px 10px;
+  font-size: 10.5px;
+  line-height: 1.6;
+  text-align: center;
+  color: var(--md-sys-color-on-surface-variant);
+  background-color: var(--md-sys-color-surface);
+  border: 1px dashed var(--md-sys-color-outline-variant);
+  border-radius: 8px;
+  word-break: keep-all;
+}
+
+/* ---------- 지표 ---------- */
+
+.ws-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 5px;
+  padding: 9px 10px;
+  background-color: var(--sp-card-bg);
+  border-bottom: 1px solid var(--sp-card-border);
+}
+
+.ws-stat {
+  padding: 7px 8px;
+  border-radius: 8px;
+  background-color: var(--md-sys-color-surface);
+  border: 1px solid var(--md-sys-color-outline-variant);
+  text-align: center;
+  min-width: 0;
+}
+
+.ws-stat b {
+  display: block;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.15;
+  color: var(--md-sys-color-on-surface);
+  font-variant-numeric: tabular-nums;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ws-stat span {
+  display: block;
+  margin-top: 2px;
+  font-size: 9.5px;
+  color: var(--md-sys-color-on-surface-variant);
+}
+
+.ws-stat.is-good b { color: var(--ws-good); }
+.ws-stat.is-warn b { color: var(--ws-warn); }
+.ws-stat.is-bad b { color: var(--md-sys-color-error); }
+
+/* ---------- 목록 행 ---------- */
+
+.ws-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 7px;
+  border-radius: 7px;
+  background-color: var(--md-sys-color-surface);
+}
+
+.ws-row + .ws-row {
+  margin-top: 4px;
+}
+
+.ws-row-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.ws-row-title {
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--md-sys-color-on-surface);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ---------- 배지 ---------- */
+
+.ws-badge {
+  flex-shrink: 0;
+  font-size: 9.5px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background-color: var(--md-sys-color-surface-variant);
+  color: var(--md-sys-color-on-surface-variant);
+  white-space: nowrap;
+}
+
+.ws-badge.is-good {
+  background-color: var(--ws-good-bg);
+  color: var(--ws-good);
+}
+
+.ws-badge.is-info {
+  background-color: var(--md-sys-color-primary-container);
+  color: var(--md-sys-color-on-primary-container);
+}
+
+.ws-badge.is-warn {
+  background-color: var(--ws-warn-bg);
+  color: var(--ws-warn);
+}
+
+.ws-badge.is-bad {
+  background-color: var(--md-sys-color-error-container);
+  color: var(--md-sys-color-on-error-container);
+}
+
+/* ---------- 실행 중 카드 ---------- */
+
+.ws-run {
+  padding: 9px 10px;
+  border-radius: 8px;
+  background-color: var(--md-sys-color-surface);
+  border: 1px solid var(--md-sys-color-outline-variant);
+}
+
+.ws-run-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 7px;
+}
+
+.ws-run-name {
+  flex: 1;
+  min-width: 0;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--md-sys-color-on-surface);
+}
+
+.ws-run-meta {
+  margin-top: 5px;
+  font-size: 10px;
+  color: var(--md-sys-color-on-surface-variant);
+  font-variant-numeric: tabular-nums;
+}
+
+.ws-btn-row {
+  display: flex;
+  gap: 5px;
+  margin-top: 8px;
+}
+
+.ws-error {
+  padding: 7px 9px;
+  border-radius: 7px;
+  font-size: 10.5px;
+  line-height: 1.5;
+  background-color: var(--md-sys-color-error-container);
+  color: var(--md-sys-color-on-error-container);
+  word-break: break-word;
+}
+
+/* ---------- 로그 ---------- */
+
+.ws-log-controls {
+  display: flex;
+  gap: 5px;
+}
+
+.ws-log-controls .settings-select-compact {
+  flex: 0 0 92px;
+}
+
+.ws-log-controls .pdf-input {
+  flex: 1;
+  min-width: 0;
+}
+
+.ws-logs {
+  max-height: 320px;
+  overflow-y: auto;
+  border-radius: 7px;
+  background-color: var(--md-sys-color-surface);
+  border: 1px solid var(--md-sys-color-outline-variant);
+}
+
+.ws-log {
+  display: flex;
+  gap: 6px;
+  padding: 4px 7px;
+  font-size: 10px;
+  line-height: 1.45;
+  border-bottom: 1px solid var(--md-sys-color-outline-variant);
+}
+
+.ws-log:last-child {
+  border-bottom: none;
+}
+
+.ws-log-time {
+  flex-shrink: 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 9.5px;
+  color: var(--md-sys-color-on-surface-variant);
+  font-variant-numeric: tabular-nums;
+}
+
+.ws-log-msg {
+  min-width: 0;
+  color: var(--md-sys-color-on-surface);
+  word-break: break-word;
+}
+
+.ws-log.is-warn .ws-log-msg { color: var(--ws-warn); }
+.ws-log.is-error .ws-log-msg { color: var(--md-sys-color-error); }
+
+.ws-keys {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* ---------- 학습: 정정 패턴 ---------- */
+
+.ws-pattern {
+  padding: 9px 10px;
+  border-radius: 8px;
+  background-color: var(--md-sys-color-surface);
+  border: 1px solid var(--md-sys-color-outline-variant);
+}
+
+.ws-pattern + .ws-pattern {
+  margin-top: 6px;
+}
+
+.ws-pattern-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.ws-pattern-flow {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.ws-arrow {
+  font-size: 11px;
+  color: var(--md-sys-color-on-surface-variant);
+}
+
+.ws-label-chip {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 6px;
+  background-color: var(--md-sys-color-surface-variant);
+  color: var(--md-sys-color-on-surface-variant);
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ws-label-chip.is-from {
+  text-decoration: line-through;
+  opacity: 0.75;
+}
+
+.ws-label-chip.is-to {
+  background-color: var(--md-sys-color-primary-container);
+  color: var(--md-sys-color-on-primary-container);
+}
+
+.ws-mini-track {
+  height: 3px;
+  margin-top: 6px;
+  border-radius: 2px;
+  background-color: var(--md-sys-color-surface-variant);
+  overflow: hidden;
+}
+
+.ws-mini-fill {
+  height: 100%;
+  border-radius: 2px;
+  background-color: var(--md-sys-color-primary);
+}
+
+.ws-examples {
+  margin: 7px 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.ws-examples li {
+  font-size: 10px;
+  line-height: 1.4;
+  color: var(--md-sys-color-on-surface);
+  padding-left: 8px;
+  border-left: 2px solid var(--md-sys-color-outline-variant);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ws-examples li span {
+  display: block;
+  color: var(--md-sys-color-on-surface-variant);
+  font-size: 9.5px;
+}
+
+/* ---------- AI: 응답 ---------- */
+
+.ws-answer {
+  padding: 9px 10px;
+  border-radius: 8px;
+  background-color: var(--md-sys-color-surface);
+  border: 1px solid var(--md-sys-color-outline-variant);
+}
+
+.ws-answer-head {
+  margin-bottom: 5px;
+}
+
+.ws-answer-body {
+  font-size: 11px;
+  line-height: 1.65;
+  color: var(--md-sys-color-on-surface);
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 340px;
+  overflow-y: auto;
 }

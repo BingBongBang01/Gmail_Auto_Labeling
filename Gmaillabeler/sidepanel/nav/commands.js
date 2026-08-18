@@ -31,6 +31,16 @@ const COMMANDS = {
   // 안내 문구만 표시. arg는 문구.
   feedback: (arg) => setActionFeedback(arg),
 
+  // 진행 중인 작업 중지. '작업' 서비스의 타일에서 바로 누를 수 있어야 하는 동작이라
+  // 화면을 열지 않고 실행한다.
+  cancelJob: () => {
+    chrome.runtime.sendMessage({ action: "cancelJob" }, () => {
+      setActionFeedback("중지를 요청했습니다. 진행분까지는 남습니다.");
+    });
+  },
+
+  openLogPage: () => chrome.tabs.create({ url: chrome.runtime.getURL("log/log.html") }),
+
   resetActions: () => resetCurrentServiceActions(),
   openOptions: () => chrome.runtime.openOptionsPage?.(),
   openDashboard: () => chrome.tabs.create({ url: chrome.runtime.getURL("dashboard/dashboard.html") }),
