@@ -81,12 +81,11 @@ const DEFAULT_SERVICE_ACTIONS = {
   calendar: [
     { id: "cal_classify", label: "일정분류", icon: "📅", title: "일정 자동 분류", command: "job", arg: "calendar_classify" },
     { id: "cal_colors", label: "색상적용", icon: "🎨", title: "카테고리 색상 적용", command: "job", arg: "calendar_apply_colors" },
-    { id: "cal_init", label: "카테고리생성", icon: "🗂️", title: "AI로 일정 카테고리와 색상 만들기", command: "job", arg: "calendar_init_categories" },
-    {
-      id: "cal_new_event", label: "일정생성", icon: "➕", title: "AI 스마트 일정 등록",
-      command: "job", arg: "calendar_new_event", status: "planned",
-      note: "\"다음 주 화요일 3시 미팅\" 같은 문장이나 메일 본문에서 일정을 뽑아 만듭니다. 만들기 전에 제목·시간·장소를 확인하는 화면이 필요해 아직 열지 않았습니다."
-    },
+    { id: "cal_init", label: "카테고리", icon: "🗂️", title: "AI로 일정 카테고리와 색상 만들기", command: "job", arg: "calendar_init_categories" },
+    // 잡이 아니라 화면이다. AI가 읽은 날짜는 틀릴 수 있고, 잘못 만들어진 일정은
+    // 한참 뒤에야 발견된다. 확인 화면을 반드시 거치게 한다.
+    { id: "cal_new_event", label: "일정생성", icon: "➕", title: "문장이나 메일에서 일정 만들기", command: "workspace", arg: "calendar_quick_event" },
+    { id: "cal_from_mail", label: "메일→일정", icon: "✉️", title: "열어 둔 메일에서 일정 찾기", command: "workspace", arg: "calendar_from_mail" },
     {
       id: "cal_summary", label: "오늘의일정", icon: "📋", title: "오늘 일정 브리핑",
       command: "job", arg: "calendar_summary", status: "planned",

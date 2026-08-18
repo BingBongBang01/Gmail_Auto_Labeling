@@ -104,6 +104,20 @@ async function calendarEventPatch(calendarId, eventId, updates) {
   return await calendarApiPatch(url, updates);
 }
 
+// 일정 생성. sendUpdates=none으로 고정한다 - AI가 읽어낸 참석자에게 확장이 멋대로
+// 초대 메일을 보내면 안 된다. 참석자를 실을지 자체도 화면에서 사용자가 켰을 때만 정해진다
+// (calendar/event_draft.js의 toCalendarEvent).
+async function calendarEventInsert(calendarId, event) {
+  const url = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(
+    calendarId
+  )}/events?sendUpdates=none`;
+  return await calendarApiRequest(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(event),
+  });
+}
+
 async function calendarColorsGet() {
   const url = "https://www.googleapis.com/calendar/v3/colors";
   return await calendarApiGet(url);
@@ -154,6 +168,7 @@ export {
   calendarApiPatch,
   calendarEventsList,
   calendarEventPatch,
+  calendarEventInsert,
   calendarColorsGet,
   calendarList,
   calendarEventGet,

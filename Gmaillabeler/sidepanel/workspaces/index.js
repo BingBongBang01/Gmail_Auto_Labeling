@@ -17,6 +17,7 @@ import { renderLearningWorkspace } from "./learning.js";
 import { renderAiWorkspace } from "./ai.js";
 import { renderCleanupWorkspace } from "./cleanup.js";
 import { renderGlossaryWorkspace } from "./glossary.js";
+import { renderQuickEventWorkspace } from "./quick_event.js";
 
 function renderServiceWorkspace(serviceId) {
   const container = $("panelContainer");
@@ -71,6 +72,8 @@ const NAMED_WORKSPACES = {
   ai_status: () => renderAiWorkspace("status"),
   gmail_cleanup: () => renderCleanupWorkspace(),
   glossary: () => renderGlossaryWorkspace(),
+  calendar_quick_event: () => renderQuickEventWorkspace("text"),
+  calendar_from_mail: () => renderQuickEventWorkspace("mail"),
 };
 
 function renderWorkspaceByName(name) {
