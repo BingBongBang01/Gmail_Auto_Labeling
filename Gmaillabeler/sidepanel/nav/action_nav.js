@@ -15,11 +15,8 @@ import {
 import { $ } from "../ui/dom.js";
 import { setActionFeedback } from "../ui/feedback.js";
 import { runCommand } from "./commands.js";
-<<<<<<< HEAD
 import { applyToggleStateToTile } from "./toggles.js";
-=======
 import { getTileState } from "./tile_state.js";
->>>>>>> dbb32b59f7dbd3eb73407f94051e226465e1fd08
 
 let currentActionList = [...(DEFAULT_SERVICE_ACTIONS.gmail || [])];
 let activeActionRowCount = 1;

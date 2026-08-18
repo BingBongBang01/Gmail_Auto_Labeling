@@ -12,12 +12,9 @@ import { setActionFeedback } from "../ui/feedback.js";
 import { renderWorkspaceByName } from "../workspaces/index.js";
 import { renderSettingsPanel } from "../workspaces/settings.js";
 import { resetCurrentServiceActions } from "./action_nav.js";
-<<<<<<< HEAD
 import { toggleActionSetting } from "./toggles.js";
-=======
 import { getTileState } from "./tile_state.js";
 import { renderTileNotice } from "../workspaces/notice.js";
->>>>>>> dbb32b59f7dbd3eb73407f94051e226465e1fd08
 
 const COMMANDS = {
   // 백그라운드 작업 시작. arg는 jobType.
@@ -35,10 +32,9 @@ const COMMANDS = {
   // 안내 문구만 표시. arg는 문구.
   feedback: (arg) => setActionFeedback(arg),
 
-<<<<<<< HEAD
   // 켜기/끄기 타일. arg 대신 타일의 toggleKey를 쓰므로 두 번째 인자를 받는다.
   toggleSetting: (_arg, action) => toggleActionSetting(action),
-=======
+
   // 진행 중인 작업 중지. '작업' 서비스의 타일에서 바로 누를 수 있어야 하는 동작이라
   // 화면을 열지 않고 실행한다.
   cancelJob: () => {
@@ -48,7 +44,6 @@ const COMMANDS = {
   },
 
   openLogPage: () => chrome.tabs.create({ url: chrome.runtime.getURL("log/log.html") }),
->>>>>>> dbb32b59f7dbd3eb73407f94051e226465e1fd08
 
   resetActions: () => resetCurrentServiceActions(),
   openOptions: () => chrome.runtime.openOptionsPage?.(),
