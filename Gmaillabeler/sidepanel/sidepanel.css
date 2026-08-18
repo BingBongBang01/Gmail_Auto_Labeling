@@ -351,6 +351,32 @@ body {
   background-color: var(--md-sys-color-primary-container);
 }
 
+/* toggleKey가 붙은 켜기/끄기 타일이 켜졌을 때. 우상단 점으로 상태를 알린다. */
+.service-btn.toggle-on {
+  background-color: var(--md-sys-color-primary-container);
+  border-color: var(--md-sys-color-primary);
+  color: var(--md-sys-color-on-primary-container);
+}
+
+.action-nav-container .service-btn.toggle-on {
+  background-color: var(--md-sys-color-primary-container);
+}
+
+.service-btn.toggle-on .service-label {
+  color: var(--md-sys-color-on-primary-container);
+}
+
+.service-btn.toggle-on::after {
+  content: "";
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: var(--md-sys-color-primary);
+}
+
 .service-icon {
   font-size: 22px;
   margin-bottom: 2px;

@@ -53,6 +53,12 @@
       "matches": ["*://*.youtube.com/*"],
       "js": ["content/youtube_content.js"],
       "run_at": "document_idle"
+    },
+    {
+      "matches": ["*://*.youtube.com/*"],
+      "js": ["content/youtube_shorts_hider.js"],
+      "run_at": "document_start",
+      "all_frames": false
     }
   ],
   "web_accessible_resources": [

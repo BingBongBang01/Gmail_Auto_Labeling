@@ -94,7 +94,15 @@ const DEFAULT_SERVICE_ACTIONS = {
     { id: "yt_history", label: "시청기록", icon: "📜", title: "시청 기록 열기", command: "openUrl", arg: "https://www.youtube.com/feed/history" },
     { id: "yt_trending", label: "인기급상승", icon: "🔥", title: "인기 급상승 동영상", command: "openUrl", arg: "https://www.youtube.com/feed/trending" },
     { id: "yt_music", label: "YT뮤직", icon: "🎵", title: "YouTube Music 열기", command: "openUrl", arg: "https://music.youtube.com" },
-    { id: "yt_search", label: "동영상검색", icon: "🔍", title: "유튜브 동영상 빠른 검색", command: "workspace", arg: "youtube_workspace" }
+    { id: "yt_search", label: "동영상검색", icon: "🔍", title: "유튜브 동영상 빠른 검색", command: "workspace", arg: "youtube_workspace" },
+    // toggleKey가 붙은 타일은 누를 때마다 chrome.storage.local의 그 키를 켜고 끈다.
+    // 실제 숨기기는 content/youtube_shorts_hider.js가 같은 키를 구독해서 처리한다.
+    {
+      id: "yt_hide_shorts", label: "쇼츠숨기기", icon: "🙈", title: "유튜브 쇼츠 자동 숨기기 (선반 + 좌측 메뉴)",
+      command: "toggleSetting", toggleKey: "ytHideShortsShelf",
+      onText: "쇼츠 숨기기를 켰습니다. 쇼츠 선반과 좌측 Shorts 메뉴가 사라집니다.",
+      offText: "쇼츠 숨기기를 껐습니다. 쇼츠 선반과 좌측 Shorts 메뉴가 다시 보입니다."
+    }
   ],
   gemini: [
     { id: "gemini_chat", label: "대화시작", icon: "✨", title: "Gemini AI 질의응답", command: "job", arg: "gemini_chat" },

@@ -12,6 +12,7 @@ import { setActionFeedback } from "../ui/feedback.js";
 import { renderWorkspaceByName } from "../workspaces/index.js";
 import { renderSettingsPanel } from "../workspaces/settings.js";
 import { resetCurrentServiceActions } from "./action_nav.js";
+import { toggleActionSetting } from "./toggles.js";
 
 const COMMANDS = {
   // 백그라운드 작업 시작. arg는 jobType.
@@ -29,6 +30,9 @@ const COMMANDS = {
   // 안내 문구만 표시. arg는 문구.
   feedback: (arg) => setActionFeedback(arg),
 
+  // 켜기/끄기 타일. arg 대신 타일의 toggleKey를 쓰므로 두 번째 인자를 받는다.
+  toggleSetting: (_arg, action) => toggleActionSetting(action),
+
   resetActions: () => resetCurrentServiceActions(),
   openOptions: () => chrome.runtime.openOptionsPage?.(),
   openDashboard: () => chrome.tabs.create({ url: chrome.runtime.getURL("dashboard/dashboard.html") }),
@@ -45,7 +49,7 @@ function runCommand(action) {
     console.warn(`[sidepanel] 알 수 없는 command: "${action.command}" (타일: ${action.id})`);
     return;
   }
-  fn(action.arg);
+  fn(action.arg, action);
 }
 
 export { COMMANDS, runCommand };

@@ -15,6 +15,7 @@ import {
 import { $ } from "../ui/dom.js";
 import { setActionFeedback } from "../ui/feedback.js";
 import { runCommand } from "./commands.js";
+import { applyToggleStateToTile } from "./toggles.js";
 
 let currentActionList = [...(DEFAULT_SERVICE_ACTIONS.gmail || [])];
 let activeActionRowCount = 1;
@@ -224,6 +225,10 @@ function createActionTileButton(action) {
   btn.appendChild(labelSpan);
 
   if (!action.isEmpty) {
+    // toggleKey가 있는 타일은 켜짐/꺼짐 상태를 눈에 보이게 표시한다.
+    // 어떤 기능인지는 여기서도 모른다. 상태 표시는 toggles.js가 맡는다.
+    applyToggleStateToTile(action, btn);
+
     // 타일이 무엇을 하는지는 이 파일이 알지 못한다. command 문자열을 commands.js에 넘길 뿐이다.
     btn.addEventListener("click", () => runCommand(action));
 
