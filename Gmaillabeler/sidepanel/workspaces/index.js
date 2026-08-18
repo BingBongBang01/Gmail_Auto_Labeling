@@ -18,6 +18,7 @@ import { renderAiWorkspace } from "./ai.js";
 import { renderCleanupWorkspace } from "./cleanup.js";
 import { renderGlossaryWorkspace } from "./glossary.js";
 import { renderQuickEventWorkspace } from "./quick_event.js";
+import { renderTodayWorkspace } from "./today.js";
 
 function renderServiceWorkspace(serviceId) {
   const container = $("panelContainer");
@@ -27,7 +28,9 @@ function renderServiceWorkspace(serviceId) {
   if (dynamicActions) dynamicActions.innerHTML = "";
   container.innerHTML = "";
 
-  if (serviceId === "settings") {
+  if (serviceId === "today") {
+    renderTodayWorkspace();
+  } else if (serviceId === "settings") {
     renderSettingsPanel(getCurrentSettingsSection() || "oauth");
   } else if (serviceId === "gmail") {
     renderGmailWorkspace();
@@ -74,6 +77,9 @@ const NAMED_WORKSPACES = {
   glossary: () => renderGlossaryWorkspace(),
   calendar_quick_event: () => renderQuickEventWorkspace("text"),
   calendar_from_mail: () => renderQuickEventWorkspace("mail"),
+  today_brief: () => renderTodayWorkspace("all"),
+  today_mail: () => renderTodayWorkspace("mail"),
+  today_events: () => renderTodayWorkspace("events"),
 };
 
 function renderWorkspaceByName(name) {

@@ -3100,3 +3100,66 @@ body {
 .qe-card .ws-note {
   margin-top: 0;
 }
+
+/* =========================================================================
+   오늘 (workspaces/today.js)
+   ========================================================================= */
+
+/* 브리핑 카드. .ws-answer(AI 응답)와 같은 틀을 쓰되, 여기는 문장 목록이라
+   pre-wrap 대신 리스트 여백을 쓴다. */
+.today-brief {
+  white-space: normal;
+}
+
+.today-brief-lines {
+  margin: 0;
+  padding-left: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-size: 11px;
+  line-height: 1.6;
+  color: var(--md-sys-color-on-surface);
+}
+
+/* '먼저 할 일'은 브리핑 본문과 눈으로 구분돼야 한다. 훑고 나서 실제로 손이 가는 줄이다. */
+.today-focus {
+  margin-top: 8px;
+  padding-top: 7px;
+  border-top: 1px solid var(--md-sys-color-outline-variant);
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.today-focus ol {
+  margin: 0;
+  padding-left: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-size: 11px;
+  line-height: 1.55;
+  font-weight: 600;
+  color: var(--md-sys-color-on-surface);
+}
+
+/* 일정 줄의 시각. 폭을 고정해 여러 줄의 제목이 같은 자리에서 시작하게 한다 -
+   좁은 패널에서 시간이 들쭉날쭉하면 순서가 눈에 들어오지 않는다. */
+.today-time {
+  flex-shrink: 0;
+  width: 38px;
+  font-size: 10.5px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--md-sys-color-primary);
+}
+
+.today-time.is-allday {
+  font-size: 9.5px;
+  color: var(--md-sys-color-on-surface-variant);
+}
+
+.today-row .ws-badge {
+  flex-shrink: 0;
+}

@@ -31,6 +31,9 @@
 
 
 const SERVICE_REGISTRY = [
+  // 서비스별로 나뉜 화면들과 달리, '오늘'은 지금 필요한 것만 가로질러 모은다.
+  // 안 읽은 메일과 오늘 일정은 서로 다른 서비스에 있지만 사용자가 아침에 묻는 질문은 하나다.
+  { id: "today", label: "오늘", icon: "☀️", title: "Today" },
   { id: "gmail", label: "Gmail", icon: "📧", title: "Gmail" },
   { id: "calendar", label: "캘린더", icon: "📅", title: "Calendar" },
   { id: "drive", label: "드라이브", icon: "📁", title: "Drive" },
@@ -52,6 +55,16 @@ const SERVICE_REGISTRY = [
 
 
 const DEFAULT_SERVICE_ACTIONS = {
+  today: [
+    { id: "today_brief", label: "오늘", icon: "☀️", title: "안 읽은 메일과 오늘 일정 한눈에", command: "workspace", arg: "today_brief" },
+    { id: "today_mail", label: "안읽은메일", icon: "📧", title: "안 읽은 메일만 보기", command: "workspace", arg: "today_mail" },
+    { id: "today_events", label: "오늘일정", icon: "📅", title: "오늘 일정만 보기", command: "workspace", arg: "today_events" },
+    // 브리핑에서 "그래서 뭘 하지"로 곧장 넘어가는 자리. 이미 있는 화면을 그대로 연다 -
+    // 같은 일을 하는 화면을 여기에 또 만들면 둘이 조금씩 달라진다.
+    { id: "today_new_event", label: "일정추가", icon: "➕", title: "문장으로 일정 만들기", command: "workspace", arg: "calendar_quick_event" },
+    { id: "today_clean", label: "메일정리", icon: "🧹", title: "조건에 맞는 메일을 확인하고 정리", command: "workspace", arg: "gmail_cleanup" },
+    { id: "today_classify", label: "라벨링시작", icon: "▶️", title: "안 읽은 메일 자동 분류", command: "job", arg: "gmail_classify" }
+  ],
   gmail: [
     { id: "gmail_classify", label: "라벨링시작", icon: "▶️", title: "라벨링 시작", command: "job", arg: "gmail_classify" },
     { id: "gmail_auto_settings", label: "자동설정", icon: "🤖", title: "자동 라벨링 설정", command: "workspace", arg: "gmail_auto_settings" },
@@ -86,11 +99,9 @@ const DEFAULT_SERVICE_ACTIONS = {
     // 한참 뒤에야 발견된다. 확인 화면을 반드시 거치게 한다.
     { id: "cal_new_event", label: "일정생성", icon: "➕", title: "문장이나 메일에서 일정 만들기", command: "workspace", arg: "calendar_quick_event" },
     { id: "cal_from_mail", label: "메일→일정", icon: "✉️", title: "열어 둔 메일에서 일정 찾기", command: "workspace", arg: "calendar_from_mail" },
-    {
-      id: "cal_summary", label: "오늘의일정", icon: "📋", title: "오늘 일정 브리핑",
-      command: "job", arg: "calendar_summary", status: "planned",
-      note: "메일과 일정을 함께 보는 '오늘' 화면으로 만들 예정입니다."
-    }
+    // 예전에는 등록된 적 없는 calendar_summary 잡을 가리키는 'planned' 타일이었다.
+    // 이제 '오늘' 화면이 그 일을 하므로 같은 자리에서 그리로 보낸다.
+    { id: "cal_summary", label: "오늘의일정", icon: "📋", title: "오늘 일정과 메일 브리핑", command: "workspace", arg: "today_events" }
   ],
   drive: [
     // 백업/복원은 이미 동작한다. 옵션 페이지에만 있어서 사이드패널에서는 보이지 않았다.
