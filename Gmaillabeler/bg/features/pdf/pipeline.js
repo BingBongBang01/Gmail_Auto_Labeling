@@ -33,6 +33,9 @@ const DEFAULT_OPTIONS = {
     "protocol names, commands, and product names in their original form.",
   domain: "general",
   instructions: "",
+  // 프롬프트에 실제로 들어가는 것은 glossaryText다. 화면은 프로필 id만 고르고,
+  // 실행 직전에 index.js가 그 프로필을 텍스트로 바꿔 넣는다.
+  glossaryProfileId: "",
   glossaryText: "",
   promptProfile: "compact",
   pageRange: "",
@@ -61,6 +64,7 @@ function normalizePdfOptions(raw = {}, stored = {}) {
   merged.ocrDpi = Math.max(150, Math.min(400, Number(merged.ocrDpi) || 300));
   merged.ocrMinChars = Math.max(0, Math.min(2000, Number(merged.ocrMinChars) || 0));
   merged.ocrLangs = String(merged.ocrLangs || "").trim();
+  merged.glossaryProfileId = String(merged.glossaryProfileId || "").trim();
   merged.useCache = merged.useCache !== false;
   return merged;
 }

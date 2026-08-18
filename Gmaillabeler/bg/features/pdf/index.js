@@ -15,6 +15,8 @@ import {
 } from "../../../shared/pdf_db.js";
 import { attachEnginePort, callEngine, shutdownEngine, PORT_NAME } from "./engine_port.js";
 import { runPdfTranslation, normalizePdfOptions } from "./pipeline.js";
+import { loadGlossaries, resolveGlossaryText } from "../../../shared/glossary_store.js";
+import { parseGlossaryText } from "../../../pdf/text/glossary.js";
 
 function register() {
   // 오프스크린 문서가 connect해 오는 지점. 반드시 동기 등록해야 한다
@@ -93,6 +95,22 @@ function register() {
 
   registerAction("pdf.cacheStats", async () => ({ ok: true, count: await countSegCache() }));
 
+  // 번역 화면의 '용어집 프로필' 목록. 화면이 저장소를 직접 읽어도 되지만,
+  // 실제로 프롬프트에 들어갈 항목 수를 함께 알려주려면 파싱이 필요하다.
+  registerAction("pdf.listGlossaries", async () => {
+    const { profiles, activeId } = await loadGlossaries();
+    return {
+      ok: true,
+      activeId,
+      profiles: profiles.map((p) => ({
+        id: p.id,
+        name: p.name,
+        entryCount: parseGlossaryText(p.text).entries.length,
+        updatedAt: p.updatedAt,
+      })),
+    };
+  });
+
   registerAction("pdf.clearCache", async () => {
     const count = await countSegCache();
     await clearSegCache();
@@ -117,6 +135,15 @@ function register() {
       }
 
       const options = normalizePdfOptions(payload.options, settings.pdf);
+
+      // 고른 용어집 프로필을 지금 텍스트로 바꿔 넣는다. 화면이 텍스트를 직접 보내지 않는
+      // 이유: 이어하기(pdf.resumeRun)는 저장된 옵션을 그대로 다시 쓰는데, 그때 옛 용어집
+      // 텍스트가 박혀 있으면 그 사이 고친 용어집이 반영되지 않는다. 프로필 id만 저장하고
+      // 실행할 때마다 최신 내용을 읽는다.
+      if (options.glossaryProfileId) {
+        options.glossaryText = await resolveGlossaryText(options.glossaryProfileId);
+      }
+
       const runId = payload.runId || newId("run");
       const resumedFrom = payload.resumedFrom || null;
 

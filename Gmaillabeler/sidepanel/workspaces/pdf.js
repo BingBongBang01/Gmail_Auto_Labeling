@@ -161,6 +161,15 @@ function renderPdfWorkspace() {
               </div>
             </div>
             <div class="pdf-field">
+              <label class="pdf-field-label" for="pdfGlossaryProfile">
+                용어집 <span class="pdf-hint">번역할 때 반드시 지킬 용어</span>
+              </label>
+              <select class="settings-select-compact" id="pdfGlossaryProfile">
+                <option value="">사용 안 함</option>
+              </select>
+            </div>
+
+            <div class="pdf-field">
               <label class="pdf-field-label" for="pdfOcrLangs">
                 OCR 언어 <span class="pdf-hint">비우면 원문 언어에서 추정</span>
               </label>
@@ -330,6 +339,7 @@ const OPTION_FIELDS = {
   pdfOcrMode: "ocrMode",
   pdfOcrLangs: "ocrLangs",
   pdfOcrDpi: "ocrDpi",
+  pdfGlossaryProfile: "glossaryProfileId",
   pdfUseCache: "useCache",
 };
 
@@ -337,6 +347,26 @@ const OPTION_FIELDS = {
 // (normalizePdfOptions) 화면에서 NaN을 보내면 저장된 마지막 값이 NaN으로 굳는다.
 const NUMBER_FIELDS = { fontScale: 1, ocrDpi: 300 };
 const BOOLEAN_FIELDS = new Set(["useCache"]);
+
+// 용어집 프로필 목록을 채운다. 목록이 오기 전에 저장값을 복원하면 select에 그 option이
+// 아직 없어서 빈 값으로 떨어진다. 그래서 목록을 채운 뒤 값을 한 번 더 맞춘다.
+function fillGlossaryOptions() {
+  const select = $("pdfGlossaryProfile");
+  if (!select) return;
+  sendMessage({ action: "pdf.listGlossaries" }).then((res) => {
+    const profiles = (res.ok && res.profiles) || [];
+    const wanted = select.dataset.wanted || select.value;
+    select.innerHTML =
+      `<option value="">사용 안 함</option>` +
+      profiles
+        .map(
+          (p) =>
+            `<option value="${escapeHtml(p.id)}">${escapeHtml(p.name)} (${p.entryCount}개)</option>`
+        )
+        .join("");
+    if (wanted && profiles.some((p) => p.id === wanted)) select.value = wanted;
+  });
+}
 
 function bindOptions() {
   // 마지막에 쓴 값을 그대로 되살린다. 매번 다시 고르게 하면 번거롭다.
@@ -349,9 +379,12 @@ function bindOptions() {
         // 저장된 값이 없으면 마크업의 기본값(켜짐)을 그대로 둔다.
         if (saved[key] !== undefined) el.checked = saved[key] !== false;
       } else if (saved[key] !== undefined && saved[key] !== "") {
+        // 용어집 목록은 비동기로 채워진다. 원하는 값을 적어두고 목록이 온 뒤 맞춘다.
+        if (id === "pdfGlossaryProfile") el.dataset.wanted = saved[key];
         el.value = saved[key];
       }
     }
+    fillGlossaryOptions();
   });
 
   for (const id of Object.keys(OPTION_FIELDS)) {

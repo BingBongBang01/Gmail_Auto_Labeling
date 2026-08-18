@@ -128,6 +128,8 @@ const DEFAULT_SERVICE_ACTIONS = {
     // 예전엔 command:"job", arg:"docs_translate" 였는데 그런 잡은 등록된 적이 없어서
     // 눌러도 아무 일도 일어나지 않는 타일이었다. 실제 번역 화면으로 연결한다.
     { id: "docs_translate", label: "문서번역", icon: "🌐", title: "PDF 문서 번역 (레이아웃 유지)", command: "workspace", arg: "pdf_translate" },
+    // 프롬프트는 처음부터 용어집을 받도록 되어 있었는데 입력할 화면이 없어 늘 비어 있었다.
+    { id: "docs_glossary", label: "용어집", icon: "📖", title: "번역 용어집 편집", command: "workspace", arg: "glossary" },
     {
       id: "docs_summary", label: "문서요약", icon: "📋", title: "문서 내용 요약",
       command: "job", arg: "docs_summary", status: "planned", needsScope: "drive.readonly",
