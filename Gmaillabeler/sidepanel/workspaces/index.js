@@ -15,6 +15,7 @@ import { renderPdfWorkspace } from "./pdf.js";
 import { renderActivityWorkspace } from "./activity.js";
 import { renderLearningWorkspace } from "./learning.js";
 import { renderAiWorkspace } from "./ai.js";
+import { renderCleanupWorkspace } from "./cleanup.js";
 
 function renderServiceWorkspace(serviceId) {
   const container = $("panelContainer");
@@ -67,6 +68,7 @@ const NAMED_WORKSPACES = {
   learning_recent: () => renderLearningWorkspace("recent"),
   ai_run: () => renderAiWorkspace("run"),
   ai_status: () => renderAiWorkspace("status"),
+  gmail_cleanup: () => renderCleanupWorkspace(),
 };
 
 function renderWorkspaceByName(name) {

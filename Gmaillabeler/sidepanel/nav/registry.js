@@ -62,16 +62,9 @@ const DEFAULT_SERVICE_ACTIONS = {
     { id: "gmail_repeat", label: "반복분류", icon: "🔁", title: "미분류 메일을 여러 번 나눠 분류", command: "job", arg: "gmail_repeat_classify" },
     { id: "gmail_dedupe", label: "중복정리", icon: "🧬", title: "한 메일에 여러 라벨이 붙은 것 정리", command: "job", arg: "gmail_dedupe_relabel" },
     { id: "gmail_colors", label: "라벨색상", icon: "🎨", title: "카테고리 색상을 라벨에 일괄 적용", command: "job", arg: "gmail_apply_label_colors" },
-    {
-      id: "gmail_clean", label: "메일정리", icon: "🧹", title: "불필요 메일 정리",
-      command: "job", arg: "gmail_clean", status: "planned",
-      note: "무엇을 지울지 고르지 않고 한 번에 실행하면 위험합니다. 조건을 고르고 대상 목록을 먼저 확인한 뒤 적용하는 화면으로 만들 예정입니다."
-    },
-    {
-      id: "gmail_archive", label: "보관함이동", icon: "📦", title: "읽은 메일 보관",
-      command: "job", arg: "gmail_archive", status: "planned",
-      note: "'메일정리' 화면의 프리셋(읽음 + 일정 기간 지난 메일)으로 함께 만들 예정입니다."
-    },
+    // 잡이 아니라 화면이다. 무엇을 옮길지 고르지 않고 클릭 한 번으로 수백 통을 처리하는
+    // 버튼은, 되돌리기가 있어도 만들지 않는다.
+    { id: "gmail_clean", label: "메일정리", icon: "🧹", title: "조건에 맞는 메일을 확인하고 정리", command: "workspace", arg: "gmail_cleanup" },
     {
       id: "gmail_filter", label: "필터생성", icon: "🔍", title: "스마트 필터 생성",
       command: "job", arg: "gmail_filter", status: "planned",

@@ -58,6 +58,7 @@ import * as automationFeature from "./bg/features/automation/index.js";
 import * as youtubeFeature from "./bg/features/youtube/index.js";
 import * as pdfFeature from "./bg/features/pdf/index.js";
 import * as aiFeature from "./bg/features/ai/index.js";
+import * as cleanupFeature from "./bg/features/cleanup/index.js";
 
 appearanceFeature.register();
 oauthFeature.register();
@@ -72,6 +73,7 @@ automationFeature.register();
 youtubeFeature.register();
 pdfFeature.register();
 aiFeature.register();
+cleanupFeature.register();
 
 // ---------------- 설치 / 업데이트 ----------------
 chrome.runtime.onInstalled.addListener(async (details) => {

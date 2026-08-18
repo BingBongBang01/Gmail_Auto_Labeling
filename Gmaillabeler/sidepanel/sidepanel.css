@@ -2920,3 +2920,118 @@ body {
   max-height: 340px;
   overflow-y: auto;
 }
+
+/* =========================================================================
+   메일 정리 (workspaces/cleanup.js)
+   ========================================================================= */
+
+.clean-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.clean-chip {
+  padding: 4px 9px;
+  border-radius: 999px;
+  border: 1px solid var(--md-sys-color-outline-variant);
+  background-color: var(--md-sys-color-surface);
+  color: var(--md-sys-color-on-surface-variant);
+  font-family: inherit;
+  font-size: 10.5px;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.clean-chip:hover {
+  background-color: var(--md-sys-color-surface-container);
+}
+
+/* 고른 조건은 확실히 켜져 보여야 한다. 이 화면에서 조건 하나 차이가 수백 통 차이다. */
+.clean-chip.is-on {
+  background-color: var(--md-sys-color-primary);
+  border-color: var(--md-sys-color-primary);
+  color: var(--md-sys-color-on-primary);
+}
+
+.clean-list {
+  max-height: 340px;
+  overflow-y: auto;
+  border-radius: 7px;
+  border: 1px solid var(--md-sys-color-outline-variant);
+  background-color: var(--md-sys-color-surface);
+}
+
+.clean-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--md-sys-color-outline-variant);
+  cursor: pointer;
+}
+
+.clean-row:last-child {
+  border-bottom: none;
+}
+
+.clean-row:hover {
+  background-color: var(--sp-card-hover-bg);
+}
+
+/* 제외한 줄은 "이건 안 건드린다"가 한눈에 보여야 한다. */
+.clean-row.is-excluded {
+  opacity: 0.45;
+}
+
+.clean-row.is-excluded .clean-row-subject {
+  text-decoration: line-through;
+}
+
+.clean-row input[type="checkbox"] {
+  flex-shrink: 0;
+  margin: 0;
+}
+
+.clean-row-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.clean-row-subject {
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--md-sys-color-on-surface);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 확인하지 못한 분량까지 처리하는 버튼. 색으로도 경고한다. */
+.btn-danger {
+  background-color: var(--md-sys-color-error-container);
+  color: var(--md-sys-color-on-error-container);
+  border: 1px solid var(--md-sys-color-error);
+  font-size: 11px;
+  padding: 7px 12px;
+  border-radius: 999px;
+  font-family: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  width: 100%;
+}
+
+.btn-danger:hover {
+  background-color: var(--md-sys-color-error);
+  color: var(--md-sys-color-on-primary);
+}
+
+.btn-small:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
