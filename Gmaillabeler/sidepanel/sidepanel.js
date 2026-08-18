@@ -20,6 +20,7 @@ import { updateContextUI, detectInitialContext, initActionButtons } from "./ui/c
 import { SERVICE_REGISTRY } from "./nav/registry.js";
 import { initNavResize, getServiceList } from "./nav/service_nav.js";
 import { initActionNavResize, showActionsForService } from "./nav/action_nav.js";
+import { primeTileCatalog } from "./nav/tile_state.js";
 import { renderServiceWorkspace } from "./workspaces/index.js";
 import { initLabelSettingsJobListener } from "./workspaces/gmail_label_settings.js";
 
@@ -54,6 +55,12 @@ async function initSidePanel() {
 
   initProgressSection();
   initLabelSettingsJobListener();
+
+  // 타일을 그리기 전에 "실제로 등록된 작업 목록"을 받아 둔다. 이게 있어야 없는 작업을
+  // 가리키는 타일을 회색으로 그릴 수 있다. 실패해도(서비스워커가 자는 중 등) 그냥 진행한다 -
+  // 확인하지 못했다는 이유로 멀쩡한 타일을 막으면 그게 더 나쁘다.
+  await primeTileCatalog();
+
   initNavResize();
   initActionNavResize();
   initActionButtons();

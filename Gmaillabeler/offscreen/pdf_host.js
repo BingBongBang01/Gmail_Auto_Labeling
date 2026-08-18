@@ -22,6 +22,33 @@ function loadEngine() {
   return enginePromise;
 }
 
+// OCR은 스캔본에서만 쓰인다. 여기서 static import를 하면 텍스트 PDF를 번역할 때도
+// tesseract 모듈을 매번 평가하게 되므로 필요할 때만 불러온다.
+let ocrModulePromise = null;
+function loadOcrModule() {
+  if (!ocrModulePromise) {
+    ocrModulePromise = Promise.all([
+      import("../pdf/ocr/tesseract_ocr.js"),
+      import("../pdf/ocr/image_utils.js"),
+    ]).then(([ocr, image]) => ({ ...ocr, ...image }));
+  }
+  return ocrModulePromise;
+}
+
+// vendor 경로는 여기서만 만든다. pdf/ocr/* 는 chrome.* 를 모르는 순수 모듈로 남긴다.
+function ocrPaths() {
+  return {
+    script: chrome.runtime.getURL("vendor/tesseract/tesseract.min.js"),
+    worker: chrome.runtime.getURL("vendor/tesseract/worker.min.js"),
+    core: chrome.runtime.getURL("vendor/tesseract/core/"),
+    lang: chrome.runtime.getURL("vendor/tesseract/lang"),
+  };
+}
+
+// 사용자가 "중지"를 누르면 서비스워커가 abort 명령을 보낸다.
+// 100쪽짜리 스캔본의 OCR은 몇 분씩 걸리므로 쪽 경계마다 이 플래그를 본다.
+let aborted = false;
+
 let port = null;
 function emit(evt, data) {
   try {
@@ -91,6 +118,85 @@ async function docBytes(docId) {
 }
 
 // ---------------------------------------------------------------------------
+// OCR
+// ---------------------------------------------------------------------------
+// 신뢰도가 이보다 낮은 문단은 버린다. 스캔 잡티를 글자로 읽은 것들이 여기서 걸리는데,
+// 그런 문단을 남기면 번역 비용을 쓰면서 원본 그림 위에 헛소리 상자를 그린다.
+const OCR_MIN_CONFIDENCE = 45;
+
+// 문단 높이 대비 글자 크기. OCR 줄 상자는 글자의 위아래 여백까지 포함하므로 줄 높이보다 작다.
+const OCR_FONT_RATIO = 0.72;
+
+/**
+ * 지정한 쪽들을 이미지로 렌더해 OCR한다.
+ * OCR을 쓸 수 없으면(vendor 파일 없음 등) 예외를 위로 던지지 않고 error에 담아 돌려준다 -
+ * 텍스트 레이어가 있는 나머지 쪽은 그대로 번역해야 하기 때문이다.
+ */
+async function runOcrPass(engine, doc, pages, ocrOptions) {
+  const out = { segments: [], error: null, pagesDone: 0 };
+  let ocr = null;
+  let mod = null;
+
+  try {
+    mod = await loadOcrModule();
+    const langs = mod.resolveOcrLangs(ocrOptions && ocrOptions.langs, ocrOptions && ocrOptions.sourceLang);
+    ocr = new mod.OcrEngine(ocrPaths(), langs);
+    await ocr.init();
+  } catch (e) {
+    out.error = String((e && e.message) || e);
+    if (ocr) await ocr.destroy();
+    return out;
+  }
+
+  try {
+    for (let i = 0; i < pages.length; i += 1) {
+      if (aborted) break;
+      const pno = pages[i];
+
+      const image = engine.renderPageImage(doc, pno, { dpi: (ocrOptions && ocrOptions.dpi) || 300 });
+      const blob = new Blob([image.png], { type: "image/png" });
+
+      const paragraphs = await ocr.recognize(blob);
+      // 배경색 표본은 문단이 하나라도 있을 때만 필요하다. 디코드가 공짜가 아니다.
+      const pixels = paragraphs.length ? await mod.decodeImageData(blob) : null;
+
+      let sno = 0;
+      for (const para of paragraphs) {
+        if (para.confidence < OCR_MIN_CONFIDENCE) continue;
+        if (!needsTranslation(para.text)) continue;
+
+        const rect = engine.pixelBoxToPageRect(para.box, image);
+        const bgColor = mod.sampleBackgroundColor(pixels, para.box);
+        out.segments.push({
+          segId: `p${String(pno + 1).padStart(3, "0")}_o${String(sno).padStart(3, "0")}`,
+          page: pno,
+          rect,
+          text: para.text,
+          // 줄 높이는 픽셀 단위다. 페이지 공간(pt)으로 되돌린 뒤 글자 크기로 환산한다.
+          fontSize: Math.max(4, ((para.lineHeight || 0) / (image.zoom || 1)) * OCR_FONT_RATIO) || 11,
+          color: mod.pickReadableTextColor(bgColor),
+          bgColor,
+          isOcr: true,
+          ocrConfidence: Math.round(para.confidence),
+          needsTranslation: true,
+        });
+        sno += 1;
+      }
+
+      out.pagesDone += 1;
+      emit("ocrProgress", { page: i + 1, pageCount: pages.length, segCount: out.segments.length });
+    }
+  } catch (e) {
+    // 한 쪽에서 터져도 그때까지 읽은 문단은 살린다.
+    out.error = String((e && e.message) || e);
+  } finally {
+    await ocr.destroy();
+  }
+
+  return out;
+}
+
+// ---------------------------------------------------------------------------
 // 명령
 // ---------------------------------------------------------------------------
 
@@ -148,6 +254,54 @@ const handlers = {
     }
   },
 
+  // OCR 쪽 진단용. vendor/tesseract 를 제대로 넣었는지, 페이지 래스터화와 인식이
+  // 한 바퀴 도는지 확인한다. 표본 PDF는 텍스트 PDF지만 이미지로 렌더해 OCR하므로
+  // 스캔본과 같은 경로를 탄다.
+  async ocrSelftest({ langs, dpi } = {}) {
+    aborted = false;
+    const t0 = performance.now();
+    const engine = await loadEngine();
+    const mod = await loadOcrModule();
+
+    const res = await fetch(chrome.runtime.getURL("pdf/testdata/sample_en.pdf"));
+    const doc = engine.openPdf(new Uint8Array(await res.arrayBuffer()));
+
+    try {
+      const image = engine.renderPageImage(doc, 0, { dpi: Number(dpi) || 200 });
+      const rasterMs = Math.round(performance.now() - t0);
+      const blob = new Blob([image.png], { type: "image/png" });
+
+      const resolved = mod.resolveOcrLangs(langs, "English");
+      const ocr = new mod.OcrEngine(ocrPaths(), resolved);
+      const t1 = performance.now();
+      try {
+        const paragraphs = await ocr.recognize(blob);
+        const pixels = await mod.decodeImageData(blob);
+        const first = paragraphs[0];
+        return {
+          ok: paragraphs.length > 0,
+          error: paragraphs.length ? null : "인식된 문단이 없습니다. 언어 데이터(traineddata)를 확인하세요.",
+          ocrLangs: resolved,
+          rasterMs,
+          ocrMs: Math.round(performance.now() - t1),
+          imageSize: `${image.width}x${image.height}`,
+          paragraphCount: paragraphs.length,
+          meanConfidence: paragraphs.length
+            ? Math.round(paragraphs.reduce((a, p) => a + p.confidence, 0) / paragraphs.length)
+            : 0,
+          backgroundSampled: !!pixels,
+          firstTexts: paragraphs.slice(0, 3).map((p) => p.text),
+          firstRect: first ? engine.pixelBoxToPageRect(first.box, image).map((n) => Math.round(n)) : null,
+          firstBgColor: first && pixels ? mod.sampleBackgroundColor(pixels, first.box) : null,
+        };
+      } finally {
+        await ocr.destroy();
+      }
+    } finally {
+      doc.destroy();
+    }
+  },
+
   // 문서를 열어 페이지 수만 알려준다. 파일을 고른 직후 화면에 보여주기 위한 것.
   async probe({ docId }) {
     const engine = await loadEngine();
@@ -160,19 +314,37 @@ const handlers = {
     }
   },
 
+  // 중지 요청. 다음 쪽 경계에서 멈춘다.
+  // 여기까지 뽑은 세그먼트는 버리지 않고 그대로 돌려준다 - 그래야 진행분이 파일로 남는다.
+  async abort() {
+    aborted = true;
+    return { ok: true };
+  },
+
   // 텍스트 세그먼트를 뽑는다. 바이트는 돌려주지 않고 텍스트만 돌려준다.
-  async extract({ docId, pageRange }) {
+  //
+  // 두 번 훑는다. 먼저 텍스트 레이어를 뽑으면서 어느 쪽이 스캔본인지 표시해두고,
+  // 그 다음에 표시된 쪽만 이미지로 렌더해 OCR한다. 순서를 이렇게 두는 이유:
+  // OCR은 쪽당 1~3초가 들기 때문에 "정말 필요한 쪽"의 목록이 확정된 뒤에 시작해야 한다.
+  async extract({ docId, pageRange, ocr }) {
+    aborted = false;
     const engine = await loadEngine();
     const { bytes } = await docBytes(docId);
     const doc = engine.openPdf(bytes);
 
+    const ocrMode = (ocr && ocr.mode) || "off";
+    const minChars = Number(ocr && ocr.minChars) || 0;
+
     try {
       const pageCount = doc.countPages();
       const filter = parsePageFilter(pageRange, pageCount);
-      const segments = [];
+      let segments = [];
+      const scannedPages = [];
 
+      // ---- 1차: 텍스트 레이어 ----
       for (let pno = 0; pno < pageCount; pno += 1) {
         if (filter && !filter.has(pno)) continue;
+        if (aborted) break;
 
         const { blocks } = engine.extractPageBlocks(doc, pno);
         let bno = 0;
@@ -195,10 +367,50 @@ const handlers = {
           bno += 1;
         }
 
+        // 글자가 거의 없는 쪽은 스캔된 이미지일 가능성이 높다.
+        if (engine.countBlockChars(blocks) < minChars) scannedPages.push(pno);
+
         emit("extractProgress", { page: pno + 1, pageCount, segCount: segments.length });
       }
 
-      return { ok: true, pageCount, segments };
+      // ---- 2차: OCR ----
+      const ocrTargets =
+        ocrMode === "off"
+          ? []
+          : ocrMode === "force"
+            ? [...(filter || Array.from({ length: pageCount }, (_, i) => i))].sort((a, b) => a - b)
+            : scannedPages;
+
+      let ocrError = null;
+      let ocrSegments = 0;
+      let ocrDone = 0;
+
+      if (ocrTargets.length && !aborted) {
+        const targetSet = new Set(ocrTargets);
+        // OCR한 쪽의 텍스트 레이어 세그먼트는 버린다. force 모드에서 원문이 두 번(텍스트 레이어 +
+        // OCR) 들어가 같은 자리에 번역문이 겹쳐 찍히는 것을 막는다.
+        segments = segments.filter((s) => !targetSet.has(s.page));
+
+        const result = await runOcrPass(engine, doc, ocrTargets, ocr);
+        segments = segments.concat(result.segments);
+        ocrSegments = result.segments.length;
+        ocrError = result.error;
+        ocrDone = result.pagesDone;
+      }
+
+      // 페이지 순서 -> 페이지 안에서는 위에서 아래로. 배치 묶기와 직전 문맥이 문서 순서를 전제한다.
+      segments.sort((a, b) => a.page - b.page || a.rect[1] - b.rect[1] || a.rect[0] - b.rect[0]);
+
+      return {
+        ok: true,
+        pageCount,
+        segments,
+        scannedPages: scannedPages.length,
+        ocrPages: ocrDone,
+        ocrSegments,
+        ocrError,
+        aborted,
+      };
     } finally {
       doc.destroy();
     }
@@ -222,12 +434,15 @@ const handlers = {
           fontSize: s.fontSize,
           color: s.color,
           isOcr: !!s.isOcr,
+          // OCR 세그먼트는 원문이 이미지라 지울 수 없다. 이 색으로 상자를 덮고 그 위에 쓴다.
+          bgColor: s.bgColor || null,
         });
       }
 
       const pages = [...byPage.keys()].sort((a, b) => a - b);
       let overflowCount = 0;
       let drawn = 0;
+      let covered = 0;
 
       for (let i = 0; i < pages.length; i += 1) {
         const pno = pages[i];
@@ -236,6 +451,7 @@ const handlers = {
         });
         overflowCount += stats.overflowCount;
         drawn += stats.drawn;
+        covered += stats.covered || 0;
         emit("renderProgress", { page: i + 1, pageCount: pages.length });
       }
 
@@ -258,6 +474,7 @@ const handlers = {
         outName,
         pagesRendered: pages.length,
         drawn,
+        covered,
         overflowCount,
         saveMode: saved.mode,
         outputBytes: saved.bytes.byteLength,

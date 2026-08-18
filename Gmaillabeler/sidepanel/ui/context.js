@@ -104,7 +104,14 @@ function updateContextUI(context) {
   const tEl = $("contextTitle");
   if (tEl) tEl.textContent = currentContext.title || "Page";
   const dEl = $("contextDesc");
-  if (dEl) dEl.textContent = currentContext.desc || "";
+  if (dEl) {
+    // 피드백 메시지가 떠 있어도 화면이 바뀌면 새 화면의 설명이 이긴다.
+    // 되돌리기 타이머가 남아 있으면 나중에 옛 설명으로 되돌려버리므로 함께 끈다.
+    clearTimeout(dEl._restoreTimer);
+    dEl.classList.remove("is-feedback");
+    dEl.textContent = currentContext.desc || "";
+    dEl.dataset.baseDesc = currentContext.desc || "";
+  }
 
   // Update active status in service nav if service matches
   if (currentContext.service) {

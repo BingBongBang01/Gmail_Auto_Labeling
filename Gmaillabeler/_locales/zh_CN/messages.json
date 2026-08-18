@@ -3009,6 +3009,21 @@
   "sidepanelClassifyVisible": {
     "message": "分类当前邮件"
   },
+  "sidepanelSummarizeAll": {
+    "message": "汇总全部邮件"
+  },
+  "sidepanelClassifyThread": {
+    "message": "分类此邮件"
+  },
+  "sidepanelSummarizeThread": {
+    "message": "汇总此邮件"
+  },
+  "sidepanelClassifySchedule": {
+    "message": "自动分类日程"
+  },
+  "sidepanelApplyColors": {
+    "message": "应用分类颜色"
+  },
   "sidepanelSummarizeSender": {
     "message": "发件人摘要"
   },

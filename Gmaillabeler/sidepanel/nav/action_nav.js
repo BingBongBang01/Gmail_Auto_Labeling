@@ -15,7 +15,11 @@ import {
 import { $ } from "../ui/dom.js";
 import { setActionFeedback } from "../ui/feedback.js";
 import { runCommand } from "./commands.js";
+<<<<<<< HEAD
 import { applyToggleStateToTile } from "./toggles.js";
+=======
+import { getTileState } from "./tile_state.js";
+>>>>>>> dbb32b59f7dbd3eb73407f94051e226465e1fd08
 
 let currentActionList = [...(DEFAULT_SERVICE_ACTIONS.gmail || [])];
 let activeActionRowCount = 1;
@@ -206,12 +210,18 @@ function initActionDragEdgeZones() {
 function createActionTileButton(action) {
   const btn = document.createElement("button");
   const isCurrentDragged = action.id === draggedActionId;
+  // 아직 못 하는 일은 회색으로 그린다. 클릭은 막지 않는다 - 누르면 왜 안 되는지
+  // 본문에 설명이 뜨는 편이, 눌리지도 않아 이유를 알 수 없는 것보다 낫다.
+  const state = action.isEmpty ? { available: true } : getTileState(action);
   btn.className =
     "service-btn" +
     (action.isEmpty ? " empty" : "") +
+    (state.available ? "" : " is-unavailable") +
     (isCurrentDragged ? " dragging" : "");
   btn.dataset.action = action.id;
-  btn.title = action.title || action.label;
+  btn.title = state.available
+    ? action.title || action.label
+    : `${action.title || action.label} — ${state.status === "unavailable" ? "지원하지 않음" : "준비 중"}`;
 
   const iconSpan = document.createElement("span");
   iconSpan.className = "service-icon";

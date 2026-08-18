@@ -69,4 +69,11 @@ function getRegisteredJobTypes() {
   return Array.from(jobs.keys());
 }
 
-export { registerJob, startJob, resolveJobType, getRegisteredJobTypes };
+// 화면이 "이 타일이 가리키는 작업이 실제로 있는가"를 검사할 때 쓴다.
+// 별칭까지 넣어야 한다 - 타일이 옛 이름(docs_translate 등)을 가리키는 경우가 있고,
+// startJob은 그것도 정상 처리하기 때문이다.
+function getKnownJobTypes() {
+  return [...jobs.keys(), ...aliases.keys()];
+}
+
+export { registerJob, startJob, resolveJobType, getRegisteredJobTypes, getKnownJobTypes };

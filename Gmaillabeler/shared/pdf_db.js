@@ -13,11 +13,12 @@
 //   2) clearLogs()와 5000행 자동 정리기가 도는 DB에 수십 MB PDF를 같이 두면 사고가 난다.
 
 const PDF_DB_NAME = "pdfTranslator";
-const PDF_DB_VERSION = 1;
+const PDF_DB_VERSION = 2;
 
 const DOC_STORE = "docs";       // docId  -> {docId, name, size, pageCount, blob, addedAt}
 const RUN_STORE = "runs";       // runId  -> {runId, docId, status, options, stats, outId, ...}
 const OUTPUT_STORE = "outputs"; // outId  -> {outId, runId, name, blob, createdAt}
+const SEG_CACHE_STORE = "segcache"; // key -> {key, translated, docId, updatedAt}
 
 let dbPromise = null;
 
@@ -41,6 +42,12 @@ function openPdfDb() {
       if (!db.objectStoreNames.contains(OUTPUT_STORE)) {
         const outputs = db.createObjectStore(OUTPUT_STORE, { keyPath: "outId" });
         outputs.createIndex("byRun", "runId");
+      }
+      // v2: 세그먼트 번역 캐시. 끊긴 작업을 이어할 때 이미 번역한 구간을 두 번 사지 않기 위한 것이다.
+      // byUpdatedAt은 정리(prune)에서 오래된 것부터 지우려고 만든다.
+      if (!db.objectStoreNames.contains(SEG_CACHE_STORE)) {
+        const cache = db.createObjectStore(SEG_CACHE_STORE, { keyPath: "key" });
+        cache.createIndex("byUpdatedAt", "updatedAt");
       }
     };
 
@@ -66,13 +73,19 @@ function openPdfDb() {
   return dbPromise;
 }
 
+// reqValue가 돌려준 상자를 식별하는 표. `value !== undefined` 로 판단하면 안 된다 -
+// 없는 레코드를 조회했을 때(value가 undefined) 상자 자체가 그대로 반환되고,
+// 그 상자는 truthy라서 호출부의 `if (!doc) 없음 처리` 가 전부 통과해버린다.
+// 그러면 "문서를 찾을 수 없습니다" 대신 몇 줄 뒤에서 엉뚱한 TypeError가 난다.
+const VALUE_BOX = Symbol("pdfDbValueBox");
+
 function tx(store, mode, fn) {
   return openPdfDb().then(
     (db) =>
       new Promise((resolve, reject) => {
         const transaction = db.transaction(store, mode);
         const result = fn(transaction.objectStore(store));
-        transaction.oncomplete = () => resolve(result && result.value !== undefined ? result.value : result);
+        transaction.oncomplete = () => resolve(result && result[VALUE_BOX] ? result.value : result);
         transaction.onerror = () => reject(transaction.error);
         transaction.onabort = () => reject(transaction.error);
       })
@@ -80,7 +93,7 @@ function tx(store, mode, fn) {
 }
 
 function reqValue(request) {
-  const box = { value: undefined };
+  const box = { [VALUE_BOX]: true, value: undefined };
   request.onsuccess = () => {
     box.value = request.result;
   };
@@ -111,7 +124,12 @@ async function getPdfRun(runId) {
   return tx(RUN_STORE, "readonly", (store) => reqValue(store.get(runId)));
 }
 
-async function patchPdfRun(runId, patch) {
+// 인자를 하나만 받는다: 갱신할 필드를 담은 객체이고 runId가 그 안에 들어 있어야 한다.
+// (runId, patch) 두 인자 꼴로 만들었다가 호출부가 전부 객체 하나를 넘기고 있어서
+// store.get(객체)가 IndexedDB의 DataError로 터졌다. 호출부 쪽 표기가 자연스러우니 여기를 맞춘다.
+async function patchPdfRun(patch) {
+  const runId = patch && patch.runId;
+  if (!runId) throw new Error("patchPdfRun: runId가 필요합니다.");
   const current = (await getPdfRun(runId)) || { runId };
   return putPdfRun({ ...current, ...patch });
 }
@@ -144,6 +162,76 @@ async function prunePdfOutputs(keep = 5) {
   return doomed.length;
 }
 
+// ---------------- 세그먼트 번역 캐시 ----------------
+// 키는 (원문 + 번역 조건)의 해시다(pdf/text/cache_key.js). 그래서:
+//   - 끊긴 작업을 다시 돌리면 이미 번역한 세그먼트는 API를 쓰지 않고 여기서 나온다.
+//   - 같은 문서 안에서 반복되는 머리말/꼬리말도 한 번만 번역한다.
+// 값에는 원문을 넣지 않는다. 키가 이미 원문의 해시이고, 수만 건이 쌓이는 스토어라 작게 유지한다.
+
+// 키가 많을 수 있어 트랜잭션을 나눈다. 하나의 트랜잭션에 수천 건의 get을 몰아넣으면
+// 그동안 다른 컨텍스트의 쓰기가 전부 대기한다.
+const CACHE_LOOKUP_CHUNK = 500;
+
+async function getSegCacheEntries(keys) {
+  const found = new Map();
+  const list = (keys || []).filter(Boolean);
+  for (let i = 0; i < list.length; i += CACHE_LOOKUP_CHUNK) {
+    const chunk = list.slice(i, i + CACHE_LOOKUP_CHUNK);
+    await tx(SEG_CACHE_STORE, "readonly", (store) => {
+      for (const key of chunk) {
+        const request = store.get(key);
+        request.onsuccess = () => {
+          const row = request.result;
+          if (row && typeof row.translated === "string") found.set(key, row.translated);
+        };
+      }
+    });
+  }
+  return found;
+}
+
+// entries: [{ key, translated, docId }]
+async function putSegCacheEntries(entries) {
+  const list = (entries || []).filter((e) => e && e.key && typeof e.translated === "string");
+  if (!list.length) return 0;
+  const now = Date.now();
+  for (let i = 0; i < list.length; i += CACHE_LOOKUP_CHUNK) {
+    const chunk = list.slice(i, i + CACHE_LOOKUP_CHUNK);
+    await tx(SEG_CACHE_STORE, "readwrite", (store) => {
+      for (const entry of chunk) {
+        store.put({ key: entry.key, translated: entry.translated, docId: entry.docId || null, updatedAt: now });
+      }
+    });
+  }
+  return list.length;
+}
+
+async function countSegCache() {
+  return (await tx(SEG_CACHE_STORE, "readonly", (store) => reqValue(store.count()))) || 0;
+}
+
+async function clearSegCache() {
+  return tx(SEG_CACHE_STORE, "readwrite", (store) => store.clear());
+}
+
+// 오래된 것부터 지워 상한을 지킨다. byUpdatedAt 커서는 오름차순이라 가장 오래된 항목이 먼저 나온다.
+async function pruneSegCache(keep = 20000) {
+  const total = await countSegCache();
+  if (total <= keep) return 0;
+  let remaining = total - keep;
+  await tx(SEG_CACHE_STORE, "readwrite", (store) => {
+    const request = store.index("byUpdatedAt").openCursor();
+    request.onsuccess = () => {
+      const cursor = request.result;
+      if (!cursor || remaining <= 0) return;
+      cursor.delete();
+      remaining -= 1;
+      cursor.continue();
+    };
+  });
+  return total - keep;
+}
+
 function newId(prefix) {
   return `${prefix}-${Date.now().toString(36)}-${Math.floor(Math.random() * 1e9).toString(36)}`;
 }
@@ -161,5 +249,10 @@ export {
   putPdfOutput,
   getPdfOutput,
   prunePdfOutputs,
+  getSegCacheEntries,
+  putSegCacheEntries,
+  countSegCache,
+  clearSegCache,
+  pruneSegCache,
   newId,
 };

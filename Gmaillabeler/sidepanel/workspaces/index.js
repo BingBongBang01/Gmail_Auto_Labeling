@@ -5,7 +5,6 @@
 import { $ } from "../ui/dom.js";
 import { renderCalendarWorkspace } from "./calendar.js";
 import { renderEditWorkspace } from "./edit.js";
-import { renderGeminiWorkspace } from "./gemini.js";
 import { renderGenericServiceWorkspace } from "./generic.js";
 import { renderGmailWorkspace } from "./gmail.js";
 import { getCurrentSettingsSection, renderSettingsPanel } from "./settings.js";
@@ -13,6 +12,13 @@ import { renderGmailAutoSettingsWorkspace } from "./gmail_auto_settings.js";
 import { renderGmailLabelSettingsWorkspace } from "./gmail_label_settings.js";
 import { renderYoutubeCommentsWorkspace, renderYoutubeWorkspace } from "./youtube.js";
 import { renderPdfWorkspace } from "./pdf.js";
+import { renderActivityWorkspace } from "./activity.js";
+import { renderLearningWorkspace } from "./learning.js";
+import { renderAiWorkspace } from "./ai.js";
+import { renderCleanupWorkspace } from "./cleanup.js";
+import { renderGlossaryWorkspace } from "./glossary.js";
+import { renderQuickEventWorkspace } from "./quick_event.js";
+import { renderTodayWorkspace } from "./today.js";
 
 function renderServiceWorkspace(serviceId) {
   const container = $("panelContainer");
@@ -22,7 +28,9 @@ function renderServiceWorkspace(serviceId) {
   if (dynamicActions) dynamicActions.innerHTML = "";
   container.innerHTML = "";
 
-  if (serviceId === "settings") {
+  if (serviceId === "today") {
+    renderTodayWorkspace();
+  } else if (serviceId === "settings") {
     renderSettingsPanel(getCurrentSettingsSection() || "oauth");
   } else if (serviceId === "gmail") {
     renderGmailWorkspace();
@@ -32,8 +40,12 @@ function renderServiceWorkspace(serviceId) {
     renderYoutubeCommentsWorkspace();
   } else if (serviceId === "docs") {
     renderPdfWorkspace();
-  } else if (serviceId === "gemini") {
-    renderGeminiWorkspace();
+  } else if (serviceId === "activity") {
+    renderActivityWorkspace();
+  } else if (serviceId === "learning") {
+    renderLearningWorkspace();
+  } else if (serviceId === "ai") {
+    renderAiWorkspace();
   } else if (serviceId === "edit") {
     renderEditWorkspace();
   } else {
@@ -51,6 +63,23 @@ const NAMED_WORKSPACES = {
   youtube_workspace: () => renderYoutubeWorkspace(),
   youtube_comments: () => renderYoutubeCommentsWorkspace(),
   pdf_translate: () => renderPdfWorkspace(),
+  // 한 화면 안의 탭을 타일로 직접 열 수 있게 이름을 따로 준다.
+  // 타일은 arg 하나만 넘길 수 있으므로 탭마다 항목을 두는 편이 command 규약을 건드리지 않는다.
+  activity_now: () => renderActivityWorkspace("now"),
+  activity_recent: () => renderActivityWorkspace("recent"),
+  activity_logs: () => renderActivityWorkspace("logs"),
+  activity_usage: () => renderActivityWorkspace("usage"),
+  learning_patterns: () => renderLearningWorkspace("patterns"),
+  learning_recent: () => renderLearningWorkspace("recent"),
+  ai_run: () => renderAiWorkspace("run"),
+  ai_status: () => renderAiWorkspace("status"),
+  gmail_cleanup: () => renderCleanupWorkspace(),
+  glossary: () => renderGlossaryWorkspace(),
+  calendar_quick_event: () => renderQuickEventWorkspace("text"),
+  calendar_from_mail: () => renderQuickEventWorkspace("mail"),
+  today_brief: () => renderTodayWorkspace("all"),
+  today_mail: () => renderTodayWorkspace("mail"),
+  today_events: () => renderTodayWorkspace("events"),
 };
 
 function renderWorkspaceByName(name) {
@@ -62,4 +91,11 @@ function renderWorkspaceByName(name) {
   render();
 }
 
-export { renderServiceWorkspace, renderWorkspaceByName };
+// 타일이 가리키는 화면이 실제로 있는지 nav/tile_state.js가 물어본다.
+// NAMED_WORKSPACES를 통째로 내보내지 않는 이유: 밖에서 표를 고칠 수 있게 되면
+// "화면 목록은 이 파일이 소유한다"는 규칙이 깨진다.
+function hasNamedWorkspace(name) {
+  return Object.prototype.hasOwnProperty.call(NAMED_WORKSPACES, name);
+}
+
+export { renderServiceWorkspace, renderWorkspaceByName, hasNamedWorkspace };
